@@ -16,28 +16,6 @@
     <KeyBinding Gesture="Ctrl+G" Command="{Binding ToggleViewCommand}" />
   </Window.KeyBindings>
 
-  <Window.Resources>
-    <!-- Shared by the carousel and details panel "Game Actions" buttons, and the controller's X button. -->
-    <MenuFlyout x:Key="GameActionsMenu" Placement="TopEdgeAlignedLeft">
-      <MenuItem Header="Launch With…" Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}" />
-      <MenuItem Header="Play Version…" Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}" />
-      <Separator />
-      <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
-      <MenuItem Header="Choose Cover…" Command="{Binding ChooseCoverCommand}" />
-      <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
-      <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
-      <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
-      <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
-      <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
-      <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
-      <Separator />
-      <MenuItem Header="Refresh from TitleDB" Command="{Binding RefreshFromTitleDbCommand}" />
-      <MenuItem Header="Clear Match and Artwork…" Command="{Binding ClearMatchAndArtworkCommand}" />
-      <Separator />
-      <MenuItem Header="Game Settings (Grid view)" Command="{Binding ShowGridCommand}" />
-    </MenuFlyout>
-  </Window.Resources>
-
   <Window.Styles>
     <!-- Grid: a lavender ring marks the selected cover; no default list highlight. -->
     <Style Selector="ListBox#CoverList ListBoxItem">
@@ -183,15 +161,8 @@
       <!-- ============================== Top bar ============================== -->
       <Border DockPanel.Dock="Top" Padding="28,14,24,10" BorderBrush="#2AFFFFFF" BorderThickness="0,0,0,1">
         <Grid ColumnDefinitions="Auto,Auto,*,Auto">
-          <!-- Placeholder wordmark until the S-Dock logo artwork is ready. -->
-          <StackPanel x:Name="Wordmark" Orientation="Horizontal" Spacing="4" VerticalAlignment="Center" ToolTip.Tip="S-Dock">
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="S" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="-" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="D" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="O" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="C" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-            <Border Background="#0B0B10" CornerRadius="6" Width="34" Height="46"><TextBlock Text="K" Foreground="#FBF3E4" FontSize="30" FontWeight="Black" HorizontalAlignment="Center" VerticalAlignment="Center" /></Border>
-          </StackPanel>
+          <Image x:Name="Logo" Source="avares://S-Dock/Assets/logo.png" Height="46" VerticalAlignment="Center"
+                 RenderOptions.BitmapInterpolationMode="HighQuality" ToolTip.Tip="S-Dock" />
           <Rectangle Grid.Column="1" Width="1" Height="38" Fill="#40FFFFFF" Margin="22,0" VerticalAlignment="Center" />
           <TabStrip Grid.Column="2" Classes="pills" Background="Transparent" VerticalAlignment="Center"
                     ItemsSource="{Binding LibraryTabs}" SelectedItem="{Binding SelectedLibraryTab}">
@@ -212,54 +183,9 @@
                     Command="{Binding AddFolderCommand}" ToolTip.Tip="Add a folder of games (Ctrl+O)">
               <PathIcon Data="{StaticResource IconFolderPlus}" Width="20" Height="20" />
             </Button>
-            <Button x:Name="SettingsButton" Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center" ToolTip.Tip="Settings">
+            <Button x:Name="SettingsButton" Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center"
+                    Command="{Binding OpenSettingsMenuCommand}" ToolTip.Tip="Settings (Select / Back on a controller)">
               <PathIcon Data="{StaticResource IconSettings}" Width="22" Height="22" />
-              <Button.Flyout>
-                <MenuFlyout Placement="BottomEdgeAlignedRight">
-                  <MenuItem Header="Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
-                  <MenuItem Header="Emulator Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
-                  <MenuItem Header="Background">
-                    <MenuItem Header="Game Artwork" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsArt, Mode=OneWay}"
-                              Command="{Binding SetBackgroundCommand}" CommandParameter="art"
-                              ToolTip.Tip="The game's banner or chosen background behind the covers" />
-                    <MenuItem Header="Color from Game" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsColor, Mode=OneWay}"
-                              Command="{Binding SetBackgroundCommand}" CommandParameter="color"
-                              ToolTip.Tip="A gradient in the main colour of the selected game's cover" />
-                    <MenuItem Header="Plain" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsPlain, Mode=OneWay}"
-                              Command="{Binding SetBackgroundCommand}" CommandParameter="plain"
-                              ToolTip.Tip="S-Dock's own dark background" />
-                  </MenuItem>
-                  <MenuItem Header="Playing">
-                    <MenuItem Header="Start Games in Full Screen" ToggleType="CheckBox" IsChecked="{Binding StartGamesFullScreen, Mode=OneWay}"
-                              Command="{Binding ToggleStartGamesFullScreenCommand}"
-                              ToolTip.Tip="Adds Eden's full-screen switch (-f) when a game starts" />
-                    <Separator />
-                    <MenuItem Header="Esc or Start+Select: Press Once to Exit" ToggleType="Radio" GroupName="ExitPresses"
-                              IsChecked="{Binding ExitWithOnePress, Mode=OneWay}"
-                              Command="{Binding SetExitPressesCommand}" CommandParameter="1" />
-                    <MenuItem Header="Esc or Start+Select: Press Twice to Exit" ToggleType="Radio" GroupName="ExitPresses"
-                              IsChecked="{Binding ExitWithTwoPresses, Mode=OneWay}"
-                              Command="{Binding SetExitPressesCommand}" CommandParameter="2"
-                              ToolTip.Tip="The first press shows a note; press again within 3 seconds to close the game" />
-                  </MenuItem>
-                  <Separator />
-                  <MenuItem Header="Update from TitleDB" Command="{Binding UpdateFromTitleDbCommand}" IsEnabled="{Binding !IsMatchingAll}"
-                            ToolTip.Tip="Names, descriptions, square icons and banners from the eShop's listings, matched by title ID" />
-                  <MenuItem Header="Use nx-versions" ToggleType="CheckBox" IsChecked="{Binding UseNxVersions, Mode=OneWay}"
-                            Command="{Binding ToggleNxVersionsCommand}"
-                            ToolTip.Tip="Latest known update versions and first-seen dates from 16BitWonder/nx-versions, refreshed with TitleDB" />
-                  <MenuItem Header="Match Unmatched Games on IGDB" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
-                  <MenuItem Header="Cancel" Command="{Binding CancelMatchingCommand}" ToolTip.Tip="Stop the update, matching or logo fetching; everything done so far is kept" IsVisible="{Binding IsMatchingAll}" />
-                  <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}" IsEnabled="{Binding !IsMatchingAll}"
-                            ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
-                  <MenuItem Header="Metadata Settings…" Command="{Binding IgdbSettingsCommand}" />
-                  <Separator />
-                  <MenuItem Header="Open Data Folder" Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolderTip}" />
-                  <MenuItem Header="Open Emulators Folder" Command="{Binding OpenEmulatorsFolderCommand}" />
-                  <Separator />
-                  <MenuItem Header="Quit" Click="Quit_Click" />
-                </MenuFlyout>
-              </Button.Flyout>
             </Button>
           </StackPanel>
         </Grid>
@@ -284,10 +210,6 @@
                     PlaceholderText="More filters" MinWidth="150" ToolTip.Tip="Unclassified, missing files, needs IGDB match" />
           <ComboBox Classes="chip" ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
                     IsVisible="{Binding IsArcade}" />
-          <CheckBox Content="Include ACA NEOGEO" IsChecked="{Binding IncludeAcaNeogeo}" IsVisible="{Binding IsArcade}"
-                    ToolTip.Tip="Show ACA NEOGEO titles here instead of in Main Library" />
-          <CheckBox Content="Include SEGA AGES" IsChecked="{Binding IncludeSegaAges}" IsVisible="{Binding IsArcade}"
-                    ToolTip.Tip="Show SEGA AGES titles here instead of in Main Library" />
           <Button Classes="subtle" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
@@ -322,7 +244,12 @@
             <TextBlock Text="Grid / Carousel" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key"><TextBlock Text="LB" FontSize="11" /></Border>
             <Border Classes="key"><TextBlock Text="RB" FontSize="11" /></Border>
-            <TextBlock Text="Library" VerticalAlignment="Center" Margin="2,0,0,0" />
+            <TextBlock Text="Library" VerticalAlignment="Center" Margin="2,0,22,0" />
+            <Border Classes="key"><TextBlock Text="LT" FontSize="11" /></Border>
+            <Border Classes="key"><TextBlock Text="RT" FontSize="11" /></Border>
+            <TextBlock Text="Letter" VerticalAlignment="Center" Margin="2,0,22,0" />
+            <Border Classes="key"><TextBlock Text="SELECT" FontSize="10" /></Border>
+            <TextBlock Text="Settings" VerticalAlignment="Center" Margin="2,0,0,0" />
           </StackPanel>
           <TextBlock x:Name="StatusLine" Grid.Column="1" Text="{Binding StatusText}" Classes="muted" FontSize="12"
                      HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="20,0,0,0" />
@@ -373,7 +300,7 @@
                     </StackPanel>
                   </Button>
                   <Button x:Name="DetailsGameActionsButton" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                          Flyout="{StaticResource GameActionsMenu}" Content="Game Actions…" ToolTip.Tip="Launch With, Play Version, artwork and more (X)" />
+                          Command="{Binding OpenGameMenuCommand}" Content="Game Actions…" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)" />
                   <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
                              HorizontalAlignment="Center" TextAlignment="Center" />
                 </StackPanel>
@@ -509,7 +436,7 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
                   </StackPanel>
-                  <TextBlock Text="{Binding SelectedSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2" Height="46"
+                  <TextBlock Text="{Binding CarouselSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2" Height="46"
                              TextWrapping="Wrap" TextTrimming="WordEllipsis" MaxWidth="900" HorizontalAlignment="Left" />
                   <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
                     <Button Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
@@ -520,7 +447,7 @@
                       </StackPanel>
                     </Button>
                     <Button x:Name="GameActionsButton" Classes="subtle" MinHeight="58" Padding="18,0" CornerRadius="12"
-                            Flyout="{StaticResource GameActionsMenu}" ToolTip.Tip="Launch With, Play Version, artwork and more (X)">
+                            Command="{Binding OpenGameMenuCommand}" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)">
                       <TextBlock Text="Game Actions…" FontSize="15" />
                     </Button>
                     <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0" />
@@ -552,28 +479,64 @@
             </ListBox>
           </DockPanel>
 
-          <Panel.ContextMenu>
-            <ContextMenu x:Name="CoverContextMenu">
-              <!-- Playing and versions are grid-only here; the carousel has Play and Game Actions on screen. -->
-              <MenuItem Header="Play" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
-              <MenuItem Header="Launch With…" Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
-              <MenuItem Header="Play Version…" Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
-              <Separator IsVisible="{Binding IsGrid}" />
-              <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" IsVisible="{Binding IsGrid}" />
-              <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
-              <MenuItem Header="Choose Cover…" Command="{Binding ChooseCoverCommand}" />
-      <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
-              <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
-              <Separator />
-              <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
-              <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
-              <Separator />
-              <MenuItem Header="Refresh from TitleDB" Command="{Binding RefreshFromTitleDbCommand}" />
-              <MenuItem Header="Clear Match and Artwork…" Command="{Binding ClearMatchAndArtworkCommand}" />
-            </ContextMenu>
-          </Panel.ContextMenu>
         </Panel>
       </Grid>
     </DockPanel>
+
+    <!-- Letter jump (Up/Down in the carousel, LT/RT, Page Up/Down): the letter shows briefly. -->
+    <Border x:Name="LetterBadge" IsVisible="{Binding ShowJumpLetter}" IsHitTestVisible="False"
+            HorizontalAlignment="Center" VerticalAlignment="Center" Width="150" Height="150" CornerRadius="28"
+            Background="#E6171829" BorderBrush="{StaticResource SyAccent}" BorderThickness="2">
+      <TextBlock Text="{Binding JumpLetter}" FontSize="84" FontWeight="Black" Foreground="{StaticResource SyAccent}"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+
+    <!-- The on-screen menu: Game Actions (X, the button, right-click) and Settings (Select/Back, the gear).
+         D-pad or arrows to move, A or Enter to choose, B or Esc to go back. -->
+    <Border x:Name="MenuOverlay" IsVisible="{Binding IsMenuOpen}" Background="#A6000000">
+      <Border x:Name="MenuPanel" Width="520" MaxHeight="720" HorizontalAlignment="Center" VerticalAlignment="Center"
+              Background="{StaticResource SySurface}" BorderBrush="{StaticResource SyBorder}" BorderThickness="1"
+              CornerRadius="18" Padding="14,14,14,10" BoxShadow="0 18 50 0 #80000000">
+        <DockPanel>
+          <TextBlock DockPanel.Dock="Top" Text="{Binding MenuTitle}" FontSize="21" FontWeight="Bold" Margin="14,4,14,10"
+                     TextTrimming="CharacterEllipsis" />
+          <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="18" Margin="14,10,14,2">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Classes="key"><TextBlock Text="A" /></Border>
+              <TextBlock Text="Choose" Classes="muted" VerticalAlignment="Center" />
+            </StackPanel>
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Border Classes="key"><TextBlock Text="B" /></Border>
+              <TextBlock Text="{Binding MenuBackLabel}" Classes="muted" VerticalAlignment="Center" />
+            </StackPanel>
+          </StackPanel>
+          <ListBox x:Name="MenuList" ItemsSource="{Binding MenuItems}" Background="Transparent" SelectionMode="Single"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.Styles>
+              <Style Selector="ListBoxItem">
+                <Setter Property="Padding" Value="14,11" />
+                <Setter Property="CornerRadius" Value="10" />
+                <Setter Property="Margin" Value="0,1" />
+              </Style>
+              <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+                <Setter Property="Background" Value="{StaticResource SyAccent}" />
+              </Style>
+              <Style Selector="ListBoxItem:selected TextBlock">
+                <Setter Property="Foreground" Value="{StaticResource SyOnAccent}" />
+              </Style>
+            </ListBox.Styles>
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:MenuEntry">
+                <Grid ColumnDefinitions="26,*,Auto" Opacity="{Binding Opacity}" Background="Transparent">
+                  <TextBlock Text="✓" FontWeight="Bold" FontSize="16" IsVisible="{Binding IsChecked}" VerticalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Text="{Binding Label}" FontSize="16" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Grid.Column="2" Text="›" FontSize="20" IsVisible="{Binding HasPage}" VerticalAlignment="Center" Margin="8,0,0,0" />
+                </Grid>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+        </DockPanel>
+      </Border>
+    </Border>
   </Panel>
 </Window>

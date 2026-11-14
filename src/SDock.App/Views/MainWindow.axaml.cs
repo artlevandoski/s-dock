@@ -25,6 +25,18 @@ public partial class MainWindow : Window
             list.AddHandler(KeyDownEvent, CoverList_KeyDown, RoutingStrategies.Tunnel);
             list.DoubleTapped += (_, _) => Play();
         }
+        foreach (var list in new[] { CoverList, CarouselList })
+            list.ContextRequested += Cover_ContextRequested; // right-click (or the menu key) opens Game Actions
+        MenuList.AddHandler(KeyDownEvent, MenuList_KeyDown, RoutingStrategies.Tunnel);
+        MenuList.Tapped += (_, e) =>
+        {
+            if ((e.Source as Control)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is MenuEntry entry)
+                Vm?.ActivateMenu(entry);
+        };
+        MenuOverlay.PointerPressed += (_, e) =>
+        {
+            if (e.Source == MenuOverlay) Vm?.CloseMenu(); // a click outside the panel closes it
+        };
         CarouselList.SelectionChanged += (_, _) => Dispatcher.UIThread.Post(() => CenterCarousel(animate: true), DispatcherPriority.Loaded);
         CarouselList.SizeChanged += (_, _) => { UpdateCarouselPadding(); CenterCarousel(animate: false); };
         KeyDown += Window_KeyDown;
@@ -34,6 +46,8 @@ public partial class MainWindow : Window
             if (Vm is { } vm)
             {
                 vm.PropertyChanged += Vm_PropertyChanged;
+                vm.MenuChanged += OnMenuChanged;
+                vm.QuitRequested += () => Close();
                 ApplyFullScreen(vm.IsCarousel);
             }
         };
@@ -88,6 +102,86 @@ public partial class MainWindow : Window
             Play();
             e.Handled = true;
         }
+        // Letters: Up/Down in the carousel (it only scrolls sideways), Page Up/Down in either view.
+        else if ((sender == CarouselList && e.Key is Key.Up or Key.Down) || e.Key is Key.PageUp or Key.PageDown)
+        {
+            JumpLetter(e.Key is Key.Up or Key.PageUp ? -1 : +1);
+            e.Handled = true;
+        }
+    }
+
+    private DispatcherTimer? _letterTimer;
+
+    /// <summary>Jump to the next or previous letter and show it briefly.</summary>
+    public void JumpLetter(int direction)
+    {
+        if (Vm is not { } vm || vm.JumpToLetter(direction) is null) return;
+        FocusSelectedCover();
+        _letterTimer?.Stop();
+        _letterTimer = new DispatcherTimer(TimeSpan.FromMilliseconds(650), DispatcherPriority.Normal, (_, _) =>
+        {
+            vm.ShowJumpLetter = false;
+            _letterTimer?.Stop();
+        });
+        _letterTimer.Start();
+    }
+
+    // ------------------------------------------------------------------ on-screen menu
+    private void Cover_ContextRequested(object? sender, ContextRequestedEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        if ((e.Source as Control)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is EditionItem item)
+            vm.SelectedItem = item;
+        vm.OpenGameMenu();
+        e.Handled = true;
+    }
+
+    private void OnMenuChanged()
+    {
+        if (Vm is { IsMenuOpen: true })
+            Dispatcher.UIThread.Post(FocusMenu, DispatcherPriority.Loaded);
+        else
+            Dispatcher.UIThread.Post(FocusSelectedCover, DispatcherPriority.Loaded);
+    }
+
+    /// <summary>Put focus on the menu's selected line (the first one that can be chosen, when a page opens).</summary>
+    public void FocusMenu()
+    {
+        if (Vm is not { IsMenuOpen: true } vm) return;
+        if (MenuList.SelectedItem is not MenuEntry selected || !vm.MenuItems.Contains(selected))
+            MenuList.SelectedItem = vm.MenuItems.FirstOrDefault(m => m.Enabled) ?? vm.MenuItems.FirstOrDefault();
+        if (MenuList.SelectedIndex >= 0)
+        {
+            MenuList.ScrollIntoView(MenuList.SelectedIndex);
+            if (MenuList.ContainerFromIndex(MenuList.SelectedIndex) is { } container)
+            {
+                if (!container.IsFocused) container.Focus(NavigationMethod.Directional);
+                return;
+            }
+        }
+        MenuList.Focus();
+    }
+
+    private void MenuList_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { } vm) return;
+        var selected = MenuList.SelectedItem as MenuEntry;
+        switch (e.Key)
+        {
+            case Key.Enter or Key.Space:
+                vm.ActivateMenu(selected);
+                break;
+            case Key.Right when selected is { HasPage: true }:
+                vm.ActivateMenu(selected);
+                break;
+            case Key.Escape or Key.Back:
+            case Key.Left when vm.MenuHasParent:
+                vm.MenuBack();
+                break;
+            default:
+                return;
+        }
+        e.Handled = true;
     }
 
     private void Window_KeyDown(object? sender, KeyEventArgs e)
@@ -98,6 +192,11 @@ public partial class MainWindow : Window
             SearchBox.SelectAll();
             e.Handled = true;
         }
+        else if (e.Key == Key.Escape && Vm is { IsMenuOpen: true } menuVm)
+        {
+            menuVm.MenuBack();
+            e.Handled = true;
+        }
         else if (e.Key == Key.Escape && SearchBox.IsFocused)
         {
             FocusSelectedCover();
@@ -105,7 +204,6 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Quit_Click(object? sender, RoutedEventArgs e) => Close();
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
@@ -186,13 +284,8 @@ public partial class MainWindow : Window
         return report.ToString();
     }
 
-    /// <summary>Opens the Game Actions menu (controller X) next to the visible Game Actions button.</summary>
-    public void OpenGameActions()
-    {
-        if (Vm is not { HasSelection: true } vm) return;
-        Button anchor = vm.IsCarousel ? GameActionsButton : DetailsGameActionsButton;
-        anchor.Flyout?.ShowAt(anchor);
-    }
+    /// <summary>Opens the Game Actions menu (controller X).</summary>
+    public void OpenGameActions() => Vm?.OpenGameMenu();
 
     /// <summary>Focus the selected cover in whichever view is showing.</summary>
     public void FocusSelectedCover()

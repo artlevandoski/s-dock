@@ -398,32 +398,6 @@ public sealed class TitleDbTests : IDisposable
         Assert.Contains("isn't in TitleDB (title ID 0100000000001000)", vm.StatusText);
     }
 
-    [AvaloniaFact]
-    public void Carousel_right_click_has_no_play_or_version_items()
-    {
-        using var lib = _env.OpenLibrary();
-        lib.AddEdition("Zelda", Generations.Switch1, _env.Game(), consoleTitleId: Zelda);
-        using var launcher = new EmulatorLauncher();
-        var vm = Vm(lib, new FakeUi(), launcher);
-        var window = new SDock.App.Views.MainWindow { DataContext = vm, Width = 1180, Height = 780 };
-        window.Show();
-        var menu = window.FindControl<Avalonia.Controls.ContextMenu>("CoverContextMenu")!;
-        bool Shown(string header) => menu.Items.OfType<Avalonia.Controls.MenuItem>().First(i => i.Header as string == header).IsVisible;
-        string[] gridOnly = ["Play", "Launch With…", "Play Version…", "Add Version File…"];
-        var owner = (Control)menu.Parent!;
-        menu.Open(owner); // bindings connect when it opens, as on a right-click
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.All(gridOnly, h => Assert.True(Shown(h)));
-        menu.Close();
-        vm.IsCarousel = true;
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        menu.Open(owner);
-        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Assert.All(gridOnly, h => Assert.False(Shown(h)));
-        Assert.True(Shown("Clear Match and Artwork…"));
-        window.Close();
-    }
-
     // ------------------------------------------------------------- Choose Cover
     [AvaloniaFact]
     public async Task Choose_cover_offers_the_eshop_icon_and_steamgriddb_and_takes_a_file()

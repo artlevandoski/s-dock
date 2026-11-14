@@ -250,6 +250,31 @@ public sealed partial class MainViewModel
             .Select(i => Items[i].CoverPath).OfType<string>());
     }
     public string SelectedSummary => SelectedItem?.Metadata.DisplaySummary ?? "";
+
+    /// <summary>The carousel's one line: your own text, or the description's first sentence.</summary>
+    public string CarouselSummary => SelectedItem?.Metadata.CarouselSummary ?? "";
+
+    /// <summary>Game Actions → Edit Carousel Text…: the short text under the carousel. Clear it to use the first sentence again.</summary>
+    [RelayCommand]
+    private async Task EditCarouselTextAsync()
+    {
+        if (SelectedItem is not { } item) return;
+        var automatic = Sentences.First(item.Metadata.DisplaySummary);
+        var text = await _ui.EditTextAsync("Edit Carousel Text",
+            "The carousel shows one sentence under the game's name. By default it's the first sentence of the description. " +
+            "Clear this to use that again.", item.Metadata.CarouselSummary);
+        _ui.RestoreFocus();
+        if (text is null) return;
+        var value = string.Join(" ", text.Split((char[])['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        _library.SaveMetadata(_library.GetMetadata(item.Id) with
+        {
+            UserShortSummary = value.Length == 0 || value == automatic ? null : value,
+        });
+        Refresh(item.Id);
+        StatusText = value.Length == 0 || value == automatic
+            ? $"“{item.Title}” shows its description's first sentence in the carousel."
+            : $"Carousel text updated for “{item.Title}”.";
+    }
     public bool HasSummary => SelectedSummary.Length > 0;
 
     /// <summary>"Platformer · Adventure · 2023".</summary>

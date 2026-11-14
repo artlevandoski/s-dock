@@ -61,7 +61,9 @@ internal static class XInput
             _api = -1;
             return null;
         }
-        return result == 0 ? new PadState((PadButtons)s.Gamepad.Buttons, s.Gamepad.ThumbLX, s.Gamepad.ThumbLY) : null;
+        return result == 0
+            ? new PadState((PadButtons)s.Gamepad.Buttons, s.Gamepad.ThumbLX, s.Gamepad.ThumbLY, s.Gamepad.LeftTrigger, s.Gamepad.RightTrigger)
+            : null;
     }
 }
 
@@ -148,7 +150,18 @@ public sealed class GamepadService
 
     public static void Dispatch(Window active, PadAction action)
     {
-        if (active is MainWindow { DataContext: MainViewModel vm } main)
+        if (active is MainWindow { DataContext: MainViewModel { IsMenuOpen: true } menuVm } menuWindow)
+        {
+            // The on-screen menu is open: X and Select close it; the D-pad, A and B work inside it (below).
+            switch (action)
+            {
+                case PadAction.GameActions or PadAction.Menu: menuVm.CloseMenu(); return;
+                case PadAction.PreviousLibrary or PadAction.NextLibrary or PadAction.ToggleView or PadAction.Play
+                    or PadAction.PreviousLetter or PadAction.NextLetter: return;
+            }
+            menuWindow.FocusMenu();
+        }
+        else if (active is MainWindow { DataContext: MainViewModel vm } main)
         {
             switch (action)
             {
@@ -157,6 +170,9 @@ public sealed class GamepadService
                 case PadAction.ToggleView: vm.ToggleViewCommand.Execute(null); return;
                 case PadAction.GameActions: main.OpenGameActions(); return;
                 case PadAction.Play: if (vm.CanPlay) vm.PlayCommand.Execute(null); return;
+                case PadAction.Menu: vm.OpenSettingsMenu(); return;
+                case PadAction.PreviousLetter: main.JumpLetter(-1); return;
+                case PadAction.NextLetter: main.JumpLetter(+1); return;
             }
             // Nothing focused yet (e.g. right after start): put focus on the selected cover first.
             if (TopLevel.GetTopLevel(main)?.FocusManager?.GetFocusedElement() is null)

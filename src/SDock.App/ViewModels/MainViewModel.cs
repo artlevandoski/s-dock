@@ -105,7 +105,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
         nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
-        nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText))]
+        nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText), nameof(CarouselSummary))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]

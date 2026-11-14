@@ -11,6 +11,9 @@ public enum PadButtons : ushort
     DpadRight = 0x0008,
     Start = 0x0010,
     Back = 0x0020,
+    /// <summary>Not XInput bits: the analog triggers pulled past halfway (see <see cref="GamepadMapper"/>).</summary>
+    LeftTrigger = 0x0400,
+    RightTrigger = 0x0800,
     LeftShoulder = 0x0100,
     RightShoulder = 0x0200,
     A = 0x1000,
@@ -19,7 +22,15 @@ public enum PadButtons : ushort
     Y = 0x8000,
 }
 
-public readonly record struct PadState(PadButtons Buttons, short LeftX = 0, short LeftY = 0);
+public readonly record struct PadState(PadButtons Buttons, short LeftX = 0, short LeftY = 0, byte LeftTrigger = 0, byte RightTrigger = 0)
+{
+    public const byte TriggerThreshold = 128;
+
+    /// <summary>The buttons, with the triggers counted as pressed past halfway.</summary>
+    public PadButtons AllButtons => Buttons
+        | (LeftTrigger >= TriggerThreshold ? PadButtons.LeftTrigger : 0)
+        | (RightTrigger >= TriggerThreshold ? PadButtons.RightTrigger : 0);
+}
 
 public enum PadAction
 {
@@ -41,6 +52,12 @@ public enum PadAction
     GameActions,
     /// <summary>Start: Play.</summary>
     Play,
+    /// <summary>Select / Back: the Settings menu.</summary>
+    Menu,
+    /// <summary>LT: jump to the previous letter.</summary>
+    PreviousLetter,
+    /// <summary>RT: jump to the next letter.</summary>
+    NextLetter,
 }
 
 /// <summary>
@@ -62,6 +79,9 @@ public sealed class GamepadMapper
         (PadButtons.Y, PadAction.ToggleView),
         (PadButtons.X, PadAction.GameActions),
         (PadButtons.Start, PadAction.Play),
+        (PadButtons.Back, PadAction.Menu),
+        (PadButtons.LeftTrigger, PadAction.PreviousLetter),
+        (PadButtons.RightTrigger, PadAction.NextLetter),
     ];
 
     private PadButtons _previous;
@@ -71,7 +91,7 @@ public sealed class GamepadMapper
     /// <summary>Forget held buttons (e.g. when the window loses focus) so nothing fires on return.</summary>
     public void Reset(PadState? current = null)
     {
-        _previous = current?.Buttons ?? PadButtons.None;
+        _previous = current?.AllButtons ?? PadButtons.None;
         _heldDirection = current is { } c ? Direction(c) : null;
         _nextRepeat = TimeSpan.MaxValue; // a direction held through a reset doesn't fire until released
     }
@@ -93,11 +113,12 @@ public sealed class GamepadMapper
     {
         var actions = new List<PadAction>();
 
-        var pressed = state.Buttons & ~_previous;
+        var buttons = state.AllButtons;
+        var pressed = buttons & ~_previous;
         foreach (var (button, action) in ButtonActions)
             if (pressed.HasFlag(button))
                 actions.Add(action);
-        _previous = state.Buttons;
+        _previous = buttons;
 
         var direction = Direction(state);
         if (direction != _heldDirection)

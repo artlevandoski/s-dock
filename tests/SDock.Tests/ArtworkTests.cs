@@ -424,6 +424,12 @@ public sealed class ArtworkTests : IDisposable
         vm.BackgroundIsColor = true;
         MainWindowTests.Capture(window, "carousel-color.png");
         vm.BackgroundIsArt = true;
+        vm.OpenGameMenu();
+        MainWindowTests.Capture(window, "menu-game.png");
+        vm.CloseMenu();
+        vm.OpenSettingsMenu();
+        MainWindowTests.Capture(window, "menu-settings.png");
+        vm.CloseMenu();
         window.Close();
 
         var bg = new ArtPickerViewModel(ArtKind.KeyArt, "Haunted House", true, ui,

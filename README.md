@@ -28,7 +28,7 @@ to build it.
 dotnet run --project src\SDock.App
 ```
 
-Then, from the **Settings** (gear) menu:
+Then, from the **Settings** menu (the gear, or Select on a controller):
 
 1. **Emulator Settings…** (Ctrl+E): add your emulator. Builds placed in the `emulators\`
    folder are found automatically; **Add as profile** sets them up. For Eden, **Use Eden
@@ -42,15 +42,21 @@ Then, from the **Settings** (gear) menu:
 
 **Libraries.** *Main Library* and *Arcade Archives* are separate tabs, each with its own
 search, filters and last selection. Arcade Archives and Arcade Archives 2 titles go there
-automatically; tick *Include ACA NEOGEO* or *Include SEGA AGES* to add those series too.
+automatically; turn on **Settings → Arcade Archives → Include ACA NEOGEO / Include SEGA AGES** to add those
+series too.
 The **Library** dropdown in the details panel moves any game by hand.
 
 **Grid or carousel.** The grid shows a details panel beside the covers. The carousel fills
-the screen with one row of covers above the game's details; switching back to the grid
-leaves full screen. Both views share the same selection.
+the screen with one row of covers above the game's name and the first sentence of its
+description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
+screen. Both views share the same selection.
+
+**Jump by letter.** Up/Down in the carousel, LT/RT on a controller, or Page Up/Page Down jump
+to the next or previous letter (by sort title). The letter shows briefly in the middle.
 
 **Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified, Missing
-files, Update available, Not in TitleDB, Needs IGDB match and Hidden games.
+files, Update available, Not in TitleDB, Needs IGDB match and Hidden games. With a
+controller, use **Settings → Filter**.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
 its generation's default, and otherwise asks you. **Launch With…** picks an emulator just
@@ -62,28 +68,32 @@ once. When the emulator closes, S-Dock comes back with the same game selected.
 - **Start Games in Full Screen** (on by default) starts Eden in full screen. For other
   emulators, add their own full-screen switch to the profile.
 
-**Game Actions** (the button, the X button on a controller, or right-click a cover):
+**Menus.** Game Actions (the X button, the Game Actions button, or right-click a cover) and
+Settings (Select, or the gear) open as a list in the middle of the screen. Move with the D-pad
+or arrow keys, choose with A or Enter, and go back with B or Esc. Settings with a tick apply
+straight away.
+
+**Game Actions:**
 
 | Action | What it does |
 |---|---|
 | Launch With… / Play Version… | Play once with another emulator, or another file of the game |
 | Choose Cover / Background / Logo… | Pick from downloaded artwork or browse your PC; *Use Default* goes back |
-| Edit Description… | Replace the downloaded description with your own |
+| Edit Description… / Edit Carousel Text… | Write your own description, or the one line shown in the carousel |
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
 | Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
-| Refresh from TitleDB | Download the game's info and pictures again |
-| Clear Match and Artwork… | Start the game over: removes its matches, descriptions and pictures |
+| Game Info and Matching › | Refresh from TitleDB, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
-Playing and version items appear in the right-click menu only in the grid; the carousel has
-Play and Game Actions on screen.
+In the carousel, Play and Add Version File… are left out of the menu (Play is on screen).
 
 **Updates and DLC.** S-Dock reads the update and DLC files beside each game (for example in
 `Updates` and `DLC` subfolders) from their file names. The details show whether you have
 the latest known update and how many DLC you have.
 
-**Settings menu** also has **Background** (game artwork, a gradient in the game's colour,
-or plain), **Open Data Folder** and **Open Emulators Folder**.
+**Settings** also has **Background** (game artwork, a gradient in the game's colour, or
+plain), **Playing**, **Game Info** (TitleDB, nx-versions, IGDB, logos), **Open Data Folder**,
+**Open Emulators Folder** and **Quit**.
 
 ## Game info and artwork
 
@@ -128,12 +138,14 @@ Xbox-compatible controllers work through Windows XInput, with no extra drivers.
 
 | Controller | Keyboard | Action |
 |---|---|---|
-| D-pad / left stick | Arrow keys | Move between covers (hold to repeat) |
-| A | Enter | Play, or press the focused button |
-| B | Esc | Back / close a dialog |
-| X | | Game Actions |
+| D-pad / left stick | Arrow keys | Move between covers (hold to repeat); in the carousel, Up/Down jump letters |
+| A | Enter | Play, or choose in a menu |
+| B | Esc | Back / close a menu or dialog |
+| X | Right-click | Game Actions |
+| Select (Back) | | Settings |
 | Y | Ctrl+G | Grid / carousel |
 | LB / RB | Ctrl+Shift+Tab / Ctrl+Tab | Previous / next library |
+| LT / RT | Page Up / Page Down | Previous / next letter |
 | Start | | Play |
 | Start + Select | Esc (in a game) | Close the game and return to S-Dock |
 | | Ctrl+F | Search |

@@ -19,10 +19,11 @@ the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each
 | Playing | Eden starts in full screen (setting remembered, never added twice, other emulators untouched); one- or two-press exit within 3 seconds; closing a running emulator |
 | Libraries and browsing | Arcade Archives, ACA NEOGEO and SEGA AGES by title prefix; manual pins and options persist; per-library search, filters and selection; hide and unhide; sort titles; Update available, Not in TitleDB and Hidden filters |
 | Grid and carousel | one shared view; the centred cover is larger and stays centred; carousel is full screen and the grid restores the window; covers and the details band keep their size and place while browsing; right-click menu differs by view |
-| Settings menu | Background, Playing and nx-versions items change their setting when clicked, and the tick follows |
+| Menus | settings apply at once and the tick follows; actions close the menu then run; B goes back a page or closes |
 | Background | artwork, colour from the cover (toned down for readable text) or plain; remembered |
 | Versions | add, remove and choose the main file; Play Version… launches once; duplicates attached at import; Switch 2 editions never matched to Switch 1 titles |
-| Controller | buttons fire once; directions repeat when held; stick deadzone; held buttons ignored on return |
+| Controller | buttons fire once; directions repeat when held; stick deadzone; held buttons ignored on return; triggers past halfway and Select map to letter jumps and Settings; the Settings and Game Actions menus, their pages, ticks and actions, right-click, and letter jumps all driven through the controller path |
+| Carousel text | first sentence (abbreviations, decimals, ellipses, quotes and taglines handled; long ones cut at a word); your own text replaces it and clearing it goes back |
 | TitleDB | US listing first, then UK, Australian and Japanese (no Japanese text); AeroFoil's fork with the original as fallback; unchanged listings not downloaded again; demos never win over the full listing; images only from Nintendo's image server; failed images counted and retried; works offline from the saved copy; offered after the first import |
 | nx-versions | latest update and version dates; first-seen dates fill a missing release year; a failed refresh keeps the saved copy; turning it off stops downloads and keeps recorded versions; update and DLC files read from the game folder |
 | IGDB | one sign-in reused; expired token renewed once; clear message for bad credentials; pasted links, slugs and IDs; platform-aware matching with confident matches only; match-all summary and cancel |
@@ -55,7 +56,10 @@ Run by hand with your own emulator and game folder, and record results below.
 7. Arcade Archives titles appear in their tab; each library keeps its own search and
    selection after a restart. Tick *Include SEGA AGES* and *Include ACA NEOGEO*.
 8. Switch to the carousel (full screen) and use the controller straight away, without
-   clicking: D-pad, A to play, LB/RB, X, Y. Back in the grid, the window is restored.
+   clicking: D-pad, A to play, LB/RB, X (Game Actions), Select (Settings), Y, Up/Down and
+   LT/RT to jump letters. Choose things in both menus with A, go back with B. Right-click a
+   cover with the mouse: the same Game Actions menu opens. Back in the grid, the window is
+   restored.
 9. Play from the carousel and exit with Esc (twice), then with Start + Select. Use the
    controller again without clicking. Try *Press Once to Exit*.
 10. Try each **Background** option. Set a **Sort Title**. Hide a game and unhide it.

@@ -50,6 +50,11 @@ public sealed record EditionMetadata
     public string? UserCoverFile { get; init; }
     public string? UserKeyArtFile { get; init; }
     public string? UserLogoFile { get; init; }
+    /// <summary>Your own short text for the carousel (otherwise the description's first sentence).</summary>
+    public string? UserShortSummary { get; init; }
+
+    /// <summary>The carousel's text: yours, or the first sentence of the description.</summary>
+    public string CarouselSummary => UserShortSummary ?? Sentences.First(DisplaySummary);
 
     /// <summary>The description shown when the user hasn't written their own: TitleDB's, else IGDB's.</summary>
     public string? DefaultSummary => TdbSummary ?? Summary;
