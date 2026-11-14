@@ -11,7 +11,7 @@ emulators/
 ```
 
 Everything in this folder except this README is ignored by git, so nothing you place here
-is uploaded. S-Dock opens this folder from **Emulator → Open Emulators Folder** and
+is uploaded. S-Dock opens this folder from **Settings → Open Emulators Folder** and
 starts the executable picker here when you set up a profile.
 
 If S-Dock's folder is read-only, `%LOCALAPPDATA%\S-Dock\Emulators` is used instead.

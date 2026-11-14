@@ -1,0 +1,116 @@
+# Testing S-Dock
+
+## Automated tests
+
+```powershell
+dotnet test
+```
+
+The tests use placeholder game files, a stand-in emulator (`tests/FakeEmulator`) and fake
+versions of IGDB, SteamGridDB and TitleDB. They never touch real games, a real emulator or
+the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each window.
+
+| Area | What's covered |
+|---|---|
+| Importing | file classification; update, DLC and duplicate flags; ambiguous names → Unclassified; filename/folder generation conflicts; repeat scans add nothing and keep edits; game files left byte-for-byte untouched; a file's own title ID is the last one in its name |
+| Library storage | library, profiles and selection survive a restart; files stored apart from games; every schema upgrade (v1 → v9) keeps existing data |
+| Launching | paths with spaces passed as single arguments; missing executable, game or `{game}` argument; an `.exe` that can't start; a second launch while one runs; exit code and launch log; Play returns to the same cover |
+| Emulator choice | game's choice → generation default → ask; Unclassified always asks; remember for the game or as default; Launch With… saves nothing; two builds side by side; removing a profile clears choices that used it; Emulators folder discovery |
+| Playing | Eden starts in full screen (setting remembered, never added twice, other emulators untouched); one- or two-press exit within 3 seconds; closing a running emulator |
+| Libraries and browsing | Arcade Archives, ACA NEOGEO and SEGA AGES by title prefix; manual pins and options persist; per-library search, filters and selection; hide and unhide; sort titles; Update available, Not in TitleDB and Hidden filters |
+| Grid and carousel | one shared view; the centred cover is larger and stays centred; carousel is full screen and the grid restores the window; covers and the details band keep their size and place while browsing; right-click menu differs by view |
+| Settings menu | Background, Playing and nx-versions items change their setting when clicked, and the tick follows |
+| Background | artwork, colour from the cover (toned down for readable text) or plain; remembered |
+| Versions | add, remove and choose the main file; Play Version… launches once; duplicates attached at import; Switch 2 editions never matched to Switch 1 titles |
+| Controller | buttons fire once; directions repeat when held; stick deadzone; held buttons ignored on return |
+| TitleDB | US listing first, then UK, Australian and Japanese (no Japanese text); AeroFoil's fork with the original as fallback; unchanged listings not downloaded again; demos never win over the full listing; images only from Nintendo's image server; failed images counted and retried; works offline from the saved copy; offered after the first import |
+| nx-versions | latest update and version dates; first-seen dates fill a missing release year; a failed refresh keeps the saved copy; turning it off stops downloads and keeps recorded versions; update and DLC files read from the game folder |
+| IGDB | one sign-in reused; expired token renewed once; clear message for bad credentials; pasted links, slugs and IDs; platform-aware matching with confident matches only; match-all summary and cancel |
+| Artwork | your choices always win, then TitleDB, then IGDB; Choose Cover, Background and Logo (including a file from the PC and Use Default); logos fetched right after a match; Get Missing Logos progress, summary and cancel; SteamGridDB images downloaded without the API key; Clear Match and Artwork; Refresh from TitleDB |
+| Large libraries | background artwork cache, re-decoded when a file changes and replaceable while in use; carousel centring with virtualization; opt-in 863-game stress test |
+| Renaming | old Switch Yard environment variables, profile folder and solution name still recognised |
+
+## Manual checklist (real emulator)
+
+Run by hand with your own emulator and game folder, and record results below.
+
+**Library and launching**
+
+1. Import a small folder that includes a path with spaces and an Arcade Archives title.
+   Check the preview, then import the same folder again: everything shows "Already in
+   library".
+2. Restart S-Dock. The games, emulator profile and selected game are still there.
+3. Play a game and exit the emulator. S-Dock comes back with the same game selected.
+4. Move one game file, and point the profile at a missing exe. S-Dock says what to fix
+   (FILE MISSING / Locate File…, Emulator Settings…) and stays usable.
+
+**Emulators**
+
+5. Put one or two builds in `emulators\`, add them with **Add as profile**, set the Switch 1
+   default, then give one game a different emulator and check Play uses it.
+6. **Launch With…** another emulator; afterwards the game's own choice is unchanged.
+
+**Browsing and controller**
+
+7. Arcade Archives titles appear in their tab; each library keeps its own search and
+   selection after a restart. Tick *Include SEGA AGES* and *Include ACA NEOGEO*.
+8. Switch to the carousel (full screen) and use the controller straight away, without
+   clicking: D-pad, A to play, LB/RB, X, Y. Back in the grid, the window is restored.
+9. Play from the carousel and exit with Esc (twice), then with Start + Select. Use the
+   controller again without clicking. Try *Press Once to Exit*.
+10. Try each **Background** option. Set a **Sort Title**. Hide a game and unhide it.
+11. Add a second file to a game (Add Version File…) and launch it with Play Version….
+
+**Game info and artwork**
+
+12. Run **Update from TitleDB**: square covers, banners, descriptions, publisher and
+    players appear. Run it again (it finishes quickly). Check **More filters → Not in
+    TitleDB** and **Update available**.
+13. Enter IGDB credentials (Test IGDB succeeds), run **Match Unmatched Games on IGDB**, and
+    fix one game with **Match on IGDB…** using a pasted igdb.com link.
+14. Add a SteamGridDB key and run **Get Missing Logos**. Logos replace the names.
+15. Use **Choose Cover…** (including a file from your PC), **Choose Background…** and
+    **Choose Logo…**, then **Use Default**. Edit a description, then **Refresh from IGDB**:
+    your description and pictures stay.
+16. On one game, use **Clear Match and Artwork… → Clear and Look Up Again**.
+17. Move the whole S-Dock folder (or go offline): artwork and emulators still work.
+
+### Results
+
+| Date | Build | Emulator | Steps | Result | Notes |
+|---|---|---|---|---|---|
+| 2026-11-13 | Python | Eden v0.2.1 | 1–4 | Pass | Eden preset (`-g {game}`) booted the game directly |
+
+## Performance
+
+S-Dock is tuned for libraries of hundreds of games:
+
+- Artwork is decoded in the background and kept in memory: covers near the selection first,
+  then every cover, so scrolling never waits. Backgrounds and logos either side of the
+  selection are preloaded. Covers are decoded at the size they're drawn, and the least
+  recently used are dropped if memory runs short.
+- The carousel and the import preview only create controls for what's on screen.
+- The database uses write-ahead logging and imports in a single transaction.
+
+Measured with 863 folders (base game, update and DLC in each; 2,877 files) on a 100%-scaled
+display:
+
+| | Result |
+|---|---|
+| Scan 2,877 files | 0.5 s |
+| Import preview opens | under 1 s |
+| Import 863 games | 0.1 s |
+| Launch to first frame | about 1.8 s |
+| All 863 covers in memory | about 0.25 s after the window appears (about 300 MB) |
+| Grid smooth scroll / carousel (one game per frame) | 60 fps |
+| TitleDB: build merged file / look up a library | about 5 s / about 0.5 s |
+| Read update and DLC files beside 862 games | about 1.4 s |
+
+To repeat the measurements:
+
+```powershell
+# Builds a library shaped like the one above in %TEMP%\S-Dock Stress and times each step
+$env:SDOCK_STRESS = "1"; dotnet test -c Release --filter "FullyQualifiedName~StressTests" --logger "console;verbosity=detailed"
+# Real frame times with your graphics card (opens a window for about 10 seconds), written to logs\benchmark.txt
+.\src\SDock.App\bin\Release\net10.0\S-Dock.exe --data-dir "$env:TEMP\S-Dock Stress\run" --benchmark
+```
