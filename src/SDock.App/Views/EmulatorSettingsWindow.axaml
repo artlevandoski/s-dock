@@ -1,0 +1,128 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SDock.App.ViewModels"
+        xmlns:core="using:SDock.Core"
+        x:Class="SDock.App.Views.EmulatorSettingsWindow"
+        x:DataType="vm:EmulatorProfilesViewModel"
+        Title="Emulator Settings"
+        Width="1000" Height="680" MinWidth="820" MinHeight="560"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="16">
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Intro}" TextWrapping="Wrap" Margin="0,0,0,12" />
+
+    <!-- Bottom: generation defaults and Save/Cancel -->
+    <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="0,12,0,0">
+      <Border BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+        <Grid ColumnDefinitions="Auto,*,24,Auto,*">
+          <TextBlock Grid.Column="0" Text="Default for Switch 1:" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding Switch1Choices}" SelectedItem="{Binding Switch1Default}" />
+          <TextBlock Grid.Column="3" Text="Default for Switch 2:" VerticalAlignment="Center" Margin="0,0,8,0" />
+          <ComboBox Grid.Column="4" HorizontalAlignment="Stretch" ItemsSource="{Binding Switch2Choices}" SelectedItem="{Binding Switch2Default}" />
+        </Grid>
+      </Border>
+      <TextBlock Classes="muted" TextWrapping="Wrap"
+                 Text="Play uses a game's own emulator choice first, then its generation's default, and otherwise asks." />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Content="Save" Classes="accent" MinWidth="90" HorizontalContentAlignment="Center" Command="{Binding SaveCommand}" />
+        <Button Content="Cancel" MinWidth="90" HorizontalContentAlignment="Center" Command="{Binding CancelCommand}" IsCancel="True" />
+      </StackPanel>
+    </StackPanel>
+
+    <!-- Left: profile list and Emulators folder -->
+    <DockPanel DockPanel.Dock="Left" Width="300" Margin="0,0,16,0">
+      <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
+        <Button Content="Add" Command="{Binding AddProfileCommand}" />
+        <Button Content="Duplicate" Command="{Binding DuplicateProfileCommand}" />
+        <Button Content="Remove" Command="{Binding RemoveProfileCommand}" />
+      </StackPanel>
+
+      <Border DockPanel.Dock="Bottom" BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="4" Padding="10" Margin="0,10,0,0">
+        <StackPanel Spacing="8">
+          <TextBlock Text="Emulators folder" FontWeight="SemiBold" />
+          <TextBlock Text="{Binding DiscoveredHint}" Classes="muted" TextWrapping="Wrap" />
+          <ComboBox HorizontalAlignment="Stretch" ItemsSource="{Binding Discovered}" SelectedItem="{Binding SelectedDiscovered}"
+                    IsVisible="{Binding HasDiscovered}">
+            <ComboBox.ItemTemplate>
+              <DataTemplate x:DataType="core:DiscoveredEmulator">
+                <TextBlock Text="{Binding Display}" ToolTip.Tip="{Binding Path}" />
+              </DataTemplate>
+            </ComboBox.ItemTemplate>
+          </ComboBox>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Content="Add as profile" Command="{Binding AddDiscoveredCommand}" IsVisible="{Binding HasDiscovered}" />
+            <Button Content="Rescan" Command="{Binding RescanCommand}" />
+            <Button Content="Open folder" Command="{Binding OpenEmulatorsFolderCommand}" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <ListBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding Selected}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ProfileEditor">
+            <StackPanel Spacing="2" Margin="0,2">
+              <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+              <TextBlock Text="{Binding Subtitle}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </DockPanel>
+
+    <!-- Right: editor for the selected profile -->
+    <Grid>
+      <TextBlock Text="Add a profile, or add one from the Emulators folder." Classes="muted"
+                 HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasSelection}" />
+      <ScrollViewer IsVisible="{Binding HasSelection}">
+        <StackPanel Spacing="12" DataContext="{Binding Selected}" x:DataType="vm:ProfileEditor">
+          <Grid ColumnDefinitions="160,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto">
+            <Grid.Styles>
+              <Style Selector="Grid > TextBlock">
+                <Setter Property="VerticalAlignment" Value="Center" />
+              </Style>
+              <Style Selector="Grid > :is(Control)">
+                <Setter Property="Margin" Value="0,4" />
+              </Style>
+            </Grid.Styles>
+
+            <TextBlock Grid.Row="0" Text="Profile name:" />
+            <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Name}" PlaceholderText="e.g. Eden 0.2.1" />
+
+            <TextBlock Grid.Row="1" Text="Executable:" />
+            <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Executable}" PlaceholderText="e.g. C:\Emulators\Eden\eden.exe" />
+            <Button Grid.Row="1" Grid.Column="2" Content="Browse…" Margin="8,4,0,4"
+                    Command="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).BrowseExecutableCommand}" />
+
+            <TextBlock Grid.Row="2" Text="Working directory:" />
+            <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding WorkingDir}" PlaceholderText="Leave blank to use the executable's folder" />
+            <Button Grid.Row="2" Grid.Column="2" Content="Browse…" Margin="8,4,0,4"
+                    Command="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).BrowseWorkingDirCommand}" />
+
+            <TextBlock Grid.Row="3" Text="Supported generation:" />
+            <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch"
+                      ItemsSource="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).GenerationOptions}"
+                      SelectedItem="{Binding Generation}" />
+
+            <TextBlock Grid.Row="4" Text="Arguments:" VerticalAlignment="Top" Margin="0,10,0,0" />
+            <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding ArgsText}" AcceptsReturn="True"
+                     Height="90" FontFamily="Consolas, monospace" />
+          </Grid>
+
+          <StackPanel Orientation="Horizontal" Spacing="8" Margin="160,0,0,0">
+            <Button Content="Use Eden preset"
+                    Command="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).UseEdenPresetCommand}"
+                    ToolTip.Tip="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).PresetTooltip}" />
+            <Button Content="Test Launch"
+                    Command="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).TestLaunchCommand}"
+                    IsEnabled="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).CanTest}"
+                    ToolTip.Tip="Launch the selected game with this profile (before saving)" />
+          </StackPanel>
+
+          <SelectableTextBlock Text="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).CommandPreview}"
+                               TextWrapping="Wrap" FontFamily="Consolas, monospace" Foreground="#8A93A0" />
+          <SelectableTextBlock Text="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).Status}" TextWrapping="Wrap"
+                               Classes.warning="{Binding $parent[Window].((vm:EmulatorProfilesViewModel)DataContext).StatusIsError}" />
+        </StackPanel>
+      </ScrollViewer>
+    </Grid>
+  </DockPanel>
+</Window>

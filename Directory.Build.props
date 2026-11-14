@@ -6,6 +6,6 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <Version>0.1.0</Version>
-    <Product>Switch Yard</Product>
+    <Product>S-Dock</Product>
   </PropertyGroup>
 </Project>

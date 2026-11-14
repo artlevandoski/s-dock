@@ -1,7 +1,7 @@
-# Switch Yard
+# S-Dock
 
 An independent Windows frontend for certain game libraries. You bring your own game files and
-your own emulator installation. Switch Yard does not include or download games, firmware,
+your own emulator installation. S-Dock does not include or download games, firmware,
 keys, or system files.
 
 **Status:** Milestone 4. Browse Main Library and Arcade Archives in a grid or a
@@ -20,26 +20,26 @@ emulator profiles, and keep several versions of a game. Built with C# / .NET 10 
 From PowerShell in the project folder:
 
 ```powershell
-dotnet run --project src\SwitchYard.App
+dotnet run --project src\SDock.App
 ```
 
 Or build once and start the executable directly:
 
 ```powershell
 dotnet build -c Release
-.\src\SwitchYard.App\bin\Release\net10.0\SwitchYard.exe
+.\src\SDock.App\bin\Release\net10.0\S-Dock.exe
 ```
 
 Pass `--data-dir <folder>` to use a separate, throwaway library.
 
 ## Portable by default
 
-Switch Yard keeps its own files beside itself, so the whole folder can be copied to another
+S-Dock keeps its own files beside itself, so the whole folder can be copied to another
 PC or a USB drive:
 
 ```
-SwitchYard\
-  SwitchYard.exe
+S-Dock\
+  S-Dock.exe
   data\        library.sqlite3 (library, profiles, defaults, last selection) and logs\
   emulators\   emulator builds you place here
 ```
@@ -50,9 +50,9 @@ SwitchYard\
   relative to it, so they keep working after the folder moves or gets a new drive letter.
   Game folders and emulators elsewhere are stored as full paths.
 - If the folder can't be written to (for example under `C:\Program Files`), data goes to
-  `%LOCALAPPDATA%\SwitchYard` instead.
+  `%LOCALAPPDATA%\S-Dock` instead.
 - On the first portable start, a library from an earlier build in
-  `%LOCALAPPDATA%\SwitchYard` is copied into `data\`. The original stays where it was as
+  `%LOCALAPPDATA%\S-Dock` is copied into `data\`. The original stays where it was as
   a backup.
 
 **Library → Open Data Folder** opens the data folder in use; its tooltip shows the path.
@@ -62,18 +62,18 @@ SwitchYard\
 Packages the .NET runtime, so it runs on PCs without .NET installed:
 
 ```powershell
-dotnet publish src\SwitchYard.App -c Release -r win-x64 --self-contained -o publish\SwitchYard
+dotnet publish src\SDock.App -c Release -r win-x64 --self-contained -o publish\S-Dock
 ```
 
-Copy `publish\SwitchYard` wherever you like. It is about 210 MB unzipped.
+Copy `publish\S-Dock` wherever you like. It is about 210 MB unzipped.
 
 ## Project layout
 
 | Path | What it is |
 |---|---|
-| `src/SwitchYard.Core` | Database, folder scanner, emulator launcher. No UI code. |
-| `src/SwitchYard.App` | Avalonia desktop app: views, view models, generated placeholder covers |
-| `tests/SwitchYard.Tests` | xUnit tests, including headless UI tests |
+| `src/SDock.Core` | Database, folder scanner, emulator launcher. No UI code. |
+| `src/SDock.App` | Avalonia desktop app: views, view models, generated placeholder covers |
+| `tests/SDock.Tests` | xUnit tests, including headless UI tests |
 | `tests/FakeEmulator` | Stand-in emulator used by the launch tests |
 | `emulators/` | Your local emulator builds. Git-ignored except its README. |
 | `data/` | Your library and logs when run from source. Git-ignored. |
@@ -85,7 +85,7 @@ dotnet test
 ```
 
 The tests use placeholder files and the fake emulator. They never touch real games or a
-real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of each window.
+real emulator. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each window.
 
 | Area | Tests |
 |---|---|
@@ -195,7 +195,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   | Y | grid / carousel |
   | X | Game Actions menu (Launch With…, Play Version…, artwork, …) |
   | Start | Play |
-  | Start + Select (Back) | while a game runs: close it and return to Switch Yard |
+  | Start + Select (Back) | while a game runs: close it and return to S-Dock |
 
   Other input is ignored while another app, such as the emulator, is in front.
 
@@ -214,7 +214,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   background), *Color from Game* (a gradient in the main colour of the selected cover), or
   *Plain*.
 - **Full screen and focus:** going full screen, returning from a game and starting in the
-  carousel all bring Switch Yard to the front, so the controller works without clicking. If
+  carousel all bring S-Dock to the front, so the controller works without clicking. If
   Windows still leaves nothing in front, any controller button brings it back.
 - **Hide Game** (Game Actions or right-click): hides a game you don't play from its library
   and counts without removing anything. **More filters → Hidden games** lists them; choose
@@ -223,14 +223,14 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 ### Milestone 4: IGDB metadata and artwork
 
 **One-time setup.** IGDB requires free Twitch developer credentials, and each user brings
-their own, so no shared secret ships with Switch Yard:
+their own, so no shared secret ships with S-Dock:
 
 1. Sign in at the [Twitch developer console](https://dev.twitch.tv/console/apps) and click
    **Register Your Application**. Use any name, OAuth redirect `http://localhost`, category
    *Application Integration*, client type *Confidential*.
 2. Open the application, copy the **Client ID**, and click **New Secret** to get a
    **Client Secret**.
-3. In Switch Yard: **Settings → Metadata Settings…**, paste both, click **Test IGDB**,
+3. In S-Dock: **Settings → Metadata Settings…**, paste both, click **Test IGDB**,
    then **Save**.
 
 **Optional: more logos.** Logos come from IGDB first (its `logos` endpoint). For games
@@ -274,7 +274,7 @@ repository.
 ### TitleDB: names, descriptions and square icons
 
 - [TitleDB](https://github.com/blawar/titledb) is the eShop's own listing of every game
-  (MIT-licensed data). Games are matched **exactly by their title ID**, which Switch Yard
+  (MIT-licensed data). Games are matched **exactly by their title ID**, which S-Dock
   already reads from the file names, so there's nothing to search and no account or key.
 - **Settings → Update from TitleDB** downloads TitleDB's US English listing, then the UK,
   Australian and Japanese listings for games the US one doesn't have (about 360 MB in all,
@@ -285,7 +285,7 @@ repository.
   date, genres, number of players, the square eShop icon (used as the cover) and the banner
   (used as the background). Running it again only downloads TitleDB if there's a newer copy
   and only fetches images that are missing. It can be cancelled from the same menu.
-- After the first import, Switch Yard offers to do this; once TitleDB is downloaded, newly
+- After the first import, S-Dock offers to do this; once TitleDB is downloaded, newly
   imported games are filled in automatically.
 - **Choose Background…** lists the eShop banner and screenshots first.
 - **nx-versions** ([16BitWonder/nx-versions](https://github.com/16BitWonder/nx-versions), on by
@@ -294,7 +294,7 @@ repository.
   date wins; nx-versions' may be a little late). It has no names or artwork, refreshes with
   TitleDB, and keeps the saved copy if a refresh fails. Turning it off stops it refreshing and
   being used; versions already recorded stay.
-- **Updates and DLC beside each game:** Switch Yard reads the update and DLC files in each
+- **Updates and DLC beside each game:** S-Dock reads the update and DLC files in each
   game's folder (and its subfolders, such as `Updates` and `DLC`) from their names, never
   opening them. The details show "Up to date" or "Update available" against nx-versions, and how
   many DLC you have; **More filters → Update available** lists games with a newer update.
@@ -313,7 +313,7 @@ repository.
 
 ### Large libraries
 
-Switch Yard is tuned for libraries of hundreds of games:
+S-Dock is tuned for libraries of hundreds of games:
 
 - **Artwork is decoded in the background and kept in memory.** Covers near the selection
   come first, then every cover in the library, so scrolling and browsing never wait for
@@ -338,10 +338,10 @@ display:
 To repeat the measurements:
 
 ```powershell
-# Builds a library shaped like the one above in %TEMP%\SwitchYard Stress and times each step
-$env:SWITCHYARD_STRESS = "1"; dotnet test -c Release --filter "FullyQualifiedName~StressTests" --logger "console;verbosity=detailed"
+# Builds a library shaped like the one above in %TEMP%\S-Dock Stress and times each step
+$env:SDOCK_STRESS = "1"; dotnet test -c Release --filter "FullyQualifiedName~StressTests" --logger "console;verbosity=detailed"
 # Real frame times with your graphics card (opens a window for about 10 seconds), written to logs\benchmark.txt
-.\src\SwitchYard.App\bin\Release\net10.0\SwitchYard.exe --data-dir "$env:TEMP\SwitchYard Stress\run" --benchmark
+.\src\SDock.App\bin\Release\net10.0\S-Dock.exe --data-dir "$env:TEMP\S-Dock Stress\run" --benchmark
 ```
 
 ## Windows smoke test (real Eden)
@@ -351,9 +351,9 @@ Run by hand with your Eden install and game folder. Record results below.
 1. Import a small folder that includes a path with spaces and one Arcade Archives title.
    Check the preview classifications. Run Add Folder on the same folder again and confirm
    everything shows "Already in library".
-2. Close and reopen Switch Yard. Confirm the games, the Eden profile, and the selected
+2. Close and reopen S-Dock. Confirm the games, the Eden profile, and the selected
    cover are still there.
-3. Launch a known working title. Exit Eden. Confirm Switch Yard comes back with the same
+3. Launch a known working title. Exit Eden. Confirm S-Dock comes back with the same
    cover selected and focused.
 4. Rename or move one game file, and separately point the profile at a nonexistent exe.
    Confirm the app names what to fix (FILE MISSING / Locate File…, Emulator Settings…)
@@ -369,7 +369,7 @@ Run by hand with your Eden install and game folder. Record results below.
    after a restart.
 8. In the carousel, browse with the arrow keys, then with a controller (D-pad, A to play,
    LB/RB, Y). Launch from the carousel and exit the emulator; the same cover comes back
-   centred. Pressing buttons while the emulator is in front must not affect Switch Yard,
+   centred. Pressing buttons while the emulator is in front must not affect S-Dock,
    except Start + Select.
 9. Add a second file to a game (Add Version File…), then use Play Version… to launch it.
 10. Enter your IGDB credentials (Test Connection must succeed), run **Match Unmatched
@@ -381,7 +381,7 @@ Run by hand with your Eden install and game folder. Record results below.
     details panel. Optionally add a SteamGridDB key and run it again for games IGDB had no
     logo for. Use **Choose Background…** and **Choose Logo…** to pick others, then **Use
     Default** to go back.
-13. Switch to the carousel (Switch Yard goes full screen) and back to the grid (it leaves
+13. Switch to the carousel (S-Dock goes full screen) and back to the grid (it leaves
     full screen). Play a game: Eden opens in full screen. Press Esc twice to close it and
     come back; play again and use Start + Select. Switch to *Press Once to Exit* and repeat.
 14. Hide a game, find it under **More filters → Hidden games**, and unhide it.

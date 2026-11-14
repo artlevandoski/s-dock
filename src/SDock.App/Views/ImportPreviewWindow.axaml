@@ -1,0 +1,90 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SDock.App.ViewModels"
+        x:Class="SDock.App.Views.ImportPreviewWindow"
+        x:DataType="vm:ImportPreviewViewModel"
+        Title="Import Preview"
+        Width="1180" Height="600" MinWidth="800" MinHeight="400"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="14">
+    <StackPanel DockPanel.Dock="Top" Spacing="10" Margin="0,0,0,10">
+      <TextBlock Text="{Binding Header}" TextWrapping="Wrap" />
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Text="Assign generation to this folder:" VerticalAlignment="Center" />
+        <ComboBox ItemsSource="{Binding FolderOptions}" SelectedItem="{Binding FolderGeneration}" MinWidth="150" />
+      </StackPanel>
+    </StackPanel>
+
+    <StackPanel DockPanel.Dock="Bottom" Spacing="8" Margin="0,10,0,0">
+      <TextBlock Text="{Binding Summary}" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <SelectableTextBlock Text="{Binding Warnings}" Classes="warning" TextWrapping="Wrap" IsVisible="{Binding HasWarnings}" />
+      <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+        <Button Content="Import" Classes="accent" MinWidth="100" HorizontalContentAlignment="Center"
+                Command="{Binding ImportCommand}" IsDefault="True" />
+        <Button Content="Cancel" MinWidth="100" HorizontalContentAlignment="Center"
+                Command="{Binding CancelCommand}" IsCancel="True" />
+      </StackPanel>
+    </StackPanel>
+
+    <Border BorderBrush="#30FFFFFF" BorderThickness="1" CornerRadius="4">
+      <DockPanel>
+        <Grid DockPanel.Dock="Top" ColumnDefinitions="64,300,150,130,160,250,*" Background="#18FFFFFF">
+          <Grid.Styles>
+            <Style Selector="TextBlock">
+              <Setter Property="FontWeight" Value="SemiBold" />
+              <Setter Property="Margin" Value="6,6" />
+            </Style>
+          </Grid.Styles>
+          <TextBlock Grid.Column="0" Text="Import" />
+          <TextBlock Grid.Column="1" Text="Title" />
+          <TextBlock Grid.Column="2" Text="Generation" />
+          <TextBlock Grid.Column="3" Text="Type" />
+          <TextBlock Grid.Column="4" Text="Title ID" />
+          <TextBlock Grid.Column="5" Text="Review notes" />
+          <TextBlock Grid.Column="6" Text="File" />
+        </Grid>
+        <!-- A ListBox virtualizes: only the rows on screen exist, so thousands of files open instantly. -->
+        <ListBox x:Name="RowList" ItemsSource="{Binding Rows}" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+              <Setter Property="FocusAdorner" Value="{x:Null}" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#14FFFFFF" />
+            </Style>
+            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#0DFFFFFF" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:ImportRow">
+                <Border BorderBrush="#18FFFFFF" BorderThickness="0,0,0,1" Padding="0,3">
+                  <Grid ColumnDefinitions="64,300,150,130,160,250,*">
+                    <CheckBox Grid.Column="0" HorizontalAlignment="Center" IsChecked="{Binding Include}" IsEnabled="{Binding IsEditable}" />
+                    <TextBox Grid.Column="1" Margin="2,0" Text="{Binding Title}" IsEnabled="{Binding IsEditable}"
+                             ToolTip.Tip="Correct the title if needed" />
+                    <ComboBox Grid.Column="2" Margin="2,0" HorizontalAlignment="Stretch" ItemsSource="{Binding Options}"
+                              SelectedItem="{Binding GenerationOption}" IsEnabled="{Binding IsEditable}" />
+                    <TextBlock Grid.Column="3" Margin="6,0" VerticalAlignment="Center" Text="{Binding KindLabel}" />
+                    <TextBlock Grid.Column="4" Margin="6,0" VerticalAlignment="Center" Text="{Binding TitleId}" FontFamily="Consolas, monospace" />
+                    <StackPanel Grid.Column="5" Margin="6,0" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="{Binding Notes}" TextWrapping="Wrap"
+                                 Classes.warning="{Binding IsFlagged}" Classes.muted="{Binding !IsFlagged}" />
+                      <CheckBox Content="{Binding AddAsVersionLabel}" IsChecked="{Binding AddAsVersion}"
+                                IsVisible="{Binding CanAddAsVersion}" FontSize="12"
+                                ToolTip.Tip="Attach this file to that game; launch it with Play Version…" />
+                    </StackPanel>
+                    <TextBlock Grid.Column="6" Margin="6,0" VerticalAlignment="Center" Text="{Binding Path}"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" />
+                  </Grid>
+                </Border>
+              </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </DockPanel>
+    </Border>
+  </DockPanel>
+</Window>
