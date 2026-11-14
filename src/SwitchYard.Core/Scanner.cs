@@ -325,6 +325,13 @@ public static partial class LibraryScanner
     /// <summary>Write the chosen preview entries to the library. Existing records are preserved.</summary>
     public static ImportSummary ImportEntries(LibraryStore library, string folder, string folderGeneration, IEnumerable<ScanEntry> entries)
     {
+        ImportSummary? result = null;
+        library.InTransaction(() => result = ImportEntriesCore(library, folder, folderGeneration, entries));
+        return result!;
+    }
+
+    private static ImportSummary ImportEntriesCore(LibraryStore library, string folder, string folderGeneration, IEnumerable<ScanEntry> entries)
+    {
         var folderId = library.UpsertFolder(folder, folderGeneration);
         var added = new List<string>();
         var present = new List<string>();

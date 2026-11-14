@@ -7,31 +7,49 @@ using SwitchYard.Core.Metadata;
 namespace SwitchYard.App.ViewModels;
 
 public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null)
+    : System.ComponentModel.INotifyPropertyChanged
 {
-    /// <summary>Covers are decoded at this width (about 2× their on-screen size in the grid).</summary>
-    public const int CoverDecodeWidth = 300;
-
     private Avalonia.Media.Imaging.Bitmap? _cover;
-    private bool _coverLoaded;
+    private bool _coverRequested;
+
+    public event System.ComponentModel.PropertyChangedEventHandler? PropertyChanged;
 
     public Edition Edition { get; } = edition;
     public EditionMetadata Metadata { get; } = metadata ?? EditionMetadata.Empty(edition.Id);
     public bool IsMatched => Edition.IgdbId is not null;
 
-    /// <summary>The cover to show: the user's image, else IGDB's, else null (generated placeholder).</summary>
+    /// <summary>Full path of the cover file to show (the user's, else IGDB's), or null for the placeholder.</summary>
+    public string? CoverPath { get; } = (metadata ?? EditionMetadata.Empty(edition.Id)).DisplayCoverFile is { } f
+        ? Path.Combine(AppPaths.ArtworkDir, f)
+        : null;
+
+    /// <summary>
+    /// The cover, from the background image cache. Already-decoded covers are returned at once; otherwise
+    /// the placeholder shows until the decode finishes, then this property notifies.
+    /// </summary>
     public Avalonia.Media.Imaging.Bitmap? Cover
     {
         get
         {
-            if (!_coverLoaded)
+            if (_cover is null && !_coverRequested && CoverPath is { } path)
             {
-                _coverLoaded = true;
-                if (Metadata.DisplayCoverFile is { } f)
-                    _cover = Controls.ArtCache.Load(Path.Combine(AppPaths.ArtworkDir, f), CoverDecodeWidth);
+                _cover = Controls.ImageCache.Covers.TryGet(path);
+                if (_cover is null)
+                {
+                    _coverRequested = true;
+                    Controls.ImageCache.Covers.Request(path, bitmap =>
+                    {
+                        _cover = bitmap;
+                        PropertyChanged?.Invoke(this, new System.ComponentModel.PropertyChangedEventArgs(nameof(Cover)));
+                    });
+                }
             }
             return _cover;
         }
     }
+
+    /// <summary>True when there's no cover file or it's already decoded (nothing left to wait for).</summary>
+    public bool CoverReady => CoverPath is null || _cover is not null || Controls.ImageCache.Covers.TryGet(CoverPath) is not null;
     public string Id => Edition.Id;
     public string Title => Edition.Title;
     public string Generation => Edition.Generation;
@@ -53,7 +71,10 @@ public sealed partial class MainViewModel : ObservableObject
     private bool _suppressGenerationWrite;
 
     public EmulatorLauncher Launcher { get; }
-    public ObservableCollection<EditionItem> Items { get; } = [];
+    /// <summary>The covers shown for the current library and filters. Replaced as a whole (one update for the view).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasItems))]
+    public partial ObservableCollection<EditionItem> Items { get; set; } = [];
     public IReadOnlyList<GenerationOption> GenerationOptions => GenerationOption.Library;
 
     /// <param name="igdbFactory">Creates the IGDB client from the saved credentials (tests pass a fake).</param>
@@ -130,6 +151,7 @@ public sealed partial class MainViewModel : ObservableObject
         SelectedGenerationOption = value is null ? null : GenerationOption.ForLibrary(value.Generation);
         _suppressGenerationWrite = false;
         RebuildEmulatorChoices();
+        PrefetchNeighbours();
     }
 
     partial void OnSelectedGenerationOptionChanged(GenerationOption? value)

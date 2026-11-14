@@ -84,9 +84,14 @@ public sealed partial class MainViewModel
         var saved = _library.GetSetting("current_library");
         SelectedLibraryTab = LibraryTabs.FirstOrDefault(t => t.Id == saved) ?? LibraryTabs[0];
         _includeNeogeo = _library.IncludeAcaNeogeo;
+        // One view for every library. Earlier builds saved it per library; fall back to Main's.
+        IsCarousel = (_library.GetSetting(ViewKey) ?? _library.GetSetting(StateKey(Libraries.Main, "view"))) == ViewCarousel;
         LoadLibraryState();
         _loadingState = false;
     }
+
+    /// <summary>Grid or carousel, shared by all libraries.</summary>
+    public const string ViewKey = "view";
 
     // ----------------------------------------------------------------- library tabs
     [ObservableProperty]
@@ -113,11 +118,10 @@ public sealed partial class MainViewModel
         ApplyFilter(_library.GetSetting(StateKey(value.Id, "selected")));
     }
 
-    /// <summary>Restore this library's saved view, filters and session search.</summary>
+    /// <summary>Restore this library's saved filters and session search (the view is shared).</summary>
     private void LoadLibraryState()
     {
         var lib = CurrentLibrary;
-        IsCarousel = _library.GetSetting(StateKey(lib, "view")) == ViewCarousel;
         GenerationFilter = FilterOption.Generation.FirstOrDefault(o => o.Value == _library.GetSetting(StateKey(lib, "generation")))
                            ?? FilterOption.Generation[0];
         SeriesFilter = SeriesFilterOptions.FirstOrDefault(o => o.Value == _library.GetSetting(StateKey(lib, "series")))
@@ -146,7 +150,7 @@ public sealed partial class MainViewModel
     partial void OnIsCarouselChanged(bool value)
     {
         if (!_loadingState)
-            _library.SetSetting(StateKey(CurrentLibrary, "view"), value ? ViewCarousel : ViewGrid);
+            _library.SetSetting(ViewKey, value ? ViewCarousel : ViewGrid);
     }
 
     [RelayCommand]
@@ -274,11 +278,10 @@ public sealed partial class MainViewModel
         selectId ??= SelectedItem?.Id ?? _library.GetSetting(StateKey(CurrentLibrary, "selected"))
                      ?? (CurrentLibrary == Libraries.Main ? _library.GetSetting(LastSelectedKey) : null);
         _applyingFilter = true;
-        Items.Clear();
-        foreach (var item in _all.Where(Matches))
-            Items.Add(item);
+        Items = new ObservableCollection<EditionItem>(_all.Where(Matches)); // one update instead of one per game
         _applyingFilter = false;
         SelectedItem = Items.FirstOrDefault(i => i.Id == selectId) ?? Items.FirstOrDefault();
+        WarmCovers();
         OnPropertyChanged(nameof(HasItems));
         OnPropertyChanged(nameof(HasActiveFilters));
         OnPropertyChanged(nameof(EmptyText));

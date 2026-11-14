@@ -151,7 +151,7 @@ public sealed class ArtworkTests : IDisposable
         using var launcher = new EmulatorLauncher();
         var vm = Window(lib, new FakeUi(), launcher, withSgdb: false);
         await vm.MatchUnmatchedCommand.ExecuteAsync(null);
-        Assert.True(vm.HasLogo);
+        Ui.WaitUntil(() => vm.HasLogo);
         Assert.Contains("1 logo(s)", vm.StatusText);
     }
 
@@ -271,8 +271,8 @@ public sealed class ArtworkTests : IDisposable
 
         await vm.MatchUnmatchedCommand.ExecuteAsync(null);
         Assert.Contains("1 logo(s)", vm.StatusText);
-        Assert.True(vm.HasLogo);
-        Assert.NotNull(vm.SelectedLogo);
+        Ui.WaitUntil(() => vm.HasLogo);
+        Ui.WaitUntil(() => vm.SelectedLogo is not null);
     }
 
     [AvaloniaFact]
@@ -294,7 +294,7 @@ public sealed class ArtworkTests : IDisposable
         };
         await vm.ChooseBackgroundCommand.ExecuteAsync(null);
         Assert.NotNull(lib.GetMetadata(id).UserKeyArtFile);
-        Assert.NotNull(vm.SelectedKeyArt);
+        Ui.WaitUntil(() => vm.SelectedKeyArt is not null);
         Assert.Contains("Background updated", vm.StatusText);
 
         ui.OnArtPicker = p =>
@@ -303,7 +303,7 @@ public sealed class ArtworkTests : IDisposable
             return new ArtPick(Candidate: p.Choices.Single(c => c.Detail.Contains("white")).Candidate);
         };
         await vm.ChooseLogoCommand.ExecuteAsync(null);
-        Assert.True(vm.HasLogo);
+        Ui.WaitUntil(() => vm.HasLogo);
         Assert.NotNull(lib.GetMetadata(id).UserLogoFile);
 
         ui.OnArtPicker = _ => new ArtPick(UseDefault: true);

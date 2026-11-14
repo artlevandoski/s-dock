@@ -189,16 +189,22 @@ public sealed class LibrariesTests : IDisposable
         vm.SearchText = "quest";
         Assert.Equal(["Super Placeholder Quest"], vm.Items.Select(i => i.Title));
 
-        // Arcade: grid, its own selection, series filter.
+        // Arcade: the same (shared) view, its own selection, series filter.
         vm.SelectedLibraryTab = vm.LibraryTabs[1];
-        Assert.True(vm.IsGrid);
+        Assert.True(vm.IsCarousel);
         Assert.Equal("", vm.SearchText);
         Assert.Equal(FilterOption.AllValue, vm.GenerationFilter.Value);
         Assert.Equal(2, vm.Items.Count);
         vm.SeriesFilter = vm.SeriesFilterOptions.Single(o => o.Value == ArcadeSeries.Aca2);
         Assert.Equal("Arcade Archives 2 RIDGE RACER", Assert.Single(vm.Items).Title);
 
-        // Back to Main: its view, filter, search and selection come back.
+        // Switching to grid in Arcade switches every library to grid.
+        vm.IsCarousel = false;
+        vm.SelectedLibraryTab = vm.LibraryTabs[0];
+        Assert.True(vm.IsGrid);
+        vm.IsCarousel = true;
+
+        // Back to Main: its filter, search and selection come back.
         vm.SelectedLibraryTab = vm.LibraryTabs[0];
         Assert.True(vm.IsCarousel);
         Assert.Equal(Generations.Switch1, vm.GenerationFilter.Value);
@@ -366,21 +372,25 @@ public sealed class LibrariesTests : IDisposable
         window.Show();
         vm.Select(vm.Items[4].Id);
         Dispatcher.UIThread.RunJobs();
-        Thread.Sleep(250); // let the scale transition and glide finish
-        Dispatcher.UIThread.RunJobs();
         window.CenterCarousel(animate: false);
         Dispatcher.UIThread.RunJobs();
 
         var carousel = window.FindControl<ListBox>("CarouselList")!;
+        Ui.WaitUntil(() => carousel.ContainerFromIndex(4) is Control c && ScaleOf(c) >= 1.179); // enlarge animation finished
         var selected = (Control)carousel.ContainerFromIndex(4)!;
         var neighbour = (Control)carousel.ContainerFromIndex(3)!;
+        Ui.WaitUntil(() => ScaleOf(neighbour) <= 1.001);
         var selectedWidth = selected.Bounds.Width * ScaleOf(selected);
         var neighbourWidth = neighbour.Bounds.Width * ScaleOf(neighbour);
         var ratio = selectedWidth / neighbourWidth;
         Assert.InRange(ratio, 1.15, 1.20); // ~15–20% larger than its neighbours
 
         var centre = selected.TranslatePoint(new Avalonia.Point(selected.Bounds.Width / 2, 0), carousel)!.Value.X;
-        Assert.InRange(centre, carousel.Bounds.Width / 2 - 2, carousel.Bounds.Width / 2 + 2);
+        var sv = carousel.FindDescendantOfType<ScrollViewer>()!;
+        Assert.True(Math.Abs(centre - carousel.Bounds.Width / 2) <= 2,
+            $"centre {centre} vs {carousel.Bounds.Width / 2}; padding {carousel.Padding}; offset {sv.Offset.X}; extent {sv.Extent.Width}; " +
+            $"viewport {sv.Viewport.Width}; selected X {selected.Bounds.X} W {selected.Bounds.Width} margin {selected.Margin}; " +
+            $"index {carousel.SelectedIndex}; neighbour X {neighbour.Bounds.X}");
         MainWindowTests.Capture(window, "carousel.png");
         window.Close();
     }
@@ -447,9 +457,9 @@ public sealed class LibrariesTests : IDisposable
 
         GamepadService.Dispatch(window, PadAction.NextLibrary);
         Assert.Equal(Libraries.Arcade, vm.CurrentLibrary);
-        Assert.False(vm.IsCarousel); // Arcade has its own view setting, grid by default
+        Assert.True(vm.IsCarousel); // the view is shared by all libraries
         GamepadService.Dispatch(window, PadAction.ToggleView);
-        Assert.True(vm.IsCarousel);
+        Assert.False(vm.IsCarousel);
         window.Close();
     }
 

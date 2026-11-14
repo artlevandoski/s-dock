@@ -121,9 +121,7 @@ public sealed class ArtworkSources(LibraryStore library, IgdbClient? igdb, Steam
         foreach (var old in Directory.GetFiles(dir, "logo.*").Where(f => !f.EndsWith(".download")))
             File.Delete(old); // a previous logo may have had another extension
         var target = Path.Combine(dir, "logo" + best.Extension);
-        var temp = target + ".download";
-        await File.WriteAllBytesAsync(temp, bytes, ct);
-        File.Move(temp, target, overwrite: true);
+        await ArtFiles.WriteAsync(target, bytes, ct);
         library.SaveMetadata(library.GetMetadata(edition.Id) with { LogoFile = Path.GetRelativePath(artworkDir, target) });
         return true;
     }

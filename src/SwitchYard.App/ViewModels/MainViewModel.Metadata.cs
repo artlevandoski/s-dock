@@ -160,9 +160,51 @@ public sealed partial class MainViewModel
     // ---------------------------------------------------------------- details
     public bool IsMatched => SelectedItem?.IsMatched ?? false;
     public Bitmap? SelectedCover => SelectedItem?.Cover;
-    public Bitmap? SelectedKeyArt => SelectedItem?.Metadata.DisplayKeyArtFile is { } f ? ArtCache.Load(ArtPath(f), 1280) : null;
-    public Bitmap? SelectedLogo => SelectedItem?.Metadata.DisplayLogoFile is { } f ? ArtCache.Load(ArtPath(f), 600) : null;
+    public Bitmap? SelectedKeyArt => FromCache(ImageCache.Backdrops, SelectedItem?.Metadata.DisplayKeyArtFile, nameof(SelectedKeyArt));
+    public Bitmap? SelectedLogo => FromCache(ImageCache.Logos, SelectedItem?.Metadata.DisplayLogoFile, nameof(SelectedLogo));
     public bool HasLogo => SelectedLogo is not null;
+
+    /// <summary>The image if it's decoded; otherwise null now, and a notification once it's ready (if still selected).</summary>
+    private Bitmap? FromCache(ImageCache cache, string? file, string property)
+    {
+        if (file is null) return null;
+        var path = ArtPath(file);
+        if (cache.TryGet(path) is { } ready) return ready;
+        var forItem = SelectedItem;
+        cache.Request(path, _ =>
+        {
+            if (SelectedItem != forItem) return;
+            OnPropertyChanged(property);
+            if (property == nameof(SelectedLogo)) OnPropertyChanged(nameof(HasLogo));
+        });
+        return null;
+    }
+
+    /// <summary>
+    /// Covers for the games around the selection go first; then every cover in the library (including the
+    /// other library) is decoded in the background, so scrolling and switching never wait for artwork.
+    /// </summary>
+    private void WarmCovers()
+    {
+        var index = SelectedItem is { } s ? Items.IndexOf(s) : 0;
+        var nearby = Enumerable.Range(Math.Max(0, index - 24), 49)
+            .Where(i => i < Items.Count).Select(i => Items[i].CoverPath).OfType<string>().ToList();
+        ImageCache.Covers.Prefetch(_all.Select(i => i.CoverPath).OfType<string>());
+        ImageCache.Covers.Prioritize(nearby);
+    }
+
+    /// <summary>Preloads backgrounds and logos for the games either side of the selection (carousel browsing).</summary>
+    private void PrefetchNeighbours()
+    {
+        if (SelectedItem is not { } s) return;
+        var index = Items.IndexOf(s);
+        if (index < 0) return;
+        var around = Enumerable.Range(index - 3, 7).Where(i => i >= 0 && i < Items.Count).Select(i => Items[i].Metadata).ToList();
+        ImageCache.Backdrops.Prefetch(around.Select(m => m.DisplayKeyArtFile).OfType<string>().Select(ArtPath));
+        ImageCache.Logos.Prefetch(around.Select(m => m.DisplayLogoFile).OfType<string>().Select(ArtPath));
+        ImageCache.Covers.Prioritize(Enumerable.Range(index - 12, 25).Where(i => i >= 0 && i < Items.Count)
+            .Select(i => Items[i].CoverPath).OfType<string>());
+    }
     public string SelectedSummary => SelectedItem?.Metadata.DisplaySummary ?? "";
     public bool HasSummary => SelectedSummary.Length > 0;
 

@@ -121,6 +121,10 @@ public sealed class LibraryStore : IDisposable
         }.ToString());
         _conn.Open();
         Exec("PRAGMA foreign_keys = ON");
+        // Write-ahead logging makes the many small writes (last selection, filters) cheap; the log is
+        // folded back into the database on close so the file stays self-contained and portable.
+        Exec("PRAGMA journal_mode = WAL");
+        Exec("PRAGMA synchronous = NORMAL");
         Exec(Schema);
         Migrate();
     }
@@ -181,7 +185,38 @@ public sealed class LibraryStore : IDisposable
         }
     }
 
-    public void Dispose() => _conn.Dispose();
+    public void Dispose()
+    {
+        try { Exec("PRAGMA wal_checkpoint(TRUNCATE)"); } catch (SqliteException) { }
+        _conn.Dispose();
+    }
+
+    private SqliteTransaction? _tx;
+
+    /// <summary>
+    /// Runs <paramref name="work"/> in one transaction (one disk sync instead of one per write).
+    /// Nested calls join the outer transaction.
+    /// </summary>
+    public void InTransaction(Action work)
+    {
+        if (_tx is not null) { work(); return; }
+        _tx = _conn.BeginTransaction();
+        try
+        {
+            work();
+            _tx.Commit();
+        }
+        catch
+        {
+            _tx.Rollback();
+            throw;
+        }
+        finally
+        {
+            _tx.Dispose();
+            _tx = null;
+        }
+    }
 
     public static string UtcNow() =>
         DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss'+00:00'", CultureInfo.InvariantCulture);
@@ -191,6 +226,7 @@ public sealed class LibraryStore : IDisposable
     {
         var cmd = _conn.CreateCommand();
         cmd.CommandText = sql;
+        cmd.Transaction = _tx;
         foreach (var (name, value) in args)
             cmd.Parameters.AddWithValue(name, value ?? DBNull.Value);
         return cmd;
@@ -296,25 +332,18 @@ public sealed class LibraryStore : IDisposable
             throw new ArgumentException($"Unknown generation: {generation}", nameof(generation));
         var id = Guid.NewGuid().ToString();
         var ts = UtcNow();
-        using var tx = _conn.BeginTransaction();
-        using (var cmd = Cmd("""
-            INSERT INTO editions(id, title, generation, content_kind, console_title_id, igdb_id, created_at, updated_at)
-            VALUES ($id, $title, $gen, $kind, $tid, NULL, $ts, $ts)
-            """, ("$id", id), ("$title", title), ("$gen", generation), ("$kind", contentKind), ("$tid", consoleTitleId), ("$ts", ts)))
+        InTransaction(() =>
         {
-            cmd.Transaction = tx;
-            cmd.ExecuteNonQuery();
-        }
-        using (var cmd = Cmd("""
-            INSERT INTO edition_files(edition_id, folder_id, path, path_key, role, size_bytes, added_at, last_seen_at)
-            VALUES ($id, $folder, $path, $key, 'primary', $size, $ts, $ts)
-            """, ("$id", id), ("$folder", folderId), ("$path", Path.GetFullPath(path)), ("$key", AppPaths.PathKey(path)),
-                 ("$size", sizeBytes), ("$ts", ts)))
-        {
-            cmd.Transaction = tx;
-            cmd.ExecuteNonQuery();
-        }
-        tx.Commit();
+            Exec("""
+                INSERT INTO editions(id, title, generation, content_kind, console_title_id, igdb_id, created_at, updated_at)
+                VALUES ($id, $title, $gen, $kind, $tid, NULL, $ts, $ts)
+                """, ("$id", id), ("$title", title), ("$gen", generation), ("$kind", contentKind), ("$tid", consoleTitleId), ("$ts", ts));
+            Exec("""
+                INSERT INTO edition_files(edition_id, folder_id, path, path_key, role, size_bytes, added_at, last_seen_at)
+                VALUES ($id, $folder, $path, $key, 'primary', $size, $ts, $ts)
+                """, ("$id", id), ("$folder", folderId), ("$path", Path.GetFullPath(path)), ("$key", AppPaths.PathKey(path)),
+                     ("$size", sizeBytes), ("$ts", ts));
+        });
         return id;
     }
 
@@ -341,14 +370,11 @@ public sealed class LibraryStore : IDisposable
     public void MarkSeen(IEnumerable<string> paths)
     {
         var ts = UtcNow();
-        using var tx = _conn.BeginTransaction();
-        foreach (var p in paths)
+        InTransaction(() =>
         {
-            using var cmd = Cmd("UPDATE edition_files SET last_seen_at = $t WHERE path_key = $k", ("$t", ts), ("$k", AppPaths.PathKey(p)));
-            cmd.Transaction = tx;
-            cmd.ExecuteNonQuery();
-        }
-        tx.Commit();
+            foreach (var p in paths)
+                Exec("UPDATE edition_files SET last_seen_at = $t WHERE path_key = $k", ("$t", ts), ("$k", AppPaths.PathKey(p)));
+        });
     }
 
     /// <summary>Library files whose path is inside <paramref name="folder"/>.</summary>
@@ -429,8 +455,7 @@ public sealed class LibraryStore : IDisposable
     public void SaveEmulatorSettings(IEnumerable<string> removedIds, IReadOnlyList<EmulatorProfile> profiles,
         string? switch1Default, string? switch2Default)
     {
-        Exec("BEGIN IMMEDIATE");
-        try
+        InTransaction(() =>
         {
             foreach (var id in removedIds)
                 DeleteProfile(id);
@@ -438,13 +463,7 @@ public sealed class LibraryStore : IDisposable
                 SaveProfile(p);
             SetGenerationDefault(Generations.Switch1, switch1Default);
             SetGenerationDefault(Generations.Switch2, switch2Default);
-            Exec("COMMIT");
-        }
-        catch
-        {
-            Exec("ROLLBACK");
-            throw;
-        }
+        });
     }
 
     /// <summary>Deletes a profile. Defaults and per-game choices that used it are removed with it.</summary>
@@ -648,18 +667,11 @@ public sealed class LibraryStore : IDisposable
     {
         using var find = Cmd("SELECT edition_id FROM edition_files WHERE id = $id", ("$id", fileId));
         if (find.ExecuteScalar() is not string editionId) return;
-        Exec("BEGIN IMMEDIATE");
-        try
+        InTransaction(() =>
         {
             Exec("UPDATE edition_files SET role = 'alternate' WHERE edition_id = $e", ("$e", editionId));
             Exec("UPDATE edition_files SET role = 'primary' WHERE id = $id", ("$id", fileId));
-            Exec("COMMIT");
-        }
-        catch
-        {
-            Exec("ROLLBACK");
-            throw;
-        }
+        });
     }
 
     public void SetLaunchOverride(string editionId, string? profileId)

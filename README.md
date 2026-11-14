@@ -107,6 +107,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Metadata | description, genres, year, IGDB ID and cached artwork saved; refresh keeps the user's text and images; remove match keeps user edits; credentials stored locally only |
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
+| Large libraries | grid and carousel share one view across libraries; artwork comes from a background cache (covers, backgrounds, logos) and is re-decoded when the file changes; artwork can be replaced while the cache reads it; carousel centring with virtualization; opt-in 863-game stress test |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
 | UI | missing-file state, Play without a profile, details dropdown, all windows render |
 
@@ -157,8 +158,8 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 ### Milestone 3: grid, carousel and libraries
 
 - **Libraries:** *Main Library* and *Arcade Archives* are separate tabs (Ctrl+Tab), each
-  with its own search (Ctrl+F), generation filter, view and last selection. Arcade Archives
-  also filters by series.
+  with its own search (Ctrl+F), generation filter and last selection. Grid or carousel is
+  one setting shared by both libraries. Arcade Archives also filters by series.
 - **Arcade Archives** and **Arcade Archives 2** titles are placed by their title prefix.
   **ACA NEOGEO** titles stay in Main Library unless you tick *Include ACA NEOGEO*.
   The **Library** dropdown in the details panel pins any game to a library; *Automatic*
@@ -235,6 +236,39 @@ repository.
   separately from downloaded data. **Refresh from IGDB** updates IGDB's data but never
   replaces yours; **Use Default Artwork** removes your images.
 - Videos are planned for later.
+
+### Large libraries
+
+Switch Yard is tuned for libraries of hundreds of games:
+
+- **Artwork is decoded in the background and kept in memory.** Covers near the selection
+  come first, then every cover in the library, so scrolling and browsing never wait for
+  artwork. Backgrounds and logos for the games either side of the selection are preloaded
+  too. Covers are decoded at the size they're drawn (scaled to your display), and the least
+  recently used are dropped if memory runs short.
+- The carousel and the import preview only create controls for what's on screen.
+- The database uses write-ahead logging and imports in a single transaction.
+
+Measured with 863 folders (base game, update and DLC in each; 2,877 files) on a 100%-scaled
+display:
+
+| | Result |
+|---|---|
+| Scan 2,877 files | 0.5 s |
+| Import preview opens | under 1 s |
+| Import 863 games | 0.1 s |
+| Launch to first frame | about 1.8 s |
+| All 863 covers in memory | about 0.25 s after the window appears (about 300 MB) |
+| Grid smooth scroll / carousel (one game per frame) | 60 fps |
+
+To repeat the measurements:
+
+```powershell
+# Builds a library shaped like the one above in %TEMP%\SwitchYard Stress and times each step
+$env:SWITCHYARD_STRESS = "1"; dotnet test -c Release --filter "FullyQualifiedName~StressTests" --logger "console;verbosity=detailed"
+# Real frame times with your graphics card (opens a window for about 10 seconds), written to logs\benchmark.txt
+.\src\SwitchYard.App\bin\Release\net10.0\SwitchYard.exe --data-dir "$env:TEMP\SwitchYard Stress\run" --benchmark
+```
 
 ## Windows smoke test (real Eden)
 

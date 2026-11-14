@@ -43,9 +43,23 @@
           <TextBlock Grid.Column="5" Text="Review notes" />
           <TextBlock Grid.Column="6" Text="File" />
         </Grid>
-        <ScrollViewer HorizontalScrollBarVisibility="Auto">
-          <ItemsControl ItemsSource="{Binding Rows}">
-            <ItemsControl.ItemTemplate>
+        <!-- A ListBox virtualizes: only the rows on screen exist, so thousands of files open instantly. -->
+        <ListBox x:Name="RowList" ItemsSource="{Binding Rows}" Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Auto">
+          <ListBox.Styles>
+            <Style Selector="ListBoxItem">
+              <Setter Property="Padding" Value="0" />
+              <Setter Property="MinHeight" Value="0" />
+              <Setter Property="FocusAdorner" Value="{x:Null}" />
+            </Style>
+            <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#14FFFFFF" />
+            </Style>
+            <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+              <Setter Property="Background" Value="#0DFFFFFF" />
+            </Style>
+          </ListBox.Styles>
+          <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:ImportRow">
                 <Border BorderBrush="#18FFFFFF" BorderThickness="0,0,0,1" Padding="0,3">
                   <Grid ColumnDefinitions="64,300,150,130,160,250,*">
@@ -68,9 +82,8 @@
                   </Grid>
                 </Border>
               </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-        </ScrollViewer>
+          </ListBox.ItemTemplate>
+        </ListBox>
       </DockPanel>
     </Border>
   </DockPanel>

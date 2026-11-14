@@ -490,7 +490,8 @@
                      ScrollViewer.VerticalScrollBarVisibility="Disabled">
               <ListBox.ItemsPanel>
                 <ItemsPanelTemplate>
-                  <StackPanel Orientation="Horizontal" />
+                  <!-- Only covers near the screen exist as controls; their images come ready from the cover cache. -->
+                  <VirtualizingStackPanel Orientation="Horizontal" />
                 </ItemsPanelTemplate>
               </ListBox.ItemsPanel>
               <ListBox.ItemTemplate>

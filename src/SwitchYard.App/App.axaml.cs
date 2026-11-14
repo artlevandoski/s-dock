@@ -33,6 +33,9 @@ public partial class App : Application
                         library.SaveProfile(p); // emulators inside the folder are now stored relative to it
             }
             var window = new MainWindow();
+            // Decode covers at the size they're drawn: the carousel's enlarged cover (~252 px) times the display scaling.
+            var scaling = window.Screens.Primary?.Scaling ?? 1.0;
+            Controls.ImageCache.Covers.DecodeWidth = (int)Math.Ceiling(Math.Clamp(252 * scaling, 220, 420));
             var ui = new UiServices(window);
             var launcher = new EmulatorLauncher(Path.Combine(AppPaths.LogDir, "last_launch.log"));
             var vm = new MainViewModel(library, launcher, ui);
@@ -43,6 +46,16 @@ public partial class App : Application
             window.DataContext = vm;
             desktop.MainWindow = window;
             window.Opened += (_, _) => window.FocusSelectedCover();
+            if (Program.Benchmark)
+            {
+                // --benchmark: measure real frame times on this machine, write logs\benchmark.txt, then exit.
+                window.Opened += async (_, _) =>
+                {
+                    var report = await window.RunBenchmarkAsync();
+                    File.WriteAllText(Path.Combine(AppPaths.LogDir, "benchmark.txt"), report);
+                    desktop.Shutdown();
+                };
+            }
 
             var gamepad = new Input.GamepadService(desktop);
             gamepad.Start();

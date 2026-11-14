@@ -180,9 +180,7 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
     {
         var bytes = await Client.DownloadImageAsync(imageId, size, ct);
         var target = Path.Combine(dir, name);
-        var temp = target + ".download";
-        await File.WriteAllBytesAsync(temp, bytes, ct);
-        File.Move(temp, target, overwrite: true);
+        await ArtFiles.WriteAsync(target, bytes, ct);
         return Path.GetRelativePath(artworkDir, target);
     }
 
@@ -221,7 +219,7 @@ public static class UserMetadata
         if (previous is not null)
             try { File.Delete(Path.Combine(artworkDir, previous)); } catch (IOException) { }
         var target = Path.Combine(dir, UserFileName(kind) + ext.ToLowerInvariant());
-        File.WriteAllBytes(target, bytes);
+        ArtFiles.Write(target, bytes);
         var rel = Path.GetRelativePath(artworkDir, target);
         library.SaveMetadata(kind switch
         {

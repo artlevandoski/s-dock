@@ -101,3 +101,20 @@ public sealed class TestEnv : IDisposable
         try { Directory.Delete(Root, recursive: true); } catch (IOException) { } catch (UnauthorizedAccessException) { }
     }
 }
+
+/// <summary>Waiting for artwork that the background image cache decodes.</summary>
+public static class Ui
+{
+    public static void WaitUntil(Func<bool> condition, int timeoutMs = 5000)
+    {
+        var deadline = DateTime.UtcNow.AddMilliseconds(timeoutMs);
+        while (!condition())
+        {
+            if (DateTime.UtcNow > deadline) throw new TimeoutException("Timed out waiting for the image cache");
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            // Headless animations (e.g. the carousel's enlarge transition) only advance on render ticks.
+            Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Thread.Sleep(5);
+        }
+    }
+}

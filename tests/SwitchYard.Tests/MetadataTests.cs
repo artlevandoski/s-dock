@@ -278,7 +278,7 @@ public sealed class MetadataTests : IDisposable
 
         var kirby = vm.Items.Single(i => i.Title.StartsWith("Kirby"));
         Assert.True(kirby.IsMatched);
-        Assert.NotNull(kirby.Cover); // real artwork instead of the placeholder
+        Ui.WaitUntil(() => kirby.Cover is not null); // real artwork instead of the placeholder
 
         vm.GenerationFilter = FilterOption.Generation.Single(o => o.Value == FilterOption.NeedsMatchValue);
         Assert.Equal("Puzzle Quest", Assert.Single(vm.Items).Title);
@@ -356,7 +356,7 @@ public sealed class MetadataTests : IDisposable
         File.WriteAllBytes(png, FakeIgdb.TinyPng);
         ui.NextPickedFile = png;
         await vm.SetCoverCommand.ExecuteAsync(null);
-        Assert.NotNull(vm.SelectedCover);
+        Ui.WaitUntil(() => vm.SelectedCover is not null);
         Assert.NotNull(lib.GetMetadata(id).UserCoverFile);
 
         vm.ResetArtworkCommand.Execute(null);
@@ -470,7 +470,7 @@ public sealed class MetadataTests : IDisposable
         Thread.Sleep(250);
         window.CenterCarousel(animate: false);
         MainWindowTests.Capture(window, "m4-carousel.png");
-        Assert.NotNull(vm.SelectedKeyArt);
+        Ui.WaitUntil(() => vm.SelectedKeyArt is not null);
         window.Close();
 
         var match = new MatchViewModel(lib.GetEdition(vm.Items.Single(i => i.Title == "Puzzle Quest").Id)!,

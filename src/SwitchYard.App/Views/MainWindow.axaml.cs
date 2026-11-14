@@ -97,6 +97,73 @@ public partial class MainWindow : Window
         }
     }
 
+    // ------------------------------------------------------------------ benchmark (--benchmark)
+    private Task NextFrameAsync()
+    {
+        var tcs = new TaskCompletionSource();
+        RequestAnimationFrame(_ => tcs.TrySetResult());
+        return tcs.Task;
+    }
+
+    private static string Summarize(string what, List<double> frames)
+    {
+        if (frames.Count == 0) return $"{what}: no frames";
+        var sorted = frames.Order().ToList();
+        var p95 = sorted[(int)(sorted.Count * 0.95) - 1];
+        return $"{what,-34} avg {frames.Average(),6:0.0} ms   p95 {p95,6:0.0} ms   max {sorted[^1],6:0.0} ms   " +
+               $"slow (>25 ms) {frames.Count(f => f > 25),3} of {frames.Count}";
+    }
+
+    /// <summary>
+    /// Measures real frame times with the actual renderer: waits for the covers, scrolls the grid, then steps
+    /// through the carousel one game per frame. Returns a short report.
+    /// </summary>
+    public async Task<string> RunBenchmarkAsync()
+    {
+        var vm = Vm!;
+        var report = new System.Text.StringBuilder();
+        await NextFrameAsync();
+        report.AppendLine($"Launch to first frame {Program.Started.ElapsedMilliseconds} ms");
+        var sw = System.Diagnostics.Stopwatch.StartNew();
+        while (Controls.ImageCache.Covers.Pending > 0 && sw.Elapsed < TimeSpan.FromSeconds(60))
+            await Task.Delay(50);
+        report.AppendLine($"Games {vm.Items.Count}; covers decoded {Controls.ImageCache.Covers.Count} in {sw.ElapsedMilliseconds} ms " +
+                          $"({Controls.ImageCache.Covers.Bytes / 1048576} MB at {Controls.ImageCache.Covers.DecodeWidth} px); " +
+                          $"display scaling {RenderScaling:0.##}");
+
+        async Task<List<double>> Measure(int count, Action step)
+        {
+            var frames = new List<double>();
+            await NextFrameAsync();
+            var clock = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 0; i < count; i++)
+            {
+                step();
+                await NextFrameAsync();
+                frames.Add(clock.Elapsed.TotalMilliseconds);
+                clock.Restart();
+            }
+            return frames;
+        }
+
+        vm.IsCarousel = false;
+        for (var i = 0; i < 10; i++) await NextFrameAsync();
+        var scroller = CoverList.FindDescendantOfType<ScrollViewer>()!;
+        report.AppendLine(Summarize("Grid: smooth scroll (40 px/frame)", await Measure(150, () =>
+            scroller.Offset = scroller.Offset.WithY(scroller.Offset.Y + 40))));
+        report.AppendLine(Summarize("Grid: page jumps (700 px/frame)", await Measure(60, () =>
+            scroller.Offset = scroller.Offset.WithY(scroller.Offset.Y + 700))));
+
+        vm.IsCarousel = true;
+        for (var i = 0; i < 20; i++) await NextFrameAsync();
+        report.AppendLine(Summarize("Carousel: one game per frame", await Measure(120, () =>
+            CarouselList.SelectedIndex = Math.Min(CarouselList.ItemCount - 1, CarouselList.SelectedIndex + 1))));
+        report.AppendLine(Summarize("Carousel: idle frames", await Measure(60, () => { })));
+
+        report.AppendLine($"Process working set {System.Diagnostics.Process.GetCurrentProcess().WorkingSet64 / 1048576} MB");
+        return report.ToString();
+    }
+
     /// <summary>Opens the Game Actions menu (controller X) next to the visible Game Actions button.</summary>
     public void OpenGameActions()
     {
@@ -134,12 +201,27 @@ public partial class MainWindow : Window
     /// <summary>Scroll so the selected cover sits in the middle of the row.</summary>
     public void CenterCarousel(bool animate)
     {
-        if (!CarouselList.IsEffectivelyVisible || CarouselScroller is not { } sv) return;
-        if (CarouselList.ContainerFromIndex(CarouselList.SelectedIndex) is not Control container) return;
-        if (container.TranslatePoint(new Point(container.Bounds.Width / 2, 0), sv) is not { } center) return;
+        if (!CarouselList.IsEffectivelyVisible || CarouselScroller is not { } sv || CarouselList.SelectedIndex < 0) return;
 
+        // The side padding depends on the current width; make sure it (and the scroll extent) is up to date first.
+        var padding = CarouselList.Padding;
+        UpdateCarouselPadding();
+        if (CarouselList.Padding != padding)
+            CarouselList.UpdateLayout();
+
+        // The carousel only creates controls for covers near the screen and estimates the rest, so centre on
+        // the selected cover's real position. If it hasn't been created yet (a far jump), bring it into view
+        // first, which creates it, then centre exactly on the next pass.
+        if (CarouselList.ContainerFromIndex(CarouselList.SelectedIndex) is not Control container ||
+            container.TranslatePoint(new Point(container.Bounds.Width / 2, 0), sv) is not { } point)
+        {
+            CarouselList.ScrollIntoView(CarouselList.SelectedIndex);
+            if (CarouselList.ContainerFromIndex(CarouselList.SelectedIndex) is null) return;
+            Dispatcher.UIThread.Post(() => CenterCarousel(animate: false), DispatcherPriority.Loaded);
+            return;
+        }
         var max = Math.Max(0, sv.Extent.Width - sv.Viewport.Width);
-        var target = Math.Clamp(sv.Offset.X + center.X - sv.Viewport.Width / 2, 0, max);
+        var target = Math.Clamp(sv.Offset.X + point.X - sv.Viewport.Width / 2, 0, max);
         _scrollAnimation?.Stop();
         if (!animate || Math.Abs(target - sv.Offset.X) < 1)
         {
