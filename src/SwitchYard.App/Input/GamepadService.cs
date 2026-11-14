@@ -120,6 +120,16 @@ public sealed class GamepadService
             GameExit?.Press();
         _exitComboHeld = combo;
         var active = _desktop.Windows.FirstOrDefault(w => w.IsActive);
+        if (active is null && state is { Buttons: not PadButtons.None } && _desktop.MainWindow is MainWindow
+            {
+                WindowState: WindowState.FullScreen, DataContext: MainViewModel { IsRunning: false },
+            } main && WindowFocus.NothingInFront())
+        {
+            // Full screen with nothing else in front (e.g. Windows didn't hand focus back after a game):
+            // a button press brings Switch Yard back instead of being ignored.
+            WindowFocus.Bring(main);
+            main.FocusSelectedCover();
+        }
         if (state is not { } s || active is null)
         {
             _wasActive = false;

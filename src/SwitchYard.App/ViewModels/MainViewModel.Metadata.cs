@@ -447,7 +447,7 @@ public sealed partial class MainViewModel
     {
         if (SelectedItem is not { } item) return;
         var text = await _ui.EditTextAsync("Edit Description",
-            "Your description replaces IGDB's and is kept when metadata is refreshed. Clear it to use IGDB's again.",
+            "Your description replaces the downloaded one (TitleDB or IGDB) and is kept when metadata is refreshed. Clear it to use the downloaded one again.",
             item.Metadata.DisplaySummary ?? "");
         if (text is null) return;
         // Saving IGDB's own text unchanged doesn't count as an edit.

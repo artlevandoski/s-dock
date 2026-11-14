@@ -20,12 +20,14 @@ public static partial class ArcadeSeries
     public const string Aca = "aca";
     public const string Aca2 = "aca2";
     public const string AcaNeogeo = "aca_neogeo";
+    public const string SegaAges = "sega_ages";
 
     public static string Label(string series) => series switch
     {
         Aca => "Arcade Archives",
         Aca2 => "Arcade Archives 2",
         AcaNeogeo => "ACA NEOGEO",
+        SegaAges => "SEGA AGES",
         _ => "",
     };
 
@@ -40,19 +42,23 @@ public static partial class ArcadeSeries
     [GeneratedRegex(@"^\s*aca[\s_-]*neo[\s_-]*geo(?![a-z])", RegexOptions.IgnoreCase)]
     private static partial Regex NeogeoRe();
 
+    [GeneratedRegex(@"^\s*sega[\s_-]*ages(?![a-z])", RegexOptions.IgnoreCase)]
+    private static partial Regex SegaAgesRe();
+
     public static string Detect(string title)
     {
         if (Aca2Re().IsMatch(title)) return Aca2;
         if (AcaRe().IsMatch(title)) return Aca;
         if (NeogeoRe().IsMatch(title)) return AcaNeogeo;
+        if (SegaAgesRe().IsMatch(title)) return SegaAges;
         return None;
     }
 
     /// <summary>
     /// Which library a title belongs to: a manual override wins; otherwise Arcade Archives and
-    /// Arcade Archives 2 go to the Arcade library, and ACA NEOGEO only when the user opts in.
+    /// Arcade Archives 2 go to the Arcade library, and ACA NEOGEO and SEGA AGES only when the user opts in.
     /// </summary>
-    public static string LibraryFor(string title, string? manualOverride, bool includeNeogeo)
+    public static string LibraryFor(string title, string? manualOverride, bool includeNeogeo, bool includeSegaAges = false)
     {
         if (manualOverride is Libraries.Main or Libraries.Arcade)
             return manualOverride;
@@ -60,6 +66,7 @@ public static partial class ArcadeSeries
         {
             Aca or Aca2 => Libraries.Arcade,
             AcaNeogeo when includeNeogeo => Libraries.Arcade,
+            SegaAges when includeSegaAges => Libraries.Arcade,
             _ => Libraries.Main,
         };
     }

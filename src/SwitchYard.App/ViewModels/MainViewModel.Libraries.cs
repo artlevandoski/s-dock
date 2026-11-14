@@ -52,8 +52,19 @@ public sealed record FilterOption(string Value, string Label)
         new(ArcadeSeries.Aca2, ArcadeSeries.Label(ArcadeSeries.Aca2)),
     ];
 
-    public static readonly IReadOnlyList<FilterOption> SeriesWithNeogeo =
-        [.. SeriesWithoutNeogeo, new(ArcadeSeries.AcaNeogeo, ArcadeSeries.Label(ArcadeSeries.AcaNeogeo))];
+    public static readonly FilterOption NeogeoSeries = new(ArcadeSeries.AcaNeogeo, ArcadeSeries.Label(ArcadeSeries.AcaNeogeo));
+    public static readonly FilterOption SegaAgesSeries = new(ArcadeSeries.SegaAges, ArcadeSeries.Label(ArcadeSeries.SegaAges));
+
+    public static readonly IReadOnlyList<FilterOption> SeriesWithNeogeo = [.. SeriesWithoutNeogeo, NeogeoSeries];
+
+    /// <summary>The series dropdown for the opted-in extras (shared instances, so selection compares by reference).</summary>
+    public static IReadOnlyList<FilterOption> Series(bool neogeo, bool segaAges)
+    {
+        var list = SeriesWithoutNeogeo.ToList();
+        if (neogeo) list.Add(NeogeoSeries);
+        if (segaAges) list.Add(SegaAgesSeries);
+        return list;
+    }
 
     public override string ToString() => Label;
 }
@@ -88,6 +99,7 @@ public sealed partial class MainViewModel
         var saved = _library.GetSetting("current_library");
         SelectedLibraryTab = LibraryTabs.FirstOrDefault(t => t.Id == saved) ?? LibraryTabs[0];
         _includeNeogeo = _library.IncludeAcaNeogeo;
+        _includeSegaAges = _library.IncludeSegaAges;
         // One view for every library. Earlier builds saved it per library; fall back to Main's.
         IsCarousel = (_library.GetSetting(ViewKey) ?? _library.GetSetting(StateKey(Libraries.Main, "view"))) == ViewCarousel;
         LoadLibraryState();
@@ -209,8 +221,7 @@ public sealed partial class MainViewModel
         set { if (value is not null) GenerationFilter = value; }
     }
 
-    public IReadOnlyList<FilterOption> SeriesFilterOptions =>
-        IncludeAcaNeogeo ? FilterOption.SeriesWithNeogeo : FilterOption.SeriesWithoutNeogeo;
+    public IReadOnlyList<FilterOption> SeriesFilterOptions => FilterOption.Series(IncludeAcaNeogeo, IncludeSegaAges);
 
     [ObservableProperty]
     public partial FilterOption SeriesFilter { get; set; } = FilterOption.SeriesWithoutNeogeo[0];
@@ -233,13 +244,32 @@ public sealed partial class MainViewModel
         {
             if (!SetProperty(ref _includeNeogeo, value)) return;
             _library.IncludeAcaNeogeo = value;
-            OnPropertyChanged(nameof(SeriesFilterOptions));
-            var keep = SeriesFilterOptions.FirstOrDefault(o => o.Value == SeriesFilter?.Value) ?? SeriesFilterOptions[0];
-            _loadingState = true;
-            SeriesFilter = keep;
-            _loadingState = false;
-            Refresh();
+            SeriesOptionsChanged();
         }
+    }
+
+    private bool _includeSegaAges;
+
+    /// <summary>Optional: show SEGA AGES titles in Arcade Archives (otherwise they stay in Main Library).</summary>
+    public bool IncludeSegaAges
+    {
+        get => _includeSegaAges;
+        set
+        {
+            if (!SetProperty(ref _includeSegaAges, value)) return;
+            _library.IncludeSegaAges = value;
+            SeriesOptionsChanged();
+        }
+    }
+
+    private void SeriesOptionsChanged()
+    {
+        OnPropertyChanged(nameof(SeriesFilterOptions));
+        var keep = SeriesFilterOptions.FirstOrDefault(o => o.Value == SeriesFilter?.Value) ?? SeriesFilterOptions[0];
+        _loadingState = true;
+        SeriesFilter = keep;
+        _loadingState = false;
+        Refresh();
     }
 
     public bool HasActiveFilters =>
@@ -323,7 +353,7 @@ public sealed partial class MainViewModel
         LibraryChoices.Clear();
         if (SelectedItem is { } item)
         {
-            var automatic = ArcadeSeries.LibraryFor(item.Title, null, IncludeAcaNeogeo);
+            var automatic = ArcadeSeries.LibraryFor(item.Title, null, IncludeAcaNeogeo, IncludeSegaAges);
             LibraryChoices.Add(new LibraryChoice(null, $"Automatic ({Libraries.Label(automatic)})"));
             LibraryChoices.Add(new LibraryChoice(Libraries.Main, Libraries.Label(Libraries.Main)));
             LibraryChoices.Add(new LibraryChoice(Libraries.Arcade, Libraries.Label(Libraries.Arcade)));

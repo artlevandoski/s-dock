@@ -73,7 +73,9 @@ public sealed class FakeUi : IUiServices
     }
 
     public string? NextEditedText { get; set; }
-    public Task<string?> EditTextAsync(string title, string explanation, string initial) => Task.FromResult(NextEditedText);
+    public Func<string, string, string?>? OnEditText { get; set; } // (explanation, initial) -> result
+    public Task<string?> EditTextAsync(string title, string explanation, string initial) =>
+        Task.FromResult(OnEditText is { } f ? f(explanation, initial) : NextEditedText);
 
     public List<string> OpenedUrls { get; } = [];
     public void OpenUrl(string url) => OpenedUrls.Add(url);

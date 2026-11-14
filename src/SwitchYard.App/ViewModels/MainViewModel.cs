@@ -103,7 +103,8 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing), nameof(VersionsText), nameof(HasVersions), nameof(CarouselSubtitle),
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
-        nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel))]
+        nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
+        nameof(SelectedColor), nameof(BackdropBrush))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]
@@ -133,6 +134,7 @@ public sealed partial class MainViewModel : ObservableObject
             var e = item.Edition;
             var lines = new List<string> { $"Type: {ContentKinds.Label(e.ContentKind)}" };
             if (e.ConsoleTitleId is not null) lines.Add($"Title ID: {e.ConsoleTitleId}");
+            if (e.SortTitle is not null) lines.Add($"Sorted as: {e.SortTitle}");
             lines.Add($"File: {e.PrimaryFile?.Path ?? "—"}");
             return string.Join("\n", lines);
         }
@@ -156,6 +158,7 @@ public sealed partial class MainViewModel : ObservableObject
         _suppressGenerationWrite = false;
         RebuildEmulatorChoices();
         PrefetchNeighbours();
+        WatchSelectedCover(value);
     }
 
     partial void OnSelectedGenerationOptionChanged(GenerationOption? value)
@@ -229,10 +232,11 @@ public sealed partial class MainViewModel : ObservableObject
         selectId ??= SelectedItem?.Id;
         var overrides = _library.LibraryOverrides();
         var includeNeogeo = _library.IncludeAcaNeogeo;
+        var includeSegaAges = _library.IncludeSegaAges;
         var metadata = _library.AllMetadata();
         var hidden = _library.HiddenEditions();
         _all = _library.ListEditions()
-            .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo), overrides.ContainsKey(e.Id),
+            .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo, includeSegaAges), overrides.ContainsKey(e.Id),
                 metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id)))
             .ToList();
         foreach (var tab in LibraryTabs)

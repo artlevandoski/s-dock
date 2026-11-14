@@ -66,6 +66,8 @@ public partial class MainWindow : Window
         {
             _stateBeforeFullScreen = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
             WindowState = WindowState.FullScreen;
+            if (IsVisible)
+                Dispatcher.UIThread.Post(() => { WindowFocus.Bring(this); FocusSelectedCover(); }, DispatcherPriority.Loaded);
         }
         else if (!fullScreen && WindowState == WindowState.FullScreen)
         {

@@ -45,7 +45,11 @@ public partial class App : Application
                 vm.StatusText = $"Switch Yard's folder is read-only, so data is kept in {AppPaths.DataDir}.";
             window.DataContext = vm;
             desktop.MainWindow = window;
-            window.Opened += (_, _) => window.FocusSelectedCover();
+            window.Opened += (_, _) =>
+            {
+                if (window.WindowState == Avalonia.Controls.WindowState.FullScreen) WindowFocus.Bring(window);
+                window.FocusSelectedCover();
+            };
             if (Program.Benchmark)
             {
                 // --benchmark: measure real frame times on this machine, write logs\benchmark.txt, then exit.

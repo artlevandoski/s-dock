@@ -11,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 7;
+    public const int SchemaVersion = 8;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -34,6 +34,7 @@ public sealed class LibraryStore : IDisposable
             content_kind     TEXT NOT NULL DEFAULT 'base',
             console_title_id TEXT,
             igdb_id          INTEGER,
+            sort_title       TEXT,
             created_at       TEXT NOT NULL,
             updated_at       TEXT NOT NULL
         );
@@ -216,6 +217,14 @@ public sealed class LibraryStore : IDisposable
                 if (!cols.Contains(name)) Exec($"ALTER TABLE edition_metadata ADD COLUMN {name} {type}");
             Exec("UPDATE meta SET value = '7' WHERE key = 'schema_version'");
         }
+        if (version < 8)
+        {
+            // v7 -> v8: the user's sort title.
+            using (var cmd = Cmd("SELECT COUNT(*) FROM pragma_table_info('editions') WHERE name = 'sort_title'"))
+                if (Convert.ToInt64(cmd.ExecuteScalar()) == 0)
+                    Exec("ALTER TABLE editions ADD COLUMN sort_title TEXT");
+            Exec("UPDATE meta SET value = '8' WHERE key = 'schema_version'");
+        }
     }
 
     private static readonly (string Name, string Type)[] TdbColumns =
@@ -342,6 +351,7 @@ public sealed class LibraryStore : IDisposable
             ContentKind = r.GetString(r.GetOrdinal("content_kind")),
             ConsoleTitleId = Str(r, "console_title_id"),
             IgdbId = Long(r, "igdb_id"),
+            SortTitle = Str(r, "sort_title"),
             Files = files.TryGetValue(id, out var list) ? list : [],
         };
     }
@@ -355,8 +365,15 @@ public sealed class LibraryStore : IDisposable
         var list = new List<Edition>();
         while (r.Read())
             list.Add(ReadEdition(r, files));
-        return list.OrderBy(e => e.Title, StringComparer.OrdinalIgnoreCase).ThenBy(e => e.Id, StringComparer.Ordinal).ToList();
+        return list.OrderBy(e => e.SortKey, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Title, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(e => e.Id, StringComparer.Ordinal).ToList();
     }
+
+    /// <summary>Sets the title a game is sorted by; null or blank goes back to sorting by its title.</summary>
+    public void SetSortTitle(string editionId, string? sortTitle) =>
+        Exec("UPDATE editions SET sort_title = $s, updated_at = $t WHERE id = $id",
+            ("$s", string.IsNullOrWhiteSpace(sortTitle) ? null : sortTitle.Trim()), ("$t", UtcNow()), ("$id", editionId));
 
     public Edition? GetEdition(string editionId)
     {
@@ -662,6 +679,15 @@ public sealed class LibraryStore : IDisposable
         set => SetSetting(IncludeNeogeoKey, value ? "1" : "0");
     }
 
+    public const string IncludeSegaAgesKey = "include_sega_ages";
+
+    /// <summary>Optional: SEGA AGES titles in Arcade Archives (otherwise they stay in Main Library).</summary>
+    public bool IncludeSegaAges
+    {
+        get => GetSetting(IncludeSegaAgesKey) == "1";
+        set => SetSetting(IncludeSegaAgesKey, value ? "1" : "0");
+    }
+
     public Dictionary<string, string> LibraryOverrides()
     {
         var result = new Dictionary<string, string>();
@@ -710,10 +736,11 @@ public sealed class LibraryStore : IDisposable
     }
 
     /// <summary>The library each edition is shown in.</summary>
-    public string LibraryOf(Edition edition, IReadOnlyDictionary<string, string>? overrides = null, bool? includeNeogeo = null) =>
+    public string LibraryOf(Edition edition, IReadOnlyDictionary<string, string>? overrides = null, bool? includeNeogeo = null,
+        bool? includeSegaAges = null) =>
         ArcadeSeries.LibraryFor(edition.Title,
             overrides is null ? GetLibraryOverride(edition.Id) : overrides.GetValueOrDefault(edition.Id),
-            includeNeogeo ?? IncludeAcaNeogeo);
+            includeNeogeo ?? IncludeAcaNeogeo, includeSegaAges ?? IncludeSegaAges);
 
     // ------------------------------------------------------------------ versions
     /// <summary>Adds another file (alternate version) to an edition.</summary>

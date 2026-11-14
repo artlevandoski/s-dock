@@ -77,3 +77,25 @@ public partial class MainViewModel
             : $"“{item.Title}” is back in {Libraries.Label(item.Library)}.";
     }
 }
+
+// Sort title: put a game where you want it in the list (e.g. series in order) without renaming it.
+public partial class MainViewModel
+{
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task SetSortTitleAsync()
+    {
+        if (SelectedItem is not { } item) return;
+        var text = await _ui.EditTextAsync("Sort Title",
+            $"Games are sorted by this instead of “{item.Title}”, for example “Zelda 1” to keep a series in order. " +
+            "Clear it to sort by the title again.",
+            item.Edition.SortTitle ?? item.Title);
+        _ui.RestoreFocus();
+        if (text is null) return;
+        var value = string.Join(" ", text.Split([(char)13, (char)10], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        _library.SetSortTitle(item.Id, value == item.Title ? null : value);
+        Refresh(item.Id);
+        StatusText = value.Length == 0 || value == item.Title
+            ? $"“{item.Title}” is sorted by its title."
+            : $"“{item.Title}” is now sorted as “{value}”.";
+    }
+}

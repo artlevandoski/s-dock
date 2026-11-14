@@ -421,6 +421,9 @@ public sealed class ArtworkTests : IDisposable
         }
         window.CenterCarousel(animate: false);
         MainWindowTests.Capture(window, "m4b-carousel.png");
+        vm.BackgroundIsColor = true;
+        MainWindowTests.Capture(window, "carousel-color.png");
+        vm.BackgroundIsArt = true;
         window.Close();
 
         var bg = new ArtPickerViewModel(ArtKind.KeyArt, "Haunted House", true, ui,

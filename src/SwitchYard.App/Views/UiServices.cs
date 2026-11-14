@@ -112,7 +112,7 @@ public sealed class UiServices(MainWindow main) : IUiServices
                 _dialogs.Peek().Activate();
                 return;
             }
-            main.Activate();
+            WindowFocus.Bring(main);
             main.FocusSelectedCover();
         }, TimeSpan.FromMilliseconds(150));
     }

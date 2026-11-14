@@ -52,6 +52,11 @@ public sealed class Edition
     public string ContentKind { get; init; } = ContentKinds.Base;
     public string? ConsoleTitleId { get; init; }
     public long? IgdbId { get; init; }
+
+    /// <summary>The user's own sort title (e.g. "Zelda 01" or "Legend of Zelda"), or null to sort by the title.</summary>
+    public string? SortTitle { get; init; }
+
+    public string SortKey => SortTitle ?? Title;
     public List<EditionFile> Files { get; init; } = [];
 
     public EditionFile? PrimaryFile => Files.FirstOrDefault(f => f.Role == "primary") ?? Files.FirstOrDefault();

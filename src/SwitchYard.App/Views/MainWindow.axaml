@@ -27,6 +27,7 @@
       <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
       <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
       <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
+      <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
       <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
       <Separator />
       <MenuItem Header="Game Settings (Grid view)" Command="{Binding ShowGridCommand}" />
@@ -153,8 +154,10 @@
 
   <Panel>
     <!-- ============================== Backdrop: the selected game's art ============================== -->
-    <Border Background="{Binding SelectedGeneration, Converter={x:Static vm:Converters.GenerationBanner}}" Opacity="0.22" />
-    <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" Opacity="{Binding BackdropOpacity}" IsHitTestVisible="False">
+    <!-- Settings → Background: the game's artwork (over a generation tint), a gradient in its colour, or plain. -->
+    <Border Background="{Binding BackdropBrush}" IsHitTestVisible="False" />
+    <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" Opacity="{Binding BackdropOpacity}" IsHitTestVisible="False"
+           IsVisible="{Binding BackgroundIsArt}">
       <Image.Transitions>
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="0:0:0.25" />
@@ -204,6 +207,14 @@
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
                   <MenuItem Header="Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
                   <MenuItem Header="Emulator Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+                  <MenuItem Header="Background">
+                    <MenuItem Header="Game Artwork" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsArt}"
+                              ToolTip.Tip="The game's banner or chosen background behind the covers" />
+                    <MenuItem Header="Color from Game" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsColor}"
+                              ToolTip.Tip="A gradient in the main colour of the selected game's cover" />
+                    <MenuItem Header="Plain" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsPlain}"
+                              ToolTip.Tip="Switch Yard's own dark background" />
+                  </MenuItem>
                   <MenuItem Header="Playing">
                     <MenuItem Header="Start Games in Full Screen" ToggleType="CheckBox" IsChecked="{Binding StartGamesFullScreen}"
                               ToolTip.Tip="Adds Eden's full-screen switch (-f) when a game starts" />
@@ -255,6 +266,8 @@
                     IsVisible="{Binding IsArcade}" />
           <CheckBox Content="Include ACA NEOGEO" IsChecked="{Binding IncludeAcaNeogeo}" IsVisible="{Binding IsArcade}"
                     ToolTip.Tip="Show ACA NEOGEO titles here instead of in Main Library" />
+          <CheckBox Content="Include SEGA AGES" IsChecked="{Binding IncludeSegaAges}" IsVisible="{Binding IsArcade}"
+                    ToolTip.Tip="Show SEGA AGES titles here instead of in Main Library" />
           <Button Classes="subtle" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
@@ -443,8 +456,10 @@
 
           <!-- Carousel -->
           <DockPanel IsVisible="{Binding IsCarousel}">
-            <!-- Info band: title, tags, description and Play on the left; the clear logo on the right -->
-            <Border DockPanel.Dock="Bottom" Padding="40,20,40,22" BorderBrush="#33FFFFFF" BorderThickness="0,1,0,0">
+            <!-- Info band: title, tags, description and Play on the left; the clear logo on the right.
+                 A fixed height, so the covers above never move as you browse (logo or not, short or long description). -->
+            <Border x:Name="CarouselInfoBand" DockPanel.Dock="Bottom" Height="250" Padding="40,20,40,22"
+                    BorderBrush="#33FFFFFF" BorderThickness="0,1,0,0">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
                   <GradientStop Offset="0" Color="#B310111E" />
@@ -452,8 +467,8 @@
                 </LinearGradientBrush>
               </Border.Background>
               <Grid ColumnDefinitions="*,Auto">
-                <StackPanel Spacing="10" VerticalAlignment="Center">
-                  <StackPanel Orientation="Horizontal" Spacing="14">
+                <StackPanel Spacing="10" VerticalAlignment="Top">
+                  <StackPanel Orientation="Horizontal" Spacing="14" Height="46">
                     <TextBlock Text="{Binding SelectedTitle}" FontSize="34" FontWeight="Bold" VerticalAlignment="Center"
                                TextTrimming="CharacterEllipsis" MaxWidth="560" />
                     <Border Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding HasSelection}">
@@ -474,9 +489,8 @@
                       </ItemsControl.ItemTemplate>
                     </ItemsControl>
                   </StackPanel>
-                  <TextBlock Text="{Binding SelectedSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2"
-                             TextWrapping="Wrap" TextTrimming="WordEllipsis" MaxWidth="900" HorizontalAlignment="Left"
-                             IsVisible="{Binding HasSummary}" />
+                  <TextBlock Text="{Binding SelectedSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2" Height="46"
+                             TextWrapping="Wrap" TextTrimming="WordEllipsis" MaxWidth="900" HorizontalAlignment="Left" />
                   <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
                     <Button Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
                             Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
@@ -492,8 +506,8 @@
                     <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0" />
                   </StackPanel>
                 </StackPanel>
-                <Image Grid.Column="1" Source="{Binding SelectedLogo}" MaxHeight="140" MaxWidth="440"
-                       VerticalAlignment="Center" Margin="30,0,0,0" IsVisible="{Binding HasLogo}" />
+                <Image Grid.Column="1" Source="{Binding SelectedLogo}" MaxHeight="140" MaxWidth="440" Width="440"
+                       Stretch="Uniform" VerticalAlignment="Center" Margin="30,0,0,0" IsVisible="{Binding HasLogo}" />
               </Grid>
             </Border>
 
@@ -529,6 +543,7 @@
               <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
               <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
               <Separator />
+              <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
               <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
             </ContextMenu>
           </Panel.ContextMenu>

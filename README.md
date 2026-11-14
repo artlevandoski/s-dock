@@ -109,6 +109,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
 | TitleDB (fake server) | download saved once and skipped when unchanged; lookup by title ID prefers the full listing over demos; updates map to their base game; text, icon, banner and screenshots saved; images only from Nintendo's image server; a failed image is counted and retried next time; works offline from the saved copy; yours → TitleDB → IGDB display order; Not in TitleDB filter; offered once after the first import; schema v7 upgrade |
+| Browsing | sort titles order games and persist (blank or the title clears it); schema v8 upgrade; SEGA AGES by title prefix, in Arcade Archives only when ticked, with its own series filter; background setting (artwork, colour from the cover, plain) remembered; cover colour follows the artwork and is toned down for readable text; carousel covers and details band keep their size and place while browsing |
 | Logos | each game's logo is fetched right after it is matched; Get Missing Logos only visits matched games without one, reports added / not found / failed, and can be cancelled |
 | Large libraries | grid and carousel share one view across libraries; artwork comes from a background cache (covers, backgrounds, logos) and is re-decoded when the file changes; artwork can be replaced while the cache reads it; carousel centring with virtualization; opt-in 863-game stress test |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
@@ -164,7 +165,9 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   with its own search (Ctrl+F), generation filter and last selection. Grid or carousel is
   one setting shared by both libraries. Arcade Archives also filters by series.
 - **Arcade Archives** and **Arcade Archives 2** titles are placed by their title prefix.
-  **ACA NEOGEO** titles stay in Main Library unless you tick *Include ACA NEOGEO*.
+  **ACA NEOGEO** and **SEGA AGES** titles stay in Main Library unless you tick *Include ACA
+  NEOGEO* or *Include SEGA AGES* (shown in the Arcade Archives library); each then gets its
+  own entry in the series filter.
   The **Library** dropdown in the details panel pins any game to a library; *Automatic*
   goes back to placement by title. Pins are stored apart from game records
   (`edition_library_overrides`).
@@ -202,6 +205,15 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
     hasn't closed after 5 seconds (for example, it's asking "are you sure?") it is stopped.
     Choose *Press Once to Exit* or *Press Twice to Exit* (the default: the first press shows
     a note over the game, and a second press within 3 seconds closes it).
+- **Sort Title…** (Game Actions or right-click): sort a game under another name without
+  renaming it, for example "Zelda 1", "Zelda 2" to keep a series in order. Clear it (or set
+  it back to the title) to sort by the title again.
+- **Background** (Settings → **Background**): *Game Artwork* (the banner or your chosen
+  background), *Color from Game* (a gradient in the main colour of the selected cover), or
+  *Plain*.
+- **Full screen and focus:** going full screen, returning from a game and starting in the
+  carousel all bring Switch Yard to the front, so the controller works without clicking. If
+  Windows still leaves nothing in front, any controller button brings it back.
 - **Hide Game** (Game Actions or right-click): hides a game you don't play from its library
   and counts without removing anything. **More filters → Hidden games** lists them; choose
   **Unhide Game** there to bring one back.
@@ -353,6 +365,10 @@ Run by hand with your Eden install and game folder. Record results below.
 15. Run **Update from TitleDB**. Covers become square eShop icons, banners appear behind the
     carousel, and descriptions, publisher and players show in the details. Check
     **More filters → Not in TitleDB** and run it again (it should finish quickly).
+16. Switch to the carousel and use the controller straight away (no click). Play a game,
+    exit it, and use the controller again without clicking.
+17. Try each **Background** option, set a **Sort Title** on a game, and tick *Include SEGA
+    AGES* in Arcade Archives.
 
 ### Results
 
@@ -377,3 +393,5 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 13 Full screen and leaving a game | | |
 | | C# | | 14 Hide and unhide | | |
 | | C# | | 15 TitleDB and square covers | | |
+| | C# | | 16 Focus without clicking | | |
+| | C# | | 17 Background, sort title, SEGA AGES | | |
