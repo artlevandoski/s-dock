@@ -68,7 +68,7 @@ internal static class XInput
 /// <summary>
 /// Polls the controller while one of Switch Yard's windows is in front, and turns presses into the same
 /// keys the keyboard uses (arrows, Enter, Escape) plus a few main-window shortcuts. While another app
-/// (such as the emulator) is in front, input is ignored.
+/// (such as the emulator) is in front, input is ignored, except Start+Select, which leaves a running game.
 /// </summary>
 public sealed class GamepadService
 {
@@ -79,6 +79,10 @@ public sealed class GamepadService
     private int? _connectedIndex;
     private TimeSpan _nextScan;
     private bool _wasActive;
+    private bool _exitComboHeld;
+
+    /// <summary>Receives Start+Select (Back) presses while a game runs.</summary>
+    public GameExitService? GameExit { get; set; }
 
     public GamepadService(IClassicDesktopStyleApplicationLifetime desktop)
     {
@@ -110,6 +114,11 @@ public sealed class GamepadService
     private void Poll()
     {
         var state = ReadController();
+        // Start+Select works over the emulator too: it's how you leave a game.
+        var combo = state is { } st && (st.Buttons & (PadButtons.Start | PadButtons.Back)) == (PadButtons.Start | PadButtons.Back);
+        if (combo && !_exitComboHeld)
+            GameExit?.Press();
+        _exitComboHeld = combo;
         var active = _desktop.Windows.FirstOrDefault(w => w.IsActive);
         if (state is not { } s || active is null)
         {

@@ -27,6 +27,7 @@
       <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
       <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
       <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
+      <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
       <Separator />
       <MenuItem Header="Game Settings (Grid view)" Command="{Binding ShowGridCommand}" />
     </MenuFlyout>
@@ -94,7 +95,7 @@
     <!-- Carousel: the selected cover is ~18% larger than its neighbours, with a glowing lavender ring. -->
     <Style Selector="ListBox#CarouselList ListBoxItem">
       <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="18,40" />
+      <Setter Property="Margin" Value="18,46" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="RenderTransform" Value="scale(1)" />
@@ -203,10 +204,20 @@
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
                   <MenuItem Header="Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
                   <MenuItem Header="Emulator Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+                  <MenuItem Header="Playing">
+                    <MenuItem Header="Start Games in Full Screen" ToggleType="CheckBox" IsChecked="{Binding StartGamesFullScreen}"
+                              ToolTip.Tip="Adds Eden's full-screen switch (-f) when a game starts" />
+                    <Separator />
+                    <MenuItem Header="Esc or Start+Select: Press Once to Exit" ToggleType="Radio" GroupName="ExitPresses"
+                              IsChecked="{Binding ExitWithOnePress}" />
+                    <MenuItem Header="Esc or Start+Select: Press Twice to Exit" ToggleType="Radio" GroupName="ExitPresses"
+                              IsChecked="{Binding ExitWithTwoPresses}"
+                              ToolTip.Tip="The first press shows a note; press again within 3 seconds to close the game" />
+                  </MenuItem>
                   <Separator />
                   <MenuItem Header="Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
-                  <MenuItem Header="Cancel Matching" Command="{Binding CancelMatchingCommand}" IsVisible="{Binding IsMatchingAll}" />
-                  <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}"
+                  <MenuItem Header="Cancel" Command="{Binding CancelMatchingCommand}" ToolTip.Tip="Stop matching or fetching logos; everything done so far is kept" IsVisible="{Binding IsMatchingAll}" />
+                  <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}" IsEnabled="{Binding !IsMatchingAll}"
                             ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
                   <MenuItem Header="Metadata Settings…" Command="{Binding IgdbSettingsCommand}" />
                   <Separator />
@@ -484,7 +495,7 @@
               </Grid>
             </Border>
 
-            <ListBox x:Name="CarouselList" Background="Transparent" VerticalAlignment="Center"
+            <ListBox x:Name="CarouselList" Background="Transparent" VerticalAlignment="Bottom" Margin="0,0,0,4"
                      ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
                      ScrollViewer.HorizontalScrollBarVisibility="Hidden"
                      ScrollViewer.VerticalScrollBarVisibility="Disabled">
@@ -497,7 +508,7 @@
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:EditionItem">
                   <Border Classes="ring" Padding="0" CornerRadius="16">
-                    <c:CoverView Width="214" Height="303" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
+                    <c:CoverView Width="260" Height="368" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
                                  Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
                   </Border>
                 </DataTemplate>
@@ -515,6 +526,8 @@
               <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
               <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
               <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
+              <Separator />
+              <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
             </ContextMenu>
           </Panel.ContextMenu>
         </Panel>

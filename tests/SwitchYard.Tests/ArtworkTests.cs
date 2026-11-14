@@ -260,6 +260,45 @@ public sealed class ArtworkTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Get_missing_logos_fills_matched_games_and_reports()
+    {
+        Seed();
+        using var lib = _env.OpenLibrary();
+        var service = new MetadataService(lib, _igdb.Client(), ArtDir);
+        foreach (var title in new[] { "Haunted House", "Kirby's Return to Dream Land Deluxe" })
+            await service.AutoMatchAsync(lib.GetEdition(lib.AddEdition(title, Generations.Switch1, _env.Game(title + ".nsp")))!);
+        lib.AddEdition("Unmatched Homebrew", Generations.Switch1, _env.Game("Homebrew.nsp")); // not matched: skipped
+        using var launcher = new EmulatorLauncher();
+        var vm = Window(lib, new FakeUi(), launcher);
+
+        await vm.GetMissingLogosCommand.ExecuteAsync(null);
+        Assert.Equal("Logos: 2 added.", vm.StatusText);
+        Assert.False(vm.IsMatchingAll);
+        await vm.GetMissingLogosCommand.ExecuteAsync(null);
+        Assert.Equal("Every matched game already has a logo.", vm.StatusText);
+    }
+
+    [Fact]
+    public async Task Match_all_fetches_each_logo_right_after_its_match()
+    {
+        Seed();
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Haunted House", Generations.Switch1, _env.Game("Haunted House.nsp"));
+        lib.AddEdition("Kirby's Return to Dream Land Deluxe", Generations.Switch1, _env.Game("Kirby.nsp"));
+        var service = new MetadataService(lib, _igdb.Client(), ArtDir);
+        var matchedSoFar = new List<int>();
+        var after = new List<string>();
+        await service.MatchAllAsync(lib.ListEditions(), afterMatch: (id, _) =>
+        {
+            after.Add(id);
+            matchedSoFar.Add(lib.ListEditions().Count(e => e.IgdbId is not null));
+            return Task.CompletedTask;
+        });
+        Assert.Equal(2, after.Count);
+        Assert.Equal([1, 2], matchedSoFar); // called as each game is matched, not once at the end
+    }
+
+    [AvaloniaFact]
     public async Task Matching_adds_the_clear_logo_in_place_of_the_name()
     {
         Seed();
@@ -371,8 +410,15 @@ public sealed class ArtworkTests : IDisposable
         MainWindowTests.Capture(window, "m4b-grid-settings.png");
         expander.IsExpanded = false;
         vm.IsCarousel = true;
+        window.Width = 1920; // full screen on a 1080p display (the headless window doesn't resize itself)
+        window.Height = 1080;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-        Thread.Sleep(250);
+        for (var i = 0; i < 30; i++) // let the selected cover's scale animation finish
+        {
+            Thread.Sleep(16);
+            Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        }
         window.CenterCarousel(animate: false);
         MainWindowTests.Capture(window, "m4b-carousel.png");
         window.Close();

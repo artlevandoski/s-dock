@@ -65,33 +65,52 @@ public sealed partial class MainViewModel
     /// Fetches logos for the given games: IGDB's first, SteamGridDB's as a fallback. Quietly skipped
     /// when neither IGDB credentials nor a SteamGridDB key are set.
     /// </summary>
-    private async Task<int> FetchLogosAsync(IEnumerable<Edition> editions, bool replace = false)
+    public sealed record LogoSummary(int Added, int NotFound, int Failed, bool Cancelled, string? Error = null);
+
+    /// <summary>
+    /// Fetches logos (IGDB first, then SteamGridDB) for matched games that have none, with progress in the
+    /// status bar. Quietly does nothing when neither IGDB credentials nor a SteamGridDB key are set.
+    /// </summary>
+    private async Task<LogoSummary> FetchLogosAsync(IReadOnlyList<Edition> editions, bool replace, CancellationToken ct)
     {
         var sources = Artwork;
-        if (!sources.CanFetchLogos) return 0;
-        var count = 0;
-        foreach (var e in editions)
+        if (!sources.CanFetchLogos) return new LogoSummary(0, 0, 0, false);
+        int added = 0, none = 0, failed = 0;
+        for (var i = 0; i < editions.Count; i++)
         {
+            if (ct.IsCancellationRequested) return new LogoSummary(added, none, failed, true);
+            var e = editions[i];
+            StatusText = $"Getting logos ({i + 1} of {editions.Count}): {e.Title}…";
             try
             {
-                if (await sources.FetchLogoAsync(e, replace)) count++;
+                if (await sources.FetchLogoAsync(e, replace, ct)) added++;
+                else none++;
+            }
+            catch (OperationCanceledException)
+            {
+                return new LogoSummary(added, none, failed, true);
             }
             catch (IgdbException ex) when (ex.Status is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
             {
-                StatusText = ex.Message;
-                break;
+                return new LogoSummary(added, none, failed, false, ex.Message); // bad key: stop rather than fail every game
             }
             catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException)
             {
-                // One game's logo failing shouldn't stop the rest.
+                failed++; // one game failing shouldn't stop the rest
             }
         }
-        return count;
+        return new LogoSummary(added, none, failed, false);
     }
+
+    /// <summary>Matched games with no logo yet (neither downloaded nor your own).</summary>
+    private List<Edition> GamesMissingLogos() => _all
+        .Where(i => i.IsMatched && i.Metadata.LogoFile is null && i.Metadata.UserLogoFile is null)
+        .Select(i => i.Edition).ToList();
 
     [RelayCommand]
     private async Task GetMissingLogosAsync()
     {
+        if (IsMatchingAll) return;
         if (!Artwork.CanFetchLogos)
         {
             if (await _ui.ConfirmAsync("Logos", "Logos come from IGDB (and optionally SteamGridDB), which need your own " +
@@ -99,12 +118,32 @@ public sealed partial class MainViewModel
                 await IgdbSettingsAsync();
             if (!Artwork.CanFetchLogos) return;
         }
-        StatusText = "Getting logos…";
-        var n = await FetchLogosAsync(_all.Select(i => i.Edition).ToList());
-        Refresh();
-        StatusText = n == 0
-            ? "No new logos found." + (Sgdb is null ? " Adding a SteamGridDB key in Metadata Settings may find more." : "")
-            : $"Added {n} logo(s).";
+        var todo = GamesMissingLogos();
+        if (todo.Count == 0)
+        {
+            StatusText = "Every matched game already has a logo.";
+            return;
+        }
+        _matchAllCts = new CancellationTokenSource();
+        OnPropertyChanged(nameof(IsMatchingAll));
+        try
+        {
+            var r = await FetchLogosAsync(todo, replace: false, _matchAllCts.Token);
+            Refresh();
+            var text = $"Logos: {r.Added} added";
+            if (r.NotFound > 0) text += $", {r.NotFound} not on IGDB" + (Sgdb is null ? " (a SteamGridDB key in Metadata Settings may find more)" : " or SteamGridDB");
+            if (r.Failed > 0) text += $", {r.Failed} failed (try again later)";
+            if (r.Cancelled) text += " · cancelled";
+            StatusText = text + ".";
+            if (r.Error is not null)
+                await _ui.ShowMessageAsync("Get Missing Logos", r.Error);
+        }
+        finally
+        {
+            _matchAllCts.Dispose();
+            _matchAllCts = null;
+            OnPropertyChanged(nameof(IsMatchingAll));
+        }
     }
 
     // ------------------------------------------------------------ choosers
@@ -277,7 +316,7 @@ public sealed partial class MainViewModel
             _library.SteamGridDbKey = vm.SteamGridDbKey;
             StatusText = "Metadata settings saved.";
             if (!hadKey && _library.HasSteamGridDbKey && _all.Any(i => i.IsMatched))
-                StatusText += " Use Metadata → Get Missing Logos to look for more logos for your matched games.";
+                StatusText += " Use Settings → Get Missing Logos to look for more logos for your matched games.";
         }
         _ui.RestoreFocus();
     }
@@ -295,9 +334,9 @@ public sealed partial class MainViewModel
         try
         {
             await service.ApplyMatchAsync(e.Id, game);
-            var logos = await FetchLogosAsync([_library.GetEdition(e.Id)!]);
+            var logos = await FetchLogosAsync([_library.GetEdition(e.Id)!], replace: false, CancellationToken.None);
             Refresh(e.Id);
-            StatusText = $"Matched “{e.Title}” to {game.Name} on IGDB." + (logos > 0 ? " Logo added." : "");
+            StatusText = $"Matched “{e.Title}” to {game.Name} on IGDB." + (logos.Added > 0 ? " Logo added." : "");
         }
         catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException)
         {
@@ -316,7 +355,7 @@ public sealed partial class MainViewModel
             StatusText = $"Refreshing “{e.Title}” from IGDB…";
             var refreshed = await service.RefreshAsync(e);
             if (refreshed)
-                await FetchLogosAsync([_library.GetEdition(e.Id)!], replace: true);
+                await FetchLogosAsync([_library.GetEdition(e.Id)!], replace: true, CancellationToken.None);
             StatusText = refreshed
                 ? $"Refreshed “{e.Title}” from IGDB. Your own description and artwork were kept."
                 : $"IGDB no longer has the matched game for “{e.Title}”. Use Change Match….";
@@ -361,13 +400,14 @@ public sealed partial class MainViewModel
         {
             // Network-bound and asynchronous, so it stays on the UI thread: the database connection
             // is never used from two threads, and the window stays responsive between requests.
-            var s = await service.MatchAllAsync(editions, progress, _matchAllCts.Token);
+            var sources = Artwork;
             var logos = 0;
-            if (!s.Cancelled)
+            var s = await service.MatchAllAsync(editions, progress, _matchAllCts.Token, async (id, ct) =>
             {
-                StatusText = "Getting logos…";
-                logos = await FetchLogosAsync(_library.ListEditions().Where(e => e.IgdbId is not null).ToList());
-            }
+                // Each game's logo right after its match, so stopping early keeps everything fetched so far.
+                if (sources.CanFetchLogos && _library.GetEdition(id) is { } matched && await sources.FetchLogoAsync(matched, ct: ct))
+                    logos++;
+            });
             Refresh();
             var text = $"IGDB: {s.Matched} matched";
             if (logos > 0) text += $", {logos} logo(s)";

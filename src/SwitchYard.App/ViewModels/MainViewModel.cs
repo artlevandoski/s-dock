@@ -6,7 +6,8 @@ using SwitchYard.Core.Metadata;
 
 namespace SwitchYard.App.ViewModels;
 
-public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null)
+public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null,
+    bool hidden = false)
     : System.ComponentModel.INotifyPropertyChanged
 {
     private Avalonia.Media.Imaging.Bitmap? _cover;
@@ -56,6 +57,7 @@ public sealed class EditionItem(Edition edition, string library, bool pinnedToLi
     public bool IsMissing { get; } = edition.IsMissing;
     public string Library { get; } = library;
     public bool PinnedToLibrary { get; } = pinnedToLibrary;
+    public bool IsHidden { get; } = hidden;
     public string Series { get; } = ArcadeSeries.Detect(edition.Title);
     public int VersionCount => Edition.Files.Count;
     public string Tooltip => IsMissing ? $"{Title}\nFile missing. Select it and use Locate File…" : Title;
@@ -99,7 +101,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing), nameof(VersionsText), nameof(HasVersions), nameof(CarouselSubtitle),
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
-        nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel))]
+        nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]
@@ -226,15 +228,18 @@ public sealed partial class MainViewModel : ObservableObject
         var overrides = _library.LibraryOverrides();
         var includeNeogeo = _library.IncludeAcaNeogeo;
         var metadata = _library.AllMetadata();
+        var hidden = _library.HiddenEditions();
         _all = _library.ListEditions()
             .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo), overrides.ContainsKey(e.Id),
-                metadata.GetValueOrDefault(e.Id)))
+                metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id)))
             .ToList();
         foreach (var tab in LibraryTabs)
-            tab.Count = _all.Count(i => i.Library == tab.Id);
+            tab.Count = _all.Count(i => i.Library == tab.Id && !i.IsHidden);
         ApplyFilter(selectId);
-        var missing = _all.Count(i => i.IsMissing);
-        StatusText = $"{_all.Count} game(s) in library" + (missing > 0 ? $" · {missing} with missing files" : "");
+        var shown = _all.Count(i => !i.IsHidden);
+        var missing = _all.Count(i => i.IsMissing && !i.IsHidden);
+        StatusText = $"{shown} game(s) in library" + (missing > 0 ? $" · {missing} with missing files" : "") +
+                     (hidden.Count > 0 ? $" · {_all.Count - shown} hidden" : "");
     }
 
     /// <summary>
@@ -460,7 +465,7 @@ public sealed partial class MainViewModel : ObservableObject
             return false;
         }
         IsRunning = true;
-        if (!Launcher.Launch(profile, game, e.Id))
+        if (!Launcher.Launch(ForLaunch(profile), game, e.Id))
         {
             IsRunning = false;
             return false;

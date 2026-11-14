@@ -24,6 +24,7 @@ public sealed record FilterOption(string Value, string Label)
     public const string AllValue = "all";
     public const string MissingValue = "missing";
     public const string NeedsMatchValue = "needs_match";
+    public const string HiddenValue = "hidden";
 
     public static readonly IReadOnlyList<FilterOption> Generation =
     [
@@ -33,12 +34,13 @@ public sealed record FilterOption(string Value, string Label)
         new(Generations.Unclassified, "Unclassified"),
         new(MissingValue, "Missing files"),
         new(NeedsMatchValue, "Needs IGDB match"),
+        new(HiddenValue, "Hidden games"),
     ];
 
     /// <summary>Shown as pills: All Games, Switch 1, Switch 2.</summary>
     public static readonly IReadOnlyList<FilterOption> Primary = Generation.Take(3).ToList();
 
-    /// <summary>In the "More" dropdown: Unclassified, Missing files, Needs IGDB match.</summary>
+    /// <summary>In the "More" dropdown: Unclassified, Missing files, Needs IGDB match, Hidden games.</summary>
     public static readonly IReadOnlyList<FilterOption> More = Generation.Skip(3).ToList();
 
     public static readonly IReadOnlyList<FilterOption> SeriesWithoutNeogeo =
@@ -260,11 +262,13 @@ public sealed partial class MainViewModel
         var q = SearchText.Trim();
         if (q.Length > 0 && !item.Title.Contains(q, StringComparison.OrdinalIgnoreCase)) return false;
         var g = GenerationFilter?.Value ?? FilterOption.AllValue;
+        if (item.IsHidden != (g == FilterOption.HiddenValue)) return false; // hidden games show only under Hidden games
         var keep = g switch
         {
             FilterOption.AllValue => true,
             FilterOption.MissingValue => item.IsMissing,
             FilterOption.NeedsMatchValue => !item.IsMatched,
+            FilterOption.HiddenValue => true,
             _ => item.Generation == g,
         };
         if (!keep) return false;
@@ -294,7 +298,9 @@ public sealed partial class MainViewModel
     public string EmptyText =>
         _all.Count == 0
             ? "Your library is empty.\nAdd a folder of your game files to get started,\nthen set up your emulator from the menu."
-            : _all.Any(i => i.Library == CurrentLibrary)
+            : GenerationFilter?.Value == FilterOption.HiddenValue
+                ? "No hidden games in this library.\nUse Game Actions → Hide Game to tidy away games you don't play."
+            : _all.Any(i => i.Library == CurrentLibrary && !i.IsHidden)
                 ? "No games match the search or filters."
                 : IsArcade
                     ? "No Arcade Archives titles yet.\nTitles starting with “Arcade Archives” or “Arcade Archives 2” appear here automatically."

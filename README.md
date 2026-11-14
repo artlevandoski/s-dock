@@ -99,7 +99,8 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Profiles | add, duplicate, remove; removing a profile clears games and defaults that used it; Emulators folder discovery skips uninstallers and helpers; unknown emulators get no unverified preset |
 | Portable | data and emulators beside the app; installed copies keep data outside the replaceable folder; read-only folders fall back to the user profile; old library copied once and kept; emulator paths survive the folder moving |
 | Libraries | Arcade Archives / Arcade Archives 2 / ACA NEOGEO by title prefix; manual pins and the NEOGEO option persist; per-library search, filters, view and selection survive switching and restart; returning from the emulator reopens the launched game's library |
-| Carousel | the centred cover is 15–20% larger than its neighbours and sits in the middle; switching views keeps the selection |
+| Carousel | the centred cover is 15–20% larger than its neighbours and sits in the middle; switching views keeps the selection; carousel view is full screen and grid view restores the window |
+| Playing | Eden games start in full screen (setting remembered, never added twice, other emulators untouched); one- or two-press exit with a 3-second window; closing a running emulator; hidden games persist, leave their library and counts, show under Hidden games and can be unhidden; schema v6 |
 | Versions | add, remove and choose the main file; Play Version… launches the chosen file once; duplicates can be attached at import; Switch 2 editions are never matched to Switch 1 titles |
 | Controller | buttons fire once, directions repeat when held, stick deadzone, held buttons ignored on return; D-pad moves the carousel, LB/RB switch library, Y switches view |
 | IGDB (fake service) | one sign-in reused, credentials sent with every request, expired token renewed once, clear message for bad credentials, pasted links/slugs/IDs parsed, search text can't break the query |
@@ -107,6 +108,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Metadata | description, genres, year, IGDB ID and cached artwork saved; refresh keeps the user's text and images; remove match keeps user edits; credentials stored locally only |
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
+| Logos | each game's logo is fetched right after it is matched; Get Missing Logos only visits matched games without one, reports added / not found / failed, and can be cancelled |
 | Large libraries | grid and carousel share one view across libraries; artwork comes from a background cache (covers, backgrounds, logos) and is re-decoded when the file changes; artwork can be replaced while the cache reads it; carousel centring with virtualization; opt-in 863-game stress test |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
 | UI | missing-file state, Play without a profile, details dropdown, all windows render |
@@ -165,8 +167,9 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   The **Library** dropdown in the details panel pins any game to a library; *Automatic*
   goes back to placement by title. Pins are stored apart from game records
   (`edition_library_overrides`).
-- **Grid or carousel** (Ctrl+G, or the button at the top right): the carousel shows one
-  row with the selected cover in the centre, 18% larger than its neighbours. Both views
+- **Grid or carousel** (Ctrl+G, or the button at the top right): the carousel fills the
+  screen and shows one row of covers just above the game's details, with the selected cover
+  in the centre, 18% larger than its neighbours. Switching back to the grid leaves full screen. Both views
   share one selection. Covers in the grid and carousel show only the artwork, without a
   generation banner; the generation is in the details panel.
 - **Versions:** a game can have several files (updates, revisions, alternate dumps).
@@ -186,8 +189,21 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   | Y | grid / carousel |
   | X | Game Actions menu (Launch With…, Play Version…, artwork, …) |
   | Start | Play |
+  | Start + Select (Back) | while a game runs: close it and return to Switch Yard |
 
-  Input is ignored while another app, such as the emulator, is in front.
+  Other input is ignored while another app, such as the emulator, is in front.
+
+- **Playing** (Settings → **Playing**):
+  - *Start Games in Full Screen* (on by default) adds Eden's full-screen switch (`-f`) at
+    launch. For other emulators, add their own switch to the profile's arguments.
+  - **Esc** (while the emulator is in front) or **Start + Select** on the controller closes
+    the game the way the emulator's close button would, so it shuts down cleanly; if it
+    hasn't closed after 5 seconds (for example, it's asking "are you sure?") it is stopped.
+    Choose *Press Once to Exit* or *Press Twice to Exit* (the default: the first press shows
+    a note over the game, and a second press within 3 seconds closes it).
+- **Hide Game** (Game Actions or right-click): hides a game you don't play from its library
+  and counts without removing anything. **More filters → Hidden games** lists them; choose
+  **Unhide Game** there to bring one back.
 
 ### Milestone 4: IGDB metadata and artwork
 
@@ -199,7 +215,7 @@ their own, so no shared secret ships with Switch Yard:
    *Application Integration*, client type *Confidential*.
 2. Open the application, copy the **Client ID**, and click **New Secret** to get a
    **Client Secret**.
-3. In Switch Yard: **Metadata → Metadata Settings…**, paste both, click **Test IGDB**,
+3. In Switch Yard: **Settings → Metadata Settings…**, paste both, click **Test IGDB**,
    then **Save**.
 
 **Optional: more logos.** Logos come from IGDB first (its `logos` endpoint). For games
@@ -213,7 +229,7 @@ repository.
 
 **Using it**
 
-- **Metadata → Match Unmatched Games** searches IGDB for every unmatched game, limited to
+- **Settings → Match Unmatched Games** searches IGDB for every unmatched game, limited to
   the game's platform (Nintendo Switch or Nintendo Switch 2; both for Unclassified). Only
   clear matches are applied: same title (ignoring case, punctuation and ™), and if several
   games share it, the only one on the right platform. The rest show under the **Needs IGDB
@@ -225,7 +241,10 @@ repository.
   `data\artwork\`, so they travel with the portable folder and work offline.
 - **Logos:** matching a game also downloads its best logo: IGDB's first (transparent ones
   preferred, saved as PNG), otherwise SteamGridDB's (official style first) if you've added
-  a key. **Metadata → Get Missing Logos** fills in logos for games matched earlier. The
+  a key. Each game's logo is fetched right after it's matched, so stopping *Match Unmatched
+  Games* early keeps every logo found so far. **Get Missing Logos** fills in logos for games
+  matched earlier, shows its progress, can be cancelled from the same menu, and ends with
+  how many were added, not found or failed. The
   logo replaces the game name under the carousel and in the details panel.
 - **Choose Background…** (details panel → **Metadata**, or right-click a cover) shows the
   game's IGDB artworks and screenshots plus SteamGridDB heroes. The one you pick shows
@@ -295,7 +314,8 @@ Run by hand with your Eden install and game folder. Record results below.
    after a restart.
 8. In the carousel, browse with the arrow keys, then with a controller (D-pad, A to play,
    LB/RB, Y). Launch from the carousel and exit the emulator; the same cover comes back
-   centred. Pressing buttons while the emulator is in front must not affect Switch Yard.
+   centred. Pressing buttons while the emulator is in front must not affect Switch Yard,
+   except Start + Select.
 9. Add a second file to a game (Add Version File…), then use Play Version… to launch it.
 10. Enter your IGDB credentials (Test Connection must succeed), run **Match Unmatched
     Games**, and check covers, descriptions and genres. Use **Needs IGDB match** and fix
@@ -306,6 +326,10 @@ Run by hand with your Eden install and game folder. Record results below.
     details panel. Optionally add a SteamGridDB key and run it again for games IGDB had no
     logo for. Use **Choose Background…** and **Choose Logo…** to pick others, then **Use
     Default** to go back.
+13. Switch to the carousel (Switch Yard goes full screen) and back to the grid (it leaves
+    full screen). Play a game: Eden opens in full screen. Press Esc twice to close it and
+    come back; play again and use Start + Select. Switch to *Press Once to Exit* and repeat.
+14. Hide a game, find it under **More filters → Hidden games**, and unhide it.
 
 ### Results
 
@@ -327,3 +351,5 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 10 IGDB setup and matching | | |
 | | C# | | 11 User edits kept, offline artwork | | |
 | | C# | | 12 Clear logos and Choose Background | | |
+| | C# | | 13 Full screen and leaving a game | | |
+| | C# | | 14 Hide and unhide | | |

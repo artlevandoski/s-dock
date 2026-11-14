@@ -11,9 +11,10 @@ namespace SwitchYard.App.Views;
 
 public partial class MainWindow : Window
 {
-    private const double CarouselItemWidth = 214 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
+    private const double CarouselItemWidth = 260 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
     private bool _closeConfirmed;
     private DispatcherTimer? _scrollAnimation;
+    private WindowState _stateBeforeFullScreen = WindowState.Normal;
 
     public MainWindow()
     {
@@ -30,7 +31,11 @@ public partial class MainWindow : Window
         Closing += OnClosing;
         DataContextChanged += (_, _) =>
         {
-            if (Vm is { } vm) vm.PropertyChanged += Vm_PropertyChanged;
+            if (Vm is { } vm)
+            {
+                vm.PropertyChanged += Vm_PropertyChanged;
+                ApplyFullScreen(vm.IsCarousel);
+            }
         };
     }
 
@@ -43,6 +48,7 @@ public partial class MainWindow : Window
     {
         if (e.PropertyName == nameof(MainViewModel.IsCarousel))
         {
+            ApplyFullScreen(Vm!.IsCarousel);
             // Switching views keeps the selection; move focus and scroll to it in the new view.
             Dispatcher.UIThread.Post(() =>
             {
@@ -50,6 +56,20 @@ public partial class MainWindow : Window
                 CenterCarousel(animate: false);
                 FocusSelectedCover();
             }, DispatcherPriority.Loaded);
+        }
+    }
+
+    /// <summary>Carousel view fills the screen; grid view puts the window back the way it was.</summary>
+    private void ApplyFullScreen(bool fullScreen)
+    {
+        if (fullScreen && WindowState != WindowState.FullScreen)
+        {
+            _stateBeforeFullScreen = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
+            WindowState = WindowState.FullScreen;
+        }
+        else if (!fullScreen && WindowState == WindowState.FullScreen)
+        {
+            WindowState = _stateBeforeFullScreen;
         }
     }
 

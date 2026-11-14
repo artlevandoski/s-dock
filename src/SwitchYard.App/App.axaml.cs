@@ -33,9 +33,9 @@ public partial class App : Application
                         library.SaveProfile(p); // emulators inside the folder are now stored relative to it
             }
             var window = new MainWindow();
-            // Decode covers at the size they're drawn: the carousel's enlarged cover (~252 px) times the display scaling.
+            // Decode covers at the size they're drawn: the carousel's enlarged cover (~307 px) times the display scaling.
             var scaling = window.Screens.Primary?.Scaling ?? 1.0;
-            Controls.ImageCache.Covers.DecodeWidth = (int)Math.Ceiling(Math.Clamp(252 * scaling, 220, 420));
+            Controls.ImageCache.Covers.DecodeWidth = (int)Math.Ceiling(Math.Clamp(307 * scaling, 260, 520));
             var ui = new UiServices(window);
             var launcher = new EmulatorLauncher(Path.Combine(AppPaths.LogDir, "last_launch.log"));
             var vm = new MainViewModel(library, launcher, ui);
@@ -57,9 +57,14 @@ public partial class App : Application
                 };
             }
 
-            var gamepad = new Input.GamepadService(desktop);
+            var gameExit = new Input.GameExitService(vm);
+            var gamepad = new Input.GamepadService(desktop) { GameExit = gameExit };
             gamepad.Start();
-            desktop.Exit += (_, _) => gamepad.Stop();
+            desktop.Exit += (_, _) =>
+            {
+                gamepad.Stop();
+                gameExit.Dispose();
+            };
 
             // Safety net: log unexpected errors and keep the app running instead of closing it.
             Dispatcher.UIThread.UnhandledException += (_, e) =>

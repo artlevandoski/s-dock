@@ -81,8 +81,13 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
     }
 
     /// <summary>Matches every unmatched edition. Confident matches are applied; the rest are left for review.</summary>
+    /// <param name="afterMatch">
+    /// Runs right after each game is matched (e.g. to fetch its logo), so an interrupted run keeps
+    /// everything it got. Failures in it don't stop the run.
+    /// </param>
     public async Task<MatchAllSummary> MatchAllAsync(IReadOnlyList<Edition> editions,
-        IProgress<(int Done, int Total, string Title)>? progress = null, CancellationToken ct = default)
+        IProgress<(int Done, int Total, string Title)>? progress = null, CancellationToken ct = default,
+        Func<string, CancellationToken, Task>? afterMatch = null)
     {
         int matched = 0, needs = 0, notFound = 0, failed = 0, done = 0;
         var todo = editions.Where(e => e.IgdbId is null).ToList();
@@ -95,7 +100,14 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
             {
                 switch (await AutoMatchAsync(e, ct))
                 {
-                    case MatchOutcome.Matched: matched++; break;
+                    case MatchOutcome.Matched:
+                        matched++;
+                        if (afterMatch is not null)
+                        {
+                            try { await afterMatch(e.Id, ct); }
+                            catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException) { }
+                        }
+                        break;
                     case MatchOutcome.NeedsMatch: needs++; break;
                     case MatchOutcome.NotFound: notFound++; break;
                 }

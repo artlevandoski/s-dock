@@ -11,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 5;
+    public const int SchemaVersion = 6;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -96,6 +96,11 @@ public sealed class LibraryStore : IDisposable
         CREATE TABLE IF NOT EXISTS edition_launch_overrides (
             edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
             profile_id TEXT NOT NULL REFERENCES emulator_profiles(id) ON DELETE CASCADE
+        );
+        -- v6: games the user has hidden from their libraries.
+        CREATE TABLE IF NOT EXISTS hidden_editions (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            hidden_at  TEXT NOT NULL
         );
         """;
 
@@ -182,6 +187,11 @@ public sealed class LibraryStore : IDisposable
             if (!cols.Contains("logo_file")) Exec("ALTER TABLE edition_metadata ADD COLUMN logo_file TEXT");
             if (!cols.Contains("steamgriddb_id")) Exec("ALTER TABLE edition_metadata ADD COLUMN steamgriddb_id INTEGER");
             Exec("UPDATE meta SET value = '5' WHERE key = 'schema_version'");
+        }
+        if (version < 6)
+        {
+            // v5 -> v6: hidden games table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '6' WHERE key = 'schema_version'");
         }
     }
 
@@ -619,6 +629,26 @@ public sealed class LibraryStore : IDisposable
                  "ON CONFLICT(edition_id) DO UPDATE SET library = excluded.library", ("$e", editionId), ("$l", library));
         else
             throw new ArgumentException($"Unknown library: {library}");
+    }
+
+    // ------------------------------------------------------------------ hidden games
+    public HashSet<string> HiddenEditions()
+    {
+        var result = new HashSet<string>();
+        using var cmd = Cmd("SELECT edition_id FROM hidden_editions");
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) result.Add(r.GetString(0));
+        return result;
+    }
+
+    /// <summary>Hides a game from its library (it stays in the database and keeps its settings) or shows it again.</summary>
+    public void SetHidden(string editionId, bool hidden)
+    {
+        if (hidden)
+            Exec("INSERT INTO hidden_editions(edition_id, hidden_at) VALUES ($e, $t) ON CONFLICT(edition_id) DO NOTHING",
+                ("$e", editionId), ("$t", UtcNow()));
+        else
+            Exec("DELETE FROM hidden_editions WHERE edition_id = $e", ("$e", editionId));
     }
 
     /// <summary>The library each edition is shown in.</summary>

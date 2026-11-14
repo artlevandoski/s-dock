@@ -14,6 +14,23 @@ public static class LaunchArgs
     /// </summary>
     public static readonly IReadOnlyList<string> EdenPreset = ["-g", GamePlaceholder];
 
+    /// <summary>
+    /// Eden's full-screen switch, inherited from yuzu ("-f" / "--fullscreen"). Check with Test Launch on new builds.
+    /// </summary>
+    public const string EdenFullScreen = "-f";
+
+    /// <summary>
+    /// The profile with Eden's full-screen switch added in front, when it's an Eden profile that doesn't already
+    /// have it. Other emulators are returned unchanged (add their own switch to the profile's arguments).
+    /// </summary>
+    public static EmulatorProfile WithFullScreen(EmulatorProfile profile)
+    {
+        if (!string.Equals(profile.Emulator, "eden", StringComparison.OrdinalIgnoreCase) ||
+            profile.Args.Any(a => a is EdenFullScreen or "--fullscreen"))
+            return profile;
+        return profile with { Args = [EdenFullScreen, .. profile.Args] };
+    }
+
     public static List<string> Build(IEnumerable<string> args, string gamePath) =>
         args.Select(a => a.Replace(GamePlaceholder, gamePath, StringComparison.Ordinal)).ToList();
 
@@ -77,6 +94,16 @@ public sealed class EmulatorLauncher : IDisposable
     }
 
     public bool IsRunning => _process is not null;
+
+    /// <summary>The running emulator's process id, or null.</summary>
+    public int? ProcessId
+    {
+        get
+        {
+            try { return _process?.Id; }
+            catch (InvalidOperationException) { return null; }
+        }
+    }
     public string CurrentTag { get; private set; } = "";
 
     private void Raise(Action action)
@@ -162,6 +189,27 @@ public sealed class EmulatorLauncher : IDisposable
             p.WaitForExit(3000);
         }
         catch (InvalidOperationException) { }
+    }
+
+    /// <summary>
+    /// Asks the emulator to close the way its window's close button would, so it can shut down cleanly. If it
+    /// hasn't exited after <paramref name="grace"/> (e.g. it is showing a "really quit?" prompt), it is stopped.
+    /// Returns immediately; <see cref="Finished"/> is raised when it has exited.
+    /// </summary>
+    public void Close(TimeSpan grace)
+    {
+        var p = _process;
+        if (p is null) return;
+        Task.Run(() =>
+        {
+            try
+            {
+                if (p.CloseMainWindow() && p.WaitForExit(grace)) return;
+                if (!p.HasExited)
+                    p.Kill(entireProcessTree: true);
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or Win32Exception or ObjectDisposedException or NotSupportedException) { }
+        });
     }
 
     private void WriteLog(string? line)
