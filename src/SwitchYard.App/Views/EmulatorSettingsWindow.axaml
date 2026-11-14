@@ -1,0 +1,60 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SwitchYard.App.ViewModels"
+        x:Class="SwitchYard.App.Views.EmulatorSettingsWindow"
+        x:DataType="vm:EmulatorSettingsViewModel"
+        Title="Emulator Settings"
+        Width="760" Height="560" MinWidth="600" MinHeight="480"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="16">
+    <TextBlock DockPanel.Dock="Top" Text="{Binding Intro}" TextWrapping="Wrap" Margin="0,0,0,14" />
+
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,12,0,0">
+      <Button Grid.Column="0" Content="Test Launch" Command="{Binding TestLaunchCommand}" IsEnabled="{Binding CanTest}"
+              ToolTip.Tip="Launch the selected game with these settings (before saving)" />
+      <Button Grid.Column="2" Content="Save" Classes="accent" MinWidth="90" HorizontalContentAlignment="Center"
+              Command="{Binding SaveCommand}" Margin="0,0,8,0" />
+      <Button Grid.Column="3" Content="Cancel" MinWidth="90" HorizontalContentAlignment="Center"
+              Command="{Binding CancelCommand}" IsCancel="True" />
+    </Grid>
+
+    <StackPanel Spacing="12">
+      <Grid ColumnDefinitions="170,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto">
+        <Grid.Styles>
+          <Style Selector="Grid > TextBlock">
+            <Setter Property="VerticalAlignment" Value="Center" />
+          </Style>
+          <Style Selector="Grid > :is(Control)">
+            <Setter Property="Margin" Value="0,4" />
+          </Style>
+        </Grid.Styles>
+
+        <TextBlock Grid.Row="0" Text="Profile name:" />
+        <TextBox Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding Name}" />
+
+        <TextBlock Grid.Row="1" Text="Executable:" />
+        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding Executable}" PlaceholderText="e.g. C:\Emulators\Eden\eden.exe" />
+        <Button Grid.Row="1" Grid.Column="2" Content="Browse…" Margin="8,4,0,4" Command="{Binding BrowseExecutableCommand}" />
+
+        <TextBlock Grid.Row="2" Text="Working directory:" />
+        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding WorkingDir}" PlaceholderText="Leave blank to use the executable's folder" />
+        <Button Grid.Row="2" Grid.Column="2" Content="Browse…" Margin="8,4,0,4" Command="{Binding BrowseWorkingDirCommand}" />
+
+        <TextBlock Grid.Row="3" Text="Supported generation:" />
+        <ComboBox Grid.Row="3" Grid.Column="1" Grid.ColumnSpan="2" HorizontalAlignment="Stretch"
+                  ItemsSource="{Binding GenerationOptions}" SelectedItem="{Binding Generation}" />
+
+        <TextBlock Grid.Row="4" Text="Arguments:" VerticalAlignment="Top" Margin="0,10,0,0" />
+        <TextBox Grid.Row="4" Grid.Column="1" Grid.ColumnSpan="2" Text="{Binding ArgsText}" AcceptsReturn="True"
+                 Height="90" FontFamily="Consolas, monospace" />
+
+        <Button Grid.Row="5" Grid.Column="1" Grid.ColumnSpan="2" Content="Use Eden preset" HorizontalAlignment="Stretch"
+                HorizontalContentAlignment="Center" Command="{Binding UseEdenPresetCommand}"
+                ToolTip.Tip="{Binding PresetTooltip}" />
+      </Grid>
+
+      <SelectableTextBlock Text="{Binding CommandPreview}" TextWrapping="Wrap" FontFamily="Consolas, monospace" Foreground="#8A93A0" />
+      <SelectableTextBlock Text="{Binding Status}" TextWrapping="Wrap" Classes.warning="{Binding StatusIsError}" />
+    </StackPanel>
+  </DockPanel>
+</Window>

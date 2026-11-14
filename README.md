@@ -1,58 +1,69 @@
 # Switch Yard
 
-An independent Windows frontend for certain game libraries. You bring
-your own game files and your own emulator installation. Switch Yard does not include
-or download games, firmware, keys, or system files.
+An independent Windows frontend for certain game libraries. You bring your own game files and
+your own emulator installation. Switch Yard does not include or download games, firmware,
+keys, or system files.
 
 **Status:** Milestone 1. Import a folder, browse the cover grid, configure one emulator
-profile, and Play.
+profile, and Play. Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/).
 
-## Windows setup
+## Requirements
 
-Requires Python 3.10+ (developed on 3.13). From PowerShell in the project folder:
+- Windows 10 or 11
+- [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (for building; a
+  packaged installer comes later)
 
-```powershell
-py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-```
+## Build and run
 
-> Keep the project out of synced folders such as Dropbox or OneDrive: sync clients can lock
-> files in `.venv` while pip is installing. If you move the project, delete `.venv` and
-> recreate it with the two commands above, since a venv hard-codes its location.
-
-## Run
+From PowerShell in the project folder:
 
 ```powershell
-.\.venv\Scripts\pythonw.exe -m switchyard
+dotnet run --project src\SwitchYard.App
 ```
 
-Use `python.exe` instead of `pythonw.exe` if you want to see a console for errors.
+Or build once and start the executable directly:
+
+```powershell
+dotnet build -c Release
+.\src\SwitchYard.App\bin\Release\net10.0\SwitchYard.exe
+```
+
 Pass `--data-dir <folder>` to use a separate, throwaway library.
 
 Data lives in `%LOCALAPPDATA%\SwitchYard\`:
 - `library.sqlite3`: library, folders, emulator profile, last selection
 - `logs\last_launch.log`: emulator output from the most recent launch
 
-**Library → Open Data Folder** opens it.
+**Library → Open Data Folder** opens it. The database format is unchanged from the
+earlier Python build, so existing libraries open as they are.
+
+## Project layout
+
+| Path | What it is |
+|---|---|
+| `src/SwitchYard.Core` | Database, folder scanner, emulator launcher. No UI code. |
+| `src/SwitchYard.App` | Avalonia desktop app: views, view models, generated placeholder covers |
+| `tests/SwitchYard.Tests` | xUnit tests, including headless UI tests |
+| `tests/FakeEmulator` | Stand-in emulator used by the launch tests |
 
 ## Automated checks
 
 ```powershell
-.\.venv\Scripts\python.exe -m pytest -v
+dotnet test
 ```
 
-The tests use placeholder files and a fake emulator (`tests/fake_emulator.py`, run through
-Python). They never touch real games or Eden. They cover:
+The tests use placeholder files and the fake emulator. They never touch real games or a
+real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of each window.
 
 | Area | Tests |
 |---|---|
-| Scan preview | classification, patch/DLC/duplicate flags, ambiguous names → Unclassified, filename/folder generation conflict, files left byte-for-byte untouched |
+| Scan preview | classification, update/DLC/duplicate flags, ambiguous names → Unclassified, filename/folder generation conflict, files left byte-for-byte untouched |
 | Repeat scans | no duplicates, record IDs and user edits preserved |
-| Persistence | library, profile and last selection survive a restart; reserved `console_title_id`/`igdb_id`; files stored separately from editions |
+| Persistence | library, profile and last selection survive a restart; reserved `console_title_id`/`igdb_id`; files stored separately from editions; path keys match the earlier build |
 | Paths | spaces in game, emulator and working-directory paths pass through as single arguments |
 | Failures | missing executable, missing game, missing `{game}` argument, an `.exe` that can't start, a second launch while running |
-| Launch | fake process starts, exits, and reports its exit code; Play from the window returns to the same cover with focus on the grid |
-| Missing files | badge, details warning, Locate File…, app stays usable |
+| Launch | fake process starts, exits, reports its exit code, and writes the launch log; Play returns to the same cover |
+| UI | missing-file state, Play without a profile, all windows render |
 
 ## How it works (Milestone 1)
 
@@ -61,16 +72,16 @@ Python). They never touch real games or Eden. They cover:
   updates, DLC and duplicates are flagged and unchecked by default. Ambiguous filenames
   import as *Unclassified*. Files already in the library are recognized, and their records
   stay as they are.
-- **Editions** have stable UUIDs. Launch paths are stored in a separate `edition_files`
+- **Editions** have stable IDs. Launch paths are stored in a separate `edition_files`
   table (one file per edition for now, more later). Generation belongs to the edition, not
   to the emulator profile.
 - **Emulator Settings…** stores executable, working directory (blank means the exe's
   folder), supported generation, and an argument list with one argument per line. `{game}`
-  is replaced by the game path. **Use Eden preset** sets `-g` / `{game}` (verified on Eden v0.2.1). **Test Launch**
-  tries the unsaved settings on the selected game.
-- **Play** (or Enter / double-click) checks the paths, then starts the emulator through
-  `QProcess` with the program and arguments passed separately, so there's no shell quoting.
-  When the emulator exits, the cover you launched is selected again and the grid gets focus.
+  is replaced by the game path. **Use Eden preset** sets `-g` / `{game}` (verified on Eden
+  v0.2.1). **Test Launch** tries the unsaved settings on the selected game.
+- **Play** (or Enter / double-click) checks the paths, then starts the emulator with the
+  program and each argument passed separately, so there's no shell quoting. When the
+  emulator exits, the cover you launched is selected again and gets focus.
 
 ## Windows smoke test (real Eden)
 
@@ -89,11 +100,13 @@ Run by hand with your Eden install and game folder. Record results below.
 
 ### Results
 
-| Date | Eden version | Step | Result | Notes |
-|---|---|---|---|---|
-| 2026-11-13 | Eden v0.2.1 | 1 Import + repeat import | Pass | |
-| 2026-11-13 | Eden v0.2.1 | 2 Restart persistence | Pass | |
-| 2026-11-13 | Eden v0.2.1 | 3 Launch, exit, focus return | Pass | Eden preset (`-g {game}`) booted the game directly |
-| 2026-11-13 | Eden v0.2.1 | 4 Moved game / missing exe | Pass | |
-
-All four steps were run by hand on Windows 11 and reported as passing.
+| Date | Build | Eden version | Step | Result | Notes |
+|---|---|---|---|---|---|
+| 2026-11-13 | Python | v0.2.1 | 1 Import + repeat import | Pass | |
+| 2026-11-13 | Python | v0.2.1 | 2 Restart persistence | Pass | |
+| 2026-11-13 | Python | v0.2.1 | 3 Launch, exit, focus return | Pass | Eden preset (`-g {game}`) booted the game directly |
+| 2026-11-13 | Python | v0.2.1 | 4 Moved game / missing exe | Pass | |
+| | C# | | 1 Import + repeat import | | |
+| | C# | | 2 Restart persistence | | |
+| | C# | | 3 Launch, exit, focus return | | |
+| | C# | | 4 Moved game / missing exe | | |

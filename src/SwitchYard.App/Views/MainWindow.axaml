@@ -1,0 +1,94 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SwitchYard.App.ViewModels"
+        xmlns:c="using:SwitchYard.App.Controls"
+        x:Class="SwitchYard.App.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Title="Switch Yard"
+        Icon="avares://SwitchYard/Assets/switchyard.ico"
+        Width="1180" Height="760" MinWidth="760" MinHeight="480"
+        WindowStartupLocation="CenterScreen">
+  <Window.KeyBindings>
+    <KeyBinding Gesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
+    <KeyBinding Gesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+  </Window.KeyBindings>
+
+  <DockPanel>
+    <Menu DockPanel.Dock="Top">
+      <MenuItem Header="_Library">
+        <MenuItem Header="_Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
+        <Separator />
+        <MenuItem Header="Open _Data Folder" Command="{Binding OpenDataFolderCommand}" />
+        <Separator />
+        <MenuItem Header="_Quit" Click="Quit_Click" />
+      </MenuItem>
+      <MenuItem Header="_Emulator">
+        <MenuItem Header="Emulator _Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+      </MenuItem>
+    </Menu>
+
+    <Border DockPanel.Dock="Top" Padding="8,4" BorderBrush="#30FFFFFF" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="6">
+        <Button Content="Add Folder…" Command="{Binding AddFolderCommand}" />
+        <Button Content="Emulator Settings…" Command="{Binding EmulatorSettingsCommand}" />
+      </StackPanel>
+    </Border>
+
+    <Border DockPanel.Dock="Bottom" Padding="10,4" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0">
+      <TextBlock x:Name="StatusLine" Text="{Binding StatusText}" Classes="muted" />
+    </Border>
+
+    <!-- Details panel -->
+    <Border DockPanel.Dock="Right" Width="330" BorderBrush="#30FFFFFF" BorderThickness="1,0,0,0">
+      <DockPanel Margin="16">
+        <Button x:Name="PlayButton" DockPanel.Dock="Bottom" Classes="primary accent"
+                Content="{Binding PlayLabel}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
+        <ScrollViewer>
+          <StackPanel Spacing="10">
+            <c:CoverView Width="200" Height="320" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
+                         Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
+                         IsMissing="{Binding SelectedIsMissing}" />
+            <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding HasSelection}">
+              <TextBlock Text="Generation:" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding GenerationOptions}"
+                        SelectedItem="{Binding SelectedGenerationOption}" />
+            </Grid>
+            <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" />
+            <TextBlock Classes="warning" FontWeight="Bold" TextWrapping="Wrap" IsVisible="{Binding ShowMissing}"
+                       Text="This game file can't be found. It may have been moved, renamed, or be on a drive that isn't connected." />
+            <Button Content="Locate File…" Command="{Binding LocateFileCommand}" IsVisible="{Binding ShowMissing}" />
+          </StackPanel>
+        </ScrollViewer>
+      </DockPanel>
+    </Border>
+
+    <!-- Cover grid -->
+    <Grid>
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="8" IsVisible="{Binding !HasItems}">
+        <TextBlock Text="Your library is empty" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center" />
+        <TextBlock HorizontalAlignment="Center" TextAlignment="Center" Classes="muted"
+                   Text="Click Add Folder… to scan a folder of your game files.&#x0a;Then open Emulator Settings… and select your Eden executable." />
+      </StackPanel>
+      <ListBox x:Name="CoverList" IsVisible="{Binding HasItems}" Background="Transparent" Padding="8"
+               ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+               ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.ItemsPanel>
+          <ItemsPanelTemplate>
+            <WrapPanel />
+          </ItemsPanelTemplate>
+        </ListBox.ItemsPanel>
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:EditionItem">
+            <StackPanel Width="156" Spacing="6" ToolTip.Tip="{Binding Tooltip}">
+              <c:CoverView Width="150" Height="240" HorizontalAlignment="Center"
+                           Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+              <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" MaxWidth="150" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Grid>
+  </DockPanel>
+</Window>

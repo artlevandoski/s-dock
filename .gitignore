@@ -1,4 +1,12 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+TestResults/
+artifacts/
+
+# Old Python build (local only)
 .venv/
 __pycache__/
-*.pyc
 .pytest_cache/
