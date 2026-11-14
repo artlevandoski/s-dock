@@ -237,6 +237,9 @@
                   <Separator />
                   <MenuItem Header="Update from TitleDB" Command="{Binding UpdateFromTitleDbCommand}" IsEnabled="{Binding !IsMatchingAll}"
                             ToolTip.Tip="Names, descriptions, square icons and banners from the eShop's listings, matched by title ID" />
+                  <MenuItem Header="Use nx-versions" ToggleType="CheckBox" IsChecked="{Binding UseNxVersions, Mode=OneWay}"
+                            Command="{Binding ToggleNxVersionsCommand}"
+                            ToolTip.Tip="Latest known update versions and first-seen dates from 16BitWonder/nx-versions, refreshed with TitleDB" />
                   <MenuItem Header="Match Unmatched Games on IGDB" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
                   <MenuItem Header="Cancel" Command="{Binding CancelMatchingCommand}" ToolTip.Tip="Stop the update, matching or logo fetching; everything done so far is kept" IsVisible="{Binding IsMatchingAll}" />
                   <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}" IsEnabled="{Binding !IsMatchingAll}"

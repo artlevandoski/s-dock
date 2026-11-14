@@ -271,6 +271,7 @@ public sealed partial class MainViewModel
             if (item.Series != ArcadeSeries.None) tags.Add(ArcadeSeries.Label(item.Series));
             tags.AddRange(item.Metadata.DisplayGenres.Take(2));
             if (item.VersionCount > 1) tags.Add($"{item.VersionCount} versions");
+            if (HasUpdateAvailable(item)) tags.Add("Update available");
             return tags;
         }
     }

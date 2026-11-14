@@ -21,6 +21,9 @@ public sealed record TitleDbEntry
     [JsonPropertyName("screenshots")] public List<string>? Screenshots { get; init; }
     [JsonPropertyName("isDemo")] public bool? IsDemo { get; init; }
 
+    /// <summary>Which listing it came from (Switch Yard's own field in the merged file).</summary>
+    [JsonPropertyName("syRegion")] public string? SourceRegion { get; init; }
+
     /// <summary>How complete the entry is; the best of several listings for one title ID wins.</summary>
     internal int Score =>
         (string.IsNullOrWhiteSpace(Description) ? 0 : 4) + (IconUrl is null ? 0 : 2) + (BannerUrl is null ? 0 : 1) +
@@ -30,15 +33,24 @@ public sealed record TitleDbEntry
 [JsonSerializable(typeof(TitleDbEntry))]
 internal sealed partial class TitleDbJsonContext : JsonSerializerContext;
 
+/// <summary>Progress of a TitleDB download: which file, and bytes so far.</summary>
+public readonly record struct TitleDbProgress(string File, int Index, int Count, long Done, long? Total);
+
 /// <summary>
-/// TitleDB (github.com/blawar/titledb, MIT): the eShop's names, descriptions, icons, banners and screenshots,
-/// listed by title ID, so games match exactly with no account or key. The English (US) file, about 90 MB,
-/// is downloaded once into the data folder and refreshed only when asked.
+/// TitleDB (MIT): the eShop's names, descriptions, icons, banners and screenshots, listed by title ID, so games
+/// match exactly with no account or key. Switch Yard reads the US English listing first and fills gaps from the
+/// UK, Australian and Japanese listings (newer or region-only games), then merges them into one compact file in
+/// the data folder. The listings come from AeroFoil's fork (luketanti/titledb), which is kept more up to date;
+/// the original (blawar/titledb) is used for any file the fork can't provide.
 /// </summary>
 public sealed class TitleDbClient : IDisposable
 {
-    public const string SourceUrl = "https://raw.githubusercontent.com/blawar/titledb/master/US.en.json";
+    public const string ForkBase = "https://raw.githubusercontent.com/luketanti/titledb/master/";
+    public const string UpstreamBase = "https://raw.githubusercontent.com/blawar/titledb/master/";
     public const string ImageHost = "img-eshop.cdn.nintendo.net";
+
+    /// <summary>Listings in order of preference. Japanese only lends pictures, names and dates (no Japanese text).</summary>
+    public static readonly IReadOnlyList<string> Regions = ["US.en", "GB.en", "AU.en", "JP.ja"];
 
     private readonly HttpClient _http;
 
@@ -51,69 +63,167 @@ public sealed class TitleDbClient : IDisposable
     }
 
     public string Folder { get; }
-    public string FilePath => Path.Combine(Folder, "US.en.json");
-    private string ETagPath => FilePath + ".etag";
+
+    /// <summary>The merged listing: one entry per title ID, only the fields Switch Yard uses.</summary>
+    public string FilePath => Path.Combine(Folder, "titles.json");
+    private string ETagsPath => Path.Combine(Folder, "titles.etags");
     public bool HasFile => File.Exists(FilePath);
     public DateTime? Downloaded => HasFile ? File.GetLastWriteTime(FilePath) : null;
 
+    internal HttpClient Http => _http;
+
     /// <summary>
-    /// Downloads TitleDB, or does nothing if the copy here is still current. Returns true when a new copy
-    /// was saved. Progress is (bytes so far, total bytes if known).
+    /// Downloads the listings and rebuilds the merged file, or does nothing if none of them changed since last
+    /// time. Returns true when a new merged file was saved.
     /// </summary>
-    public async Task<bool> DownloadAsync(IProgress<(long Done, long? Total)>? progress = null, CancellationToken ct = default)
+    public async Task<bool> DownloadAsync(IProgress<TitleDbProgress>? progress = null, CancellationToken ct = default)
     {
         Directory.CreateDirectory(Folder);
-        using var request = new HttpRequestMessage(HttpMethod.Get, SourceUrl);
-        if (HasFile && File.Exists(ETagPath) && File.ReadAllText(ETagPath).Trim() is { Length: > 0 } etag)
-            request.Headers.TryAddWithoutValidation("If-None-Match", etag);
-        using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
-        if (response.StatusCode == HttpStatusCode.NotModified) return false;
-        response.EnsureSuccessStatusCode();
-        var total = response.Content.Headers.ContentLength;
-        var temp = FilePath + ".download";
-        await using (var source = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false))
-        await using (var target = File.Create(temp))
+        var known = ReadETags();
+        // First a quick look: has anything changed? (Each listing is ~90 MB, so don't fetch them for nothing.)
+        if (HasFile && known.Count == Regions.Count)
         {
-            var buffer = new byte[1 << 16];
-            long done = 0, lastReport = 0;
-            int read;
-            while ((read = await source.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            var unchanged = true;
+            foreach (var region in Regions)
             {
-                await target.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
-                done += read;
-                if (done - lastReport >= 1 << 20) { progress?.Report((done, total)); lastReport = done; }
+                using var request = new HttpRequestMessage(HttpMethod.Get, ForkBase + region + ".json");
+                if (known.TryGetValue(region, out var tag)) request.Headers.TryAddWithoutValidation("If-None-Match", tag);
+                using var response = await _http.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.NotModified) { unchanged = false; break; }
             }
-            progress?.Report((done, total));
+            if (unchanged) return false;
         }
-        File.Move(temp, FilePath, overwrite: true);
-        if (response.Headers.ETag?.ToString() is { } newTag) File.WriteAllText(ETagPath, newTag);
-        else if (File.Exists(ETagPath)) File.Delete(ETagPath);
+
+        var merged = new Dictionary<string, TitleDbEntry>(StringComparer.OrdinalIgnoreCase);
+        var etags = new Dictionary<string, string>();
+        for (var i = 0; i < Regions.Count; i++)
+        {
+            var region = Regions[i];
+            var temp = Path.Combine(Folder, region + ".json.download");
+            try
+            {
+                var tag = await DownloadFileAsync(region, temp, i, progress, ct).ConfigureAwait(false);
+                if (tag is not null) etags[region] = tag;
+                Merge(merged, temp, region);
+            }
+            finally
+            {
+                try { File.Delete(temp); } catch (IOException) { }
+            }
+        }
+        WriteMerged(merged, FilePath);
+        File.WriteAllLines(ETagsPath, etags.Select(kv => kv.Key + "\t" + kv.Value));
+        foreach (var old in new[] { "US.en.json", "US.en.json.etag" }) // the single-listing file of earlier versions
+            try { File.Delete(Path.Combine(Folder, old)); } catch (IOException) { }
         return true;
     }
 
-    /// <summary>
-    /// Finds the given title IDs in the downloaded file (or another TitleDB file). Each entry is read and dropped
-    /// in turn, so only the matches are kept in memory. Run it off the UI thread: it takes about a second.
-    /// </summary>
-    public static Dictionary<string, TitleDbEntry> Lookup(string file, IReadOnlyCollection<string> titleIds)
+    private Dictionary<string, string> ReadETags()
     {
-        var wanted = new HashSet<string>(titleIds, StringComparer.OrdinalIgnoreCase);
-        var found = new Dictionary<string, TitleDbEntry>(StringComparer.OrdinalIgnoreCase);
-        if (wanted.Count == 0 || !File.Exists(file)) return found;
+        var result = new Dictionary<string, string>();
+        if (!File.Exists(ETagsPath)) return result;
+        foreach (var line in File.ReadAllLines(ETagsPath))
+            if (line.Split('\t') is [var region, var tag]) result[region] = tag;
+        return result;
+    }
+
+    /// <summary>Streams one listing to disk, from the fork or else the original. Returns its ETag.</summary>
+    private async Task<string?> DownloadFileAsync(string region, string target, int index, IProgress<TitleDbProgress>? progress,
+        CancellationToken ct)
+    {
+        HttpResponseMessage? response = null;
+        foreach (var source in new[] { ForkBase, UpstreamBase })
+        {
+            try
+            {
+                response = await _http.GetAsync(source + region + ".json", HttpCompletionOption.ResponseHeadersRead, ct).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode) break;
+            }
+            catch (HttpRequestException) when (source == ForkBase) { }
+            response?.Dispose();
+            response = null;
+        }
+        if (response is null) throw new HttpRequestException($"TitleDB's {region} listing couldn't be downloaded.");
+        using (response)
+        {
+            var total = response.Content.Headers.ContentLength;
+            await using var stream = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            await using var file = File.Create(target);
+            var buffer = new byte[1 << 16];
+            long done = 0, lastReport = -1;
+            int read;
+            while ((read = await stream.ReadAsync(buffer, ct).ConfigureAwait(false)) > 0)
+            {
+                await file.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
+                done += read;
+                if (done - lastReport >= 1 << 20) { progress?.Report(new(region, index, Regions.Count, done, total)); lastReport = done; }
+            }
+            progress?.Report(new(region, index, Regions.Count, done, total));
+            return response.Headers.ETag?.ToString();
+        }
+    }
+
+    /// <summary>Adds a listing's games that aren't in the merged set yet (earlier listings win).</summary>
+    internal static void Merge(Dictionary<string, TitleDbEntry> merged, string file, string region)
+    {
+        var textToo = region.EndsWith(".en", StringComparison.Ordinal);
+        var fromThisFile = new Dictionary<string, TitleDbEntry>(StringComparer.OrdinalIgnoreCase);
+        foreach (var entry in ReadEntries(file))
+        {
+            if (entry.Id is not { Length: 16 } id || merged.ContainsKey(id)) continue;
+            var e = textToo ? entry with { SourceRegion = region } : entry with { Description = null, Intro = null, SourceRegion = region };
+            if (!fromThisFile.TryGetValue(id, out var current) || e.Score > current.Score)
+                fromThisFile[id] = e;
+        }
+        foreach (var (id, e) in fromThisFile) merged[id] = e;
+    }
+
+    private static IEnumerable<TitleDbEntry> ReadEntries(string file)
+    {
         var bytes = File.ReadAllBytes(file);
+        var list = new List<TitleDbEntry>();
         var reader = new Utf8JsonReader(bytes, new JsonReaderOptions { CommentHandling = JsonCommentHandling.Skip });
         if (!reader.Read() || reader.TokenType != JsonTokenType.StartObject)
             throw new InvalidDataException("This isn't a TitleDB file.");
         while (reader.Read() && reader.TokenType == JsonTokenType.PropertyName)
         {
             reader.Read();
-            if (reader.TokenType != JsonTokenType.StartObject)
+            if (reader.TokenType != JsonTokenType.StartObject) { reader.Skip(); continue; }
+            if (JsonSerializer.Deserialize(ref reader, TitleDbJsonContext.Default.TitleDbEntry) is { } entry)
+                list.Add(entry);
+        }
+        return list;
+    }
+
+    private static void WriteMerged(Dictionary<string, TitleDbEntry> merged, string path)
+    {
+        var temp = path + ".download";
+        using (var stream = File.Create(temp))
+        using (var writer = new Utf8JsonWriter(stream))
+        {
+            writer.WriteStartObject();
+            foreach (var (id, entry) in merged.OrderBy(kv => kv.Key, StringComparer.Ordinal))
             {
-                reader.Skip();
-                continue;
+                writer.WritePropertyName(id);
+                JsonSerializer.Serialize(writer, entry, TitleDbJsonContext.Default.TitleDbEntry);
             }
-            var entry = JsonSerializer.Deserialize(ref reader, TitleDbJsonContext.Default.TitleDbEntry);
-            if (entry?.Id is not { } id || !wanted.Contains(id)) continue;
+            writer.WriteEndObject();
+        }
+        File.Move(temp, path, overwrite: true);
+    }
+
+    /// <summary>
+    /// Finds the given title IDs in the merged file (or any TitleDB listing). Run it off the UI thread: reading
+    /// the file takes about a second.
+    /// </summary>
+    public static Dictionary<string, TitleDbEntry> Lookup(string file, IReadOnlyCollection<string> titleIds)
+    {
+        var wanted = new HashSet<string>(titleIds, StringComparer.OrdinalIgnoreCase);
+        var found = new Dictionary<string, TitleDbEntry>(StringComparer.OrdinalIgnoreCase);
+        if (wanted.Count == 0 || !File.Exists(file)) return found;
+        foreach (var entry in ReadEntries(file))
+        {
+            if (entry.Id is not { } id || !wanted.Contains(id)) continue;
             if (!found.TryGetValue(id, out var current) || entry.Score > current.Score)
                 found[id] = entry;
         }
@@ -147,7 +257,8 @@ public sealed class TitleDbService(LibraryStore library, TitleDbClient client, s
     /// is only used from one thread. Progress is (done, total, title).
     /// </summary>
     public async Task<TitleDbSummary> ApplyAsync(IReadOnlyList<Edition> editions,
-        IProgress<(int Done, int Total, string Title)>? progress = null, CancellationToken ct = default, bool refresh = false)
+        IProgress<(int Done, int Total, string Title)>? progress = null, CancellationToken ct = default, bool refresh = false,
+        IReadOnlyDictionary<string, NxVersionInfo>? versions = null)
     {
         var withId = editions.Where(e => BaseTitleId(e.ConsoleTitleId) is not null).ToList();
         var ids = withId.Select(e => BaseTitleId(e.ConsoleTitleId)!).Distinct().ToList();
@@ -174,6 +285,14 @@ public sealed class TitleDbService(LibraryStore library, TitleDbClient client, s
                 done++;
                 progress?.Report((done, withId.Count, e.Title));
                 imagesFailed += failed;
+                var nx = versions is not null && versions.TryGetValue(BaseTitleId(e.ConsoleTitleId)!, out var v) ? v : null;
+                if (nx is not null)
+                    library.SaveMetadata(library.GetMetadata(e.Id) with
+                    {
+                        NxLatestUpdate = nx.LatestUpdate > 0 ? nx.LatestUpdate : null,
+                        NxUpdateDate = nx.LatestUpdate > 0 ? nx.LatestUpdateDate : null,
+                        NxFirstDate = nx.FirstSeenDate,
+                    });
                 if (entry is null) { notFound++; continue; }
                 found++;
                 library.SaveMetadata(library.GetMetadata(e.Id) with

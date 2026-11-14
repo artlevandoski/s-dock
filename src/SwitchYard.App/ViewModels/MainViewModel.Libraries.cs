@@ -26,6 +26,7 @@ public sealed record FilterOption(string Value, string Label)
     public const string NeedsMatchValue = "needs_match";
     public const string HiddenValue = "hidden";
     public const string NotInTitleDbValue = "not_in_titledb";
+    public const string UpdateAvailableValue = "update_available";
 
     public static readonly IReadOnlyList<FilterOption> Generation =
     [
@@ -34,6 +35,7 @@ public sealed record FilterOption(string Value, string Label)
         new(Generations.Switch2, "Switch 2"),
         new(Generations.Unclassified, "Unclassified"),
         new(MissingValue, "Missing files"),
+        new(UpdateAvailableValue, "Update available"),
         new(NotInTitleDbValue, "Not in TitleDB"),
         new(NeedsMatchValue, "Needs IGDB match"),
         new(HiddenValue, "Hidden games"),
@@ -302,6 +304,7 @@ public sealed partial class MainViewModel
             FilterOption.NeedsMatchValue => !item.IsMatched,
             FilterOption.HiddenValue => true,
             FilterOption.NotInTitleDbValue => !item.Metadata.HasTitleDb,
+            FilterOption.UpdateAvailableValue => HasUpdateAvailable(item),
             _ => item.Generation == g,
         };
         if (!keep) return false;

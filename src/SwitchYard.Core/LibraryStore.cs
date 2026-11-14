@@ -11,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 8;
+    public const int SchemaVersion = 9;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -99,7 +99,11 @@ public sealed class LibraryStore : IDisposable
             tdb_icon_file    TEXT,
             tdb_banner_file  TEXT,
             tdb_art_json     TEXT,
-            tdb_fetched_at   TEXT
+            tdb_fetched_at   TEXT,
+            -- v9: nx-versions
+            nx_latest_update INTEGER,
+            nx_update_date   INTEGER,
+            nx_first_date    INTEGER
         );
         -- v3: manual library assignment (Main Library / Arcade Archives), apart from game records.
         CREATE TABLE IF NOT EXISTS edition_library_overrides (
@@ -224,6 +228,17 @@ public sealed class LibraryStore : IDisposable
                 if (Convert.ToInt64(cmd.ExecuteScalar()) == 0)
                     Exec("ALTER TABLE editions ADD COLUMN sort_title TEXT");
             Exec("UPDATE meta SET value = '8' WHERE key = 'schema_version'");
+        }
+        if (version < 9)
+        {
+            // v8 -> v9: nx-versions columns on the metadata table.
+            var cols = new HashSet<string>();
+            using (var cmd = Cmd("SELECT name FROM pragma_table_info('edition_metadata')"))
+            using (var r = cmd.ExecuteReader())
+                while (r.Read()) cols.Add(r.GetString(0));
+            foreach (var name in new[] { "nx_latest_update", "nx_update_date", "nx_first_date" })
+                if (!cols.Contains(name)) Exec($"ALTER TABLE edition_metadata ADD COLUMN {name} INTEGER");
+            Exec("UPDATE meta SET value = '9' WHERE key = 'schema_version'");
         }
     }
 
@@ -619,6 +634,9 @@ public sealed class LibraryStore : IDisposable
         TdbBannerFile = Str(r, "tdb_banner_file"),
         TdbArtUrls = ListJson(Str(r, "tdb_art_json")),
         TdbFetchedAt = Str(r, "tdb_fetched_at"),
+        NxLatestUpdate = Long(r, "nx_latest_update"),
+        NxUpdateDate = Long(r, "nx_update_date") is { } nd ? (int)nd : null,
+        NxFirstDate = Long(r, "nx_first_date") is { } nf ? (int)nf : null,
     };
 
     public EditionMetadata GetMetadata(string editionId)
@@ -650,9 +668,10 @@ public sealed class LibraryStore : IDisposable
                                      cover_file, keyart_file, fetched_at, user_summary, user_cover_file,
                                      user_keyart_file, user_logo_file, logo_file, steamgriddb_id,
                                      tdb_title_id, tdb_name, tdb_summary, tdb_publisher, tdb_release_date, tdb_genres_json,
-                                     tdb_players, tdb_icon_file, tdb_banner_file, tdb_art_json, tdb_fetched_at)
+                                     tdb_players, tdb_icon_file, tdb_banner_file, tdb_art_json, tdb_fetched_at,
+                                     nx_latest_update, nx_update_date, nx_first_date)
         VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul, $lf, $sg,
-                $ti, $tn, $ts, $tp, $td, $tg, $tpl, $tic, $tb, $ta, $tf)
+                $ti, $tn, $ts, $tp, $td, $tg, $tpl, $tic, $tb, $ta, $tf, $nxl, $nxu, $nxf)
         ON CONFLICT(edition_id) DO UPDATE SET
             igdb_name = excluded.igdb_name, igdb_slug = excluded.igdb_slug, igdb_url = excluded.igdb_url,
             summary = excluded.summary, genres_json = excluded.genres_json, release_year = excluded.release_year,
@@ -664,7 +683,9 @@ public sealed class LibraryStore : IDisposable
             tdb_publisher = excluded.tdb_publisher, tdb_release_date = excluded.tdb_release_date,
             tdb_genres_json = excluded.tdb_genres_json, tdb_players = excluded.tdb_players,
             tdb_icon_file = excluded.tdb_icon_file, tdb_banner_file = excluded.tdb_banner_file,
-            tdb_art_json = excluded.tdb_art_json, tdb_fetched_at = excluded.tdb_fetched_at
+            tdb_art_json = excluded.tdb_art_json, tdb_fetched_at = excluded.tdb_fetched_at,
+            nx_latest_update = excluded.nx_latest_update, nx_update_date = excluded.nx_update_date,
+            nx_first_date = excluded.nx_first_date
         """, ("$e", m.EditionId), ("$n", m.IgdbName), ("$s", m.IgdbSlug), ("$u", m.IgdbUrl), ("$sum", m.Summary),
              ("$g", m.Genres.Count == 0 ? null : JsonSerializer.Serialize(m.Genres.ToList(), CoreJsonContext.Default.ListString)),
              ("$y", m.ReleaseYear), ("$c", m.CoverFile), ("$k", m.KeyArtFile), ("$f", m.FetchedAt),
@@ -672,7 +693,8 @@ public sealed class LibraryStore : IDisposable
              ("$lf", m.LogoFile), ("$sg", m.SteamGridDbId),
              ("$ti", m.TdbTitleId), ("$tn", m.TdbName), ("$ts", m.TdbSummary), ("$tp", m.TdbPublisher),
              ("$td", m.TdbReleaseDate), ("$tg", JsonList(m.TdbGenres)), ("$tpl", m.TdbPlayers), ("$tic", m.TdbIconFile),
-             ("$tb", m.TdbBannerFile), ("$ta", JsonList(m.TdbArtUrls)), ("$tf", m.TdbFetchedAt));
+             ("$tb", m.TdbBannerFile), ("$ta", JsonList(m.TdbArtUrls)), ("$tf", m.TdbFetchedAt),
+             ("$nxl", m.NxLatestUpdate), ("$nxu", m.NxUpdateDate), ("$nxf", m.NxFirstDate));
 
     // ----------------------------------------------------------------- libraries
     public const string IncludeNeogeoKey = "include_aca_neogeo";

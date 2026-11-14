@@ -173,8 +173,10 @@ public static partial class LibraryScanner
         var fileName = System.IO.Path.GetFileName(path);
         var stem = System.IO.Path.GetFileNameWithoutExtension(fileName);
 
-        var tidMatch = TitleIdRe().Match(stem);
-        var titleId = tidMatch.Success ? tidMatch.Groups[1].Value.ToUpperInvariant() : null;
+        // The file's own ID is the last one: DLC and updates are often named
+        // "Game [base ID] - Pack Name [DLC ID] [DLC][v65536]".
+        var tidMatches = TitleIdRe().Matches(stem);
+        var titleId = tidMatches.Count > 0 ? tidMatches[^1].Groups[1].Value.ToUpperInvariant() : null;
         var verMatch = VersionRe().Match(stem);
         long? version = null;
         if (verMatch.Success)

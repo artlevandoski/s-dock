@@ -12,9 +12,15 @@ namespace SwitchYard.Tests;
 /// <summary>Stand-in for TitleDB's file on GitHub and Nintendo's image server.</summary>
 public sealed class FakeTitleDb : HttpMessageHandler
 {
-    public string Json { get; set; } = "{}";
+    /// <summary>The US English listing; the others come from <see cref="Listings"/> (empty when not set).</summary>
+    public string Json { get => Listings["US.en"]; set => Listings["US.en"] = value; }
+    public Dictionary<string, string> Listings { get; } = new() { ["US.en"] = "{}" };
     public string ETag { get; set; } = "\"v1\"";
     public bool Offline { get; set; }
+    /// <summary>AeroFoil's fork unreachable: listings must come from the original.</summary>
+    public bool ForkDown { get; set; }
+    public string? NxVersions { get; set; }
+    public string? NxChangelog { get; set; }
     public List<string> Requests { get; } = [];
     public HashSet<string> BrokenImages { get; } = [];
 
@@ -49,14 +55,26 @@ public sealed class FakeTitleDb : HttpMessageHandler
         var url = request.RequestUri!.ToString();
         Requests.Add(url);
         if (Offline) throw new HttpRequestException("No connection");
-        if (url == TitleDbClient.SourceUrl)
+        foreach (var source in new[] { TitleDbClient.ForkBase, TitleDbClient.UpstreamBase })
         {
+            if (!url.StartsWith(source) || !url.EndsWith(".json")) continue;
+            if (source == TitleDbClient.ForkBase && ForkDown)
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.ServiceUnavailable));
+            var region = url[source.Length..^".json".Length];
+            if (!TitleDbClient.Regions.Contains(region)) break;
             if (request.Headers.TryGetValues("If-None-Match", out var tags) && tags.Contains(ETag))
                 return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotModified));
-            var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(Json, Encoding.UTF8) };
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(Listings.GetValueOrDefault(region, "{}"), Encoding.UTF8),
+            };
             response.Headers.ETag = new System.Net.Http.Headers.EntityTagHeaderValue(ETag);
             return Task.FromResult(response);
         }
+        if (url == SwitchYard.Core.Metadata.NxVersions.VersionsUrl && NxVersions is not null)
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(NxVersions) });
+        if (url == SwitchYard.Core.Metadata.NxVersions.ChangelogUrl && NxChangelog is not null)
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new StringContent(NxChangelog) });
         if (url.StartsWith("https://img-eshop.cdn.nintendo.net/") && !BrokenImages.Contains(url))
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(FakeIgdb.TinyPng) });
         return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
@@ -314,13 +332,13 @@ public sealed class TitleDbTests : IDisposable
         System.IO.File.WriteAllBytes(Path.Combine(folder, $"Zelda [{Zelda}][v0].nsp"), [1]);
 
         await vm.ImportFolderAsync(folder);
-        Assert.Contains(ui.Messages, m => m.Contains("about 90 MB"));
+        Assert.Contains(ui.Messages, m => m.Contains("about 360 MB"));
         Assert.StartsWith("TitleDB: 1 found", vm.StatusText);
 
         ui.Messages.Clear();
         System.IO.File.WriteAllBytes(Path.Combine(folder, $"Kirby [{Kirby}][v0].nsp"), [1]);
         await vm.ImportFolderAsync(folder);
-        Assert.DoesNotContain(ui.Messages, m => m.Contains("about 90 MB")); // already downloaded: no question
+        Assert.DoesNotContain(ui.Messages, m => m.Contains("about 360 MB")); // already downloaded: no question
         Assert.Equal(2, lib.AllMetadata().Values.Count(m => m.HasTitleDb));
     }
 

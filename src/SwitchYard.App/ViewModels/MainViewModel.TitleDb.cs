@@ -49,10 +49,9 @@ public sealed partial class MainViewModel
         var client = TitleDb;
         // The download runs on a worker thread; each progress update hops back to the UI thread.
         var context = SynchronizationContext.Current;
-        void Show((long Done, long? Total) p) => StatusText = p.Total is { } total
-            ? $"Downloading TitleDB… {p.Done >> 20} of {total >> 20} MB"
-            : $"Downloading TitleDB… {p.Done >> 20} MB";
-        var progress = new InlineProgress<(long Done, long? Total)>(p =>
+        void Show(TitleDbProgress p) => StatusText = $"Downloading TitleDB ({p.File}, {p.Index + 1} of {p.Count})… " +
+            (p.Total is { } total ? $"{p.Done >> 20} of {total >> 20} MB" : $"{p.Done >> 20} MB");
+        var progress = new InlineProgress<TitleDbProgress>(p =>
         {
             if (context is null) Show(p);
             else context.Post(_ => Show(p), null);
@@ -60,6 +59,11 @@ public sealed partial class MainViewModel
         try
         {
             await Task.Run(() => client.DownloadAsync(progress, ct), ct);
+            if (UseNxVersions)
+            {
+                StatusText = "Checking nx-versions…";
+                await Task.Run(() => NxVersions.DownloadAsync(client, ct), ct); // on failure the saved copy is used
+            }
             return true;
         }
         catch (OperationCanceledException)
@@ -89,7 +93,9 @@ public sealed partial class MainViewModel
         TitleDbSummary s;
         try
         {
-            s = await service.ApplyAsync(editions, progress, ct);
+            var folder = TitleDb.Folder;
+            var versions = UseNxVersions ? await Task.Run(() => NxVersions.Load(folder), ct) : null;
+            s = await service.ApplyAsync(editions, progress, ct, versions: versions);
         }
         catch (Exception ex) when (ex is InvalidDataException or System.Text.Json.JsonException)
         {
@@ -98,6 +104,7 @@ public sealed partial class MainViewModel
             return;
         }
         Refresh();
+        ScanInstalledContent();
         var text = $"TitleDB: {s.Found} found";
         if (s.NotFound > 0) text += $", {s.NotFound} not listed (filter: Not in TitleDB)";
         if (s.ImagesFailed > 0) text += $", {s.ImagesFailed} image(s) failed (run it again later)";
@@ -113,8 +120,8 @@ public sealed partial class MainViewModel
         {
             if (await _ui.ConfirmAsync("TitleDB",
                     "Fill in names, descriptions and pictures from TitleDB (the eShop's own listings)?\n\n" +
-                    "Games are matched by their title ID. Switch Yard downloads TitleDB once (about 90 MB) and keeps it " +
-                    "in its data folder. You can also do this later from Settings → Update from TitleDB."))
+                    "Games are matched by their title ID. Switch Yard downloads TitleDB's English and Japanese listings " +
+                    "once (about 360 MB, merged into one smaller file) and keeps it in its data folder. You can also do this later from Settings → Update from TitleDB."))
                 await UpdateFromTitleDbAsync();
             return;
         }
@@ -167,7 +174,7 @@ public sealed partial class MainViewModel
         if (SelectedItem is not { } item || IsMatchingAll) return;
         if (!TitleDb.HasFile)
         {
-            if (await _ui.ConfirmAsync("TitleDB", "TitleDB hasn't been downloaded yet (about 90 MB). Download it and fill in your library now?"))
+            if (await _ui.ConfirmAsync("TitleDB", "TitleDB hasn't been downloaded yet (about 360 MB). Download it and fill in your library now?"))
                 await UpdateFromTitleDbAsync();
             return;
         }
@@ -176,8 +183,10 @@ public sealed partial class MainViewModel
         try
         {
             StatusText = $"Refreshing “{item.Title}” from TitleDB…";
+            var folder = TitleDb.Folder;
+            var versions = UseNxVersions ? await Task.Run(() => NxVersions.Load(folder)) : null;
             var s = await new TitleDbService(_library, TitleDb, AppPaths.ArtworkDir)
-                .ApplyAsync([item.Edition], null, _matchAllCts.Token, refresh: true);
+                .ApplyAsync([item.Edition], null, _matchAllCts.Token, refresh: true, versions: versions);
             Refresh(item.Id);
             StatusText = s.Found == 0
                 ? $"“{item.Title}” isn't in TitleDB" + (item.Edition.ConsoleTitleId is { } tid ? $" (title ID {tid})." : " (no title ID in its file name).")

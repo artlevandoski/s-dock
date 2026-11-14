@@ -40,6 +40,11 @@ public sealed record EditionMetadata
 
     public bool HasTitleDb => TdbTitleId is not null;
 
+    // From nx-versions: the newest known update, when it appeared, and when the game first appeared
+    public long? NxLatestUpdate { get; init; }
+    public int? NxUpdateDate { get; init; }   // yyyymmdd
+    public int? NxFirstDate { get; init; }    // yyyymmdd; may be later than the real release
+
     // The user's own (never overwritten by a refresh)
     public string? UserSummary { get; init; }
     public string? UserCoverFile { get; init; }
@@ -52,7 +57,7 @@ public sealed record EditionMetadata
     public string? DisplayCoverFile => UserCoverFile ?? TdbIconFile ?? CoverFile;
     public string? DisplayKeyArtFile => UserKeyArtFile ?? TdbBannerFile ?? KeyArtFile;
     public IReadOnlyList<string> DisplayGenres => TdbGenres.Count > 0 ? TdbGenres : Genres;
-    public int? DisplayReleaseYear => TdbReleaseDate is { } d ? d / 10000 : ReleaseYear;
+    public int? DisplayReleaseYear => TdbReleaseDate is { } d ? d / 10000 : ReleaseYear ?? NxFirstDate / 10000;
     public string? DisplayLogoFile => UserLogoFile ?? LogoFile; // IGDB has no logos: SteamGridDB or the user's
 
     public static EditionMetadata Empty(string editionId) => new() { EditionId = editionId };

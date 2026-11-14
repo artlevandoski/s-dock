@@ -95,6 +95,7 @@ public sealed partial class MainViewModel : ObservableObject
         Launcher.Failed += OnFailed;
         InitLibraries();
         Refresh();
+        ScanInstalledContent();
     }
 
     // ------------------------------------------------------------- state
@@ -104,7 +105,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
         nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
-        nameof(SelectedColor), nameof(BackdropBrush))]
+        nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]
@@ -135,6 +136,7 @@ public sealed partial class MainViewModel : ObservableObject
             var lines = new List<string> { $"Type: {ContentKinds.Label(e.ContentKind)}" };
             if (e.ConsoleTitleId is not null) lines.Add($"Title ID: {e.ConsoleTitleId}");
             if (e.SortTitle is not null) lines.Add($"Sorted as: {e.SortTitle}");
+            if (UpdateStatus(item) is { Length: > 0 } updates) lines.Add(updates);
             lines.Add($"File: {e.PrimaryFile?.Path ?? "—"}");
             return string.Join("\n", lines);
         }
@@ -293,6 +295,7 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         var summary = LibraryScanner.ImportEntries(_library, folder, preview.FolderGeneration.Value, result.Entries);
         Refresh(summary.Added.FirstOrDefault());
+        ScanInstalledContent();
         if (summary.Added.FirstOrDefault() is { } first)
             Select(first); // show the library the first new game landed in
         StatusText = $"Imported {summary.Added.Count} new game(s)" +

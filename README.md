@@ -109,6 +109,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
 | TitleDB (fake server) | download saved once and skipped when unchanged; lookup by title ID prefers the full listing over demos; updates map to their base game; text, icon, banner and screenshots saved; images only from Nintendo's image server; a failed image is counted and retried next time; works offline from the saved copy; yours → TitleDB → IGDB display order; Not in TitleDB filter; offered once after the first import; schema v7 upgrade |
+| TitleDB sources and versions | US listing first, then UK, Australian and Japanese for missing games (no Japanese text); AeroFoil's fork with the original as fallback; unchanged listings aren't downloaded again; nx-versions latest update, version dates and first-seen release-year fallback; a failed refresh keeps the saved copy; turning it off stops downloads and keeps recorded versions; update and DLC files read from the game folder (the file's own ID is the last one in its name); Update available filter and status; schema v9 upgrade |
 | Fixing a game | Clear Match and Artwork removes both matches, all descriptions and pictures and the artwork folder but keeps the sort title, and can look the game up again; Refresh from TitleDB re-downloads its pictures and says when a title ID isn't listed; the carousel right-click menu has no Play, Launch With, Play Version or Add Version File; SteamGridDB images are downloaded without the API key (the image server refuses it) |
 | Browsing | sort titles order games and persist (blank or the title clears it); schema v8 upgrade; SEGA AGES by title prefix, in Arcade Archives only when ticked, with its own series filter; background setting (artwork, colour from the cover, plain) remembered; cover colour follows the artwork and is toned down for readable text; carousel covers and details band keep their size and place while browsing |
 | Logos | each game's logo is fetched right after it is matched; Get Missing Logos only visits matched games without one, reports added / not found / failed, and can be cancelled |
@@ -275,14 +276,28 @@ repository.
 - [TitleDB](https://github.com/blawar/titledb) is the eShop's own listing of every game
   (MIT-licensed data). Games are matched **exactly by their title ID**, which Switch Yard
   already reads from the file names, so there's nothing to search and no account or key.
-- **Settings → Update from TitleDB** downloads the English (US) file once, about 90 MB, into
-  `data	itledb\`, then fills in every game it lists: name, description, publisher, release
+- **Settings → Update from TitleDB** downloads TitleDB's US English listing, then the UK,
+  Australian and Japanese listings for games the US one doesn't have (about 360 MB in all,
+  merged into one ~65 MB file in `data\titledb\`). Japanese entries lend only pictures,
+  names and dates, never Japanese text. The listings come from AeroFoil's fork
+  ([luketanti/titledb](https://github.com/luketanti/titledb)), which is updated more often;
+  the original is used for any listing the fork can't provide. It then fills in every game: name, description, publisher, release
   date, genres, number of players, the square eShop icon (used as the cover) and the banner
   (used as the background). Running it again only downloads TitleDB if there's a newer copy
   and only fetches images that are missing. It can be cancelled from the same menu.
 - After the first import, Switch Yard offers to do this; once TitleDB is downloaded, newly
   imported games are filled in automatically.
 - **Choose Background…** lists the eShop banner and screenshots first.
+- **nx-versions** ([16BitWonder/nx-versions](https://github.com/16BitWonder/nx-versions), on by
+  default, **Settings → Use nx-versions**) adds the latest known update version of each game,
+  and the date each version first appeared. Those dates fill in a missing release year (TitleDB's
+  date wins; nx-versions' may be a little late). It has no names or artwork, refreshes with
+  TitleDB, and keeps the saved copy if a refresh fails. Turning it off stops it refreshing and
+  being used; versions already recorded stay.
+- **Updates and DLC beside each game:** Switch Yard reads the update and DLC files in each
+  game's folder (and its subfolders, such as `Updates` and `DLC`) from their names, never
+  opening them. The details show "Up to date" or "Update available" against nx-versions, and how
+  many DLC you have; **More filters → Update available** lists games with a newer update.
 - **Fixing one game** (Game Actions or right-click):
   - **Refresh from TitleDB** downloads its text, icon and banner again, replacing stale or
     broken downloads. Your own description and pictures stay.
