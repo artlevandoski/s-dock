@@ -11,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 4;
+    public const int SchemaVersion = 5;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -84,7 +84,9 @@ public sealed class LibraryStore : IDisposable
             user_summary     TEXT,
             user_cover_file  TEXT,
             user_keyart_file TEXT,
-            user_logo_file   TEXT
+            user_logo_file   TEXT,
+            logo_file        TEXT,
+            steamgriddb_id   INTEGER
         );
         -- v3: manual library assignment (Main Library / Arcade Archives), apart from game records.
         CREATE TABLE IF NOT EXISTS edition_library_overrides (
@@ -165,6 +167,17 @@ public sealed class LibraryStore : IDisposable
         {
             // v3 -> v4: metadata table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '4' WHERE key = 'schema_version'");
+        }
+        if (version < 5)
+        {
+            // v4 -> v5: SteamGridDB clear logo columns on the existing metadata table.
+            var cols = new HashSet<string>();
+            using (var cmd = Cmd("SELECT name FROM pragma_table_info('edition_metadata')"))
+            using (var r = cmd.ExecuteReader())
+                while (r.Read()) cols.Add(r.GetString(0));
+            if (!cols.Contains("logo_file")) Exec("ALTER TABLE edition_metadata ADD COLUMN logo_file TEXT");
+            if (!cols.Contains("steamgriddb_id")) Exec("ALTER TABLE edition_metadata ADD COLUMN steamgriddb_id INTEGER");
+            Exec("UPDATE meta SET value = '5' WHERE key = 'schema_version'");
         }
     }
 
@@ -479,6 +492,17 @@ public sealed class LibraryStore : IDisposable
         }
     }
 
+    public const string SteamGridDbKeyName = "steamgriddb_api_key";
+
+    /// <summary>The user's own SteamGridDB API key (clear logos and backgrounds), local data folder only.</summary>
+    public string SteamGridDbKey
+    {
+        get => GetSetting(SteamGridDbKeyName) ?? "";
+        set => SetSetting(SteamGridDbKeyName, value.Trim());
+    }
+
+    public bool HasSteamGridDbKey => SteamGridDbKey.Length > 0;
+
     public bool HasIgdbCredentials => IgdbCredentials is { ClientId.Length: > 0, ClientSecret.Length: > 0 };
 
     public void SetIgdbId(string editionId, long? igdbId) =>
@@ -500,6 +524,8 @@ public sealed class LibraryStore : IDisposable
         UserCoverFile = Str(r, "user_cover_file"),
         UserKeyArtFile = Str(r, "user_keyart_file"),
         UserLogoFile = Str(r, "user_logo_file"),
+        LogoFile = Str(r, "logo_file"),
+        SteamGridDbId = Long(r, "steamgriddb_id"),
     };
 
     public EditionMetadata GetMetadata(string editionId)
@@ -525,18 +551,20 @@ public sealed class LibraryStore : IDisposable
     public void SaveMetadata(EditionMetadata m) => Exec("""
         INSERT INTO edition_metadata(edition_id, igdb_name, igdb_slug, igdb_url, summary, genres_json, release_year,
                                      cover_file, keyart_file, fetched_at, user_summary, user_cover_file,
-                                     user_keyart_file, user_logo_file)
-        VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul)
+                                     user_keyart_file, user_logo_file, logo_file, steamgriddb_id)
+        VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul, $lf, $sg)
         ON CONFLICT(edition_id) DO UPDATE SET
             igdb_name = excluded.igdb_name, igdb_slug = excluded.igdb_slug, igdb_url = excluded.igdb_url,
             summary = excluded.summary, genres_json = excluded.genres_json, release_year = excluded.release_year,
             cover_file = excluded.cover_file, keyart_file = excluded.keyart_file, fetched_at = excluded.fetched_at,
             user_summary = excluded.user_summary, user_cover_file = excluded.user_cover_file,
-            user_keyart_file = excluded.user_keyart_file, user_logo_file = excluded.user_logo_file
+            user_keyart_file = excluded.user_keyart_file, user_logo_file = excluded.user_logo_file,
+            logo_file = excluded.logo_file, steamgriddb_id = excluded.steamgriddb_id
         """, ("$e", m.EditionId), ("$n", m.IgdbName), ("$s", m.IgdbSlug), ("$u", m.IgdbUrl), ("$sum", m.Summary),
              ("$g", m.Genres.Count == 0 ? null : JsonSerializer.Serialize(m.Genres.ToList(), CoreJsonContext.Default.ListString)),
              ("$y", m.ReleaseYear), ("$c", m.CoverFile), ("$k", m.KeyArtFile), ("$f", m.FetchedAt),
-             ("$us", m.UserSummary), ("$uc", m.UserCoverFile), ("$uk", m.UserKeyArtFile), ("$ul", m.UserLogoFile));
+             ("$us", m.UserSummary), ("$uc", m.UserCoverFile), ("$uk", m.UserKeyArtFile), ("$ul", m.UserLogoFile),
+             ("$lf", m.LogoFile), ("$sg", m.SteamGridDbId));
 
     // ----------------------------------------------------------------- libraries
     public const string IncludeNeogeoKey = "include_aca_neogeo";

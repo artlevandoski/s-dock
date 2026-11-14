@@ -401,15 +401,28 @@ public sealed class MetadataTests : IDisposable
     }
 
     /// <summary>Renders a stand-in artwork image (portrait cover or landscape key art) as PNG bytes.</summary>
-    private static byte[] FakeArt(string url)
+    internal static byte[] FakeArt(string url)
     {
-        var landscape = url.Contains("t_1080p");
-        var (w, h) = landscape ? (640, 360) : (264, 374);
-        var id = System.Text.RegularExpressions.Regex.Match(url, @"/(?:co|ar)(\d+)\.jpg").Groups[1].Value;
+        var isLogo = url.Contains("/logo");
+        var landscape = url.Contains("t_1080p") || url.Contains("screenshot") || url.Contains("/hero");
+        var (w, h) = isLogo ? (500, 180) : landscape ? (640, 360) : (264, 374);
+        var id = System.Text.RegularExpressions.Regex.Match(url, @"/(?:co|ar|sc)?(\d+)[ab]?\.(?:jpg|png)").Groups[1].Value;
         var hue = (int.TryParse(id, out var n) ? n * 47 : 0) % 360;
         using var rtb = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(w, h));
         using (var ctx = rtb.CreateDrawingContext())
         {
+            if (isLogo)
+            {
+                // A "clear logo": bold outlined lettering on a transparent background.
+                var logoText = new Avalonia.Media.FormattedText("HAUNTED HOUSE",
+                    System.Globalization.CultureInfo.InvariantCulture, Avalonia.Media.FlowDirection.LeftToRight,
+                    new Avalonia.Media.Typeface("Inter", Avalonia.Media.FontStyle.Italic, Avalonia.Media.FontWeight.Black),
+                    64, new Avalonia.Media.SolidColorBrush(Avalonia.Media.HsvColor.ToRgb(hue, 0.35, 1)));
+                var geo = logoText.BuildGeometry(new Avalonia.Point((w - logoText.Width) / 2, (h - logoText.Height) / 2))!;
+                ctx.DrawGeometry(new Avalonia.Media.SolidColorBrush(Avalonia.Media.HsvColor.ToRgb(hue, 0.35, 1)),
+                    new Avalonia.Media.Pen(Avalonia.Media.Brushes.Black, 5), geo);
+                goto done;
+            }
             var top = Avalonia.Media.HsvColor.ToRgb(hue, 0.55, 0.85);
             var bottom = Avalonia.Media.HsvColor.ToRgb((hue + 40) % 360, 0.7, 0.35);
             var brush = new Avalonia.Media.LinearGradientBrush
@@ -426,6 +439,7 @@ public sealed class MetadataTests : IDisposable
                 new Avalonia.Media.Typeface("Inter", Avalonia.Media.FontStyle.Normal, Avalonia.Media.FontWeight.Bold),
                 landscape ? 48 : 26, Avalonia.Media.Brushes.White);
             ctx.DrawText(text, new Avalonia.Point(18, h - text.Height - 18));
+        done:;
         }
         using var ms = new MemoryStream();
 #pragma warning disable CS0618

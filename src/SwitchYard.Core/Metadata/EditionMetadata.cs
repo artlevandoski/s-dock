@@ -20,6 +20,10 @@ public sealed record EditionMetadata
     public string? KeyArtFile { get; init; }
     public string? FetchedAt { get; init; }
 
+    // From SteamGridDB (clear logo); replaced by a refresh like IGDB's data
+    public string? LogoFile { get; init; }
+    public long? SteamGridDbId { get; init; }
+
     // The user's own (never overwritten by a refresh)
     public string? UserSummary { get; init; }
     public string? UserCoverFile { get; init; }
@@ -29,7 +33,7 @@ public sealed record EditionMetadata
     public string? DisplaySummary => UserSummary ?? Summary;
     public string? DisplayCoverFile => UserCoverFile ?? CoverFile;
     public string? DisplayKeyArtFile => UserKeyArtFile ?? KeyArtFile;
-    public string? DisplayLogoFile => UserLogoFile; // IGDB has no game logos; logos come from the user
+    public string? DisplayLogoFile => UserLogoFile ?? LogoFile; // IGDB has no logos: SteamGridDB or the user's
 
     public static EditionMetadata Empty(string editionId) => new() { EditionId = editionId };
 }

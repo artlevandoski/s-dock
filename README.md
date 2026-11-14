@@ -105,6 +105,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | IGDB (fake service) | one sign-in reused, credentials sent with every request, expired token renewed once, clear message for bad credentials, pasted links/slugs/IDs parsed, search text can't break the query |
 | Matching | platform-aware by generation (both for Unclassified); confident matches only (same title, platform as tie-breaker); match-all summary, never re-matches, stops on bad credentials, can be cancelled |
 | Metadata | description, genres, year, IGDB ID and cached artwork saved; refresh keeps the user's text and images; remove match keeps user edits; credentials stored locally only |
+| Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
 | UI | missing-file state, Play without a profile, details dropdown, all windows render |
@@ -165,7 +166,8 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   (`edition_library_overrides`).
 - **Grid or carousel** (Ctrl+G, or the button at the top right): the carousel shows one
   row with the selected cover in the centre, 18% larger than its neighbours. Both views
-  share one selection.
+  share one selection. Covers in the grid and carousel show only the artwork, without a
+  generation banner; the generation is in the details panel.
 - **Versions:** a game can have several files (updates, revisions, alternate dumps).
   Attach one with **Add Version File…**, or tick *Add as a version of …* on a duplicate in
   the import preview. **Play Version…** launches another file once, makes it the main
@@ -196,11 +198,17 @@ their own, so no shared secret ships with Switch Yard:
    *Application Integration*, client type *Confidential*.
 2. Open the application, copy the **Client ID**, and click **New Secret** to get a
    **Client Secret**.
-3. In Switch Yard: **Metadata → IGDB Settings…**, paste both, click **Test Connection**,
+3. In Switch Yard: **Metadata → Metadata Settings…**, paste both, click **Test IGDB**,
    then **Save**.
 
-The credentials are stored only in `data\library.sqlite3` on this computer, never in the
-app or the repository.
+**Optional: more logos.** Logos come from IGDB first (its `logos` endpoint). For games
+IGDB has no logo for, and for extra wide backgrounds, add
+[SteamGridDB](https://www.steamgriddb.com/), a community artwork site: sign in (free),
+open *Preferences → API*, generate an API key, and paste it into the SteamGridDB section of
+**Metadata Settings…** (**Test SteamGridDB**, then **Save**).
+
+Keys are stored only in `data\library.sqlite3` on this computer, never in the app or the
+repository.
 
 **Using it**
 
@@ -214,11 +222,18 @@ app or the repository.
   box for an IGDB link, slug or numeric ID. On a matched game it becomes **Change Match…**.
 - The chosen IGDB ID is saved, and the cover and landscape key art are downloaded once into
   `data\artwork\`, so they travel with the portable folder and work offline.
-- **Edit Description…**, **Set Cover Image…**, **Set Key Art…** and **Set Logo…** store your
-  own text and images separately. **Refresh from IGDB** updates IGDB's data but never
-  replaces yours; **Use IGDB Artwork** removes your images.
-- The carousel shows the selected game's key art behind the covers, and its logo in place
-  of the title when you've set one. IGDB has no game logos, so logos come from you.
+- **Logos:** matching a game also downloads its best logo: IGDB's first (transparent ones
+  preferred, saved as PNG), otherwise SteamGridDB's (official style first) if you've added
+  a key. **Metadata → Get Missing Logos** fills in logos for games matched earlier. The
+  logo replaces the game name under the carousel and in the details panel.
+- **Choose Background…** (details panel → **Metadata**, or right-click a cover) shows the
+  game's IGDB artworks and screenshots plus SteamGridDB heroes. The one you pick shows
+  behind the carousel.
+- **Choose Logo…** lists the game's IGDB logos, then its SteamGridDB logos. Both choosers
+  also offer **From File…** and **Use Default**.
+- **Edit Description…**, **Set Cover Image…** and your picks in the choosers are stored
+  separately from downloaded data. **Refresh from IGDB** updates IGDB's data but never
+  replaces yours; **Use Default Artwork** removes your images.
 - Videos are planned for later.
 
 ## Windows smoke test (real Eden)
@@ -253,6 +268,10 @@ Run by hand with your Eden install and game folder. Record results below.
     one game with **Match on IGDB…** (try a pasted igdb.com link).
 11. Edit a description and set your own cover, then **Refresh from IGDB**: both must stay.
     Move the whole folder (or restart offline) and confirm the artwork still shows.
+12. Run **Get Missing Logos** and check the IGDB logo replaces the name in the carousel and
+    details panel. Optionally add a SteamGridDB key and run it again for games IGDB had no
+    logo for. Use **Choose Background…** and **Choose Logo…** to pick others, then **Use
+    Default** to go back.
 
 ### Results
 
@@ -273,3 +292,4 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 9 Versions and Play Version… | | |
 | | C# | | 10 IGDB setup and matching | | |
 | | C# | | 11 User edits kept, offline artwork | | |
+| | C# | | 12 Clear logos and Choose Background | | |

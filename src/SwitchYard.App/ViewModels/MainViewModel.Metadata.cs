@@ -36,6 +36,115 @@ public sealed partial class MainViewModel
 
     private MetadataService? Metadata => Igdb is { } client ? new MetadataService(_library, client, AppPaths.ArtworkDir) : null;
 
+    // ------------------------------------------------------------ SteamGridDB
+    private readonly Func<LibraryStore, SteamGridDbClient?> _sgdbFactory;
+    private SteamGridDbClient? _sgdb;
+    private string? _sgdbKey;
+
+    private static SteamGridDbClient? DefaultSgdbFactory(LibraryStore library) =>
+        library.HasSteamGridDbKey ? new SteamGridDbClient(library.SteamGridDbKey) : null;
+
+    private SteamGridDbClient? Sgdb
+    {
+        get
+        {
+            var key = _library.SteamGridDbKey;
+            if (_sgdb is null || key != _sgdbKey)
+            {
+                _sgdb?.Dispose();
+                _sgdb = _sgdbFactory(_library);
+                _sgdbKey = key;
+            }
+            return _sgdb;
+        }
+    }
+
+    private ArtworkSources Artwork => new(_library, Igdb, Sgdb, AppPaths.ArtworkDir);
+
+    /// <summary>
+    /// Fetches logos for the given games: IGDB's first, SteamGridDB's as a fallback. Quietly skipped
+    /// when neither IGDB credentials nor a SteamGridDB key are set.
+    /// </summary>
+    private async Task<int> FetchLogosAsync(IEnumerable<Edition> editions, bool replace = false)
+    {
+        var sources = Artwork;
+        if (!sources.CanFetchLogos) return 0;
+        var count = 0;
+        foreach (var e in editions)
+        {
+            try
+            {
+                if (await sources.FetchLogoAsync(e, replace)) count++;
+            }
+            catch (IgdbException ex) when (ex.Status is System.Net.HttpStatusCode.Unauthorized or System.Net.HttpStatusCode.Forbidden)
+            {
+                StatusText = ex.Message;
+                break;
+            }
+            catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException)
+            {
+                // One game's logo failing shouldn't stop the rest.
+            }
+        }
+        return count;
+    }
+
+    [RelayCommand]
+    private async Task GetMissingLogosAsync()
+    {
+        if (!Artwork.CanFetchLogos)
+        {
+            if (await _ui.ConfirmAsync("Logos", "Logos come from IGDB (and optionally SteamGridDB), which need your own " +
+                                                "free credentials. Open Metadata Settings now?"))
+                await IgdbSettingsAsync();
+            if (!Artwork.CanFetchLogos) return;
+        }
+        StatusText = "Getting logos…";
+        var n = await FetchLogosAsync(_all.Select(i => i.Edition).ToList());
+        Refresh();
+        StatusText = n == 0
+            ? "No new logos found." + (Sgdb is null ? " Adding a SteamGridDB key in Metadata Settings may find more." : "")
+            : $"Added {n} logo(s).";
+    }
+
+    // ------------------------------------------------------------ choosers
+    private async Task ChooseArtAsync(ArtKind kind)
+    {
+        if (SelectedItem is not { } item) return;
+        var sources = Artwork;
+        var edition = item.Edition;
+        var vm = new ArtPickerViewModel(kind, item.Title, sources.HasSteamGridDb, _ui, ct => kind == ArtKind.Logo
+            ? sources.LogoCandidatesAsync(edition, ct)
+            : sources.BackgroundCandidatesAsync(edition, ct));
+        var pick = await _ui.ShowArtPickerAsync(vm);
+        if (pick is null) { _ui.RestoreFocus(); return; }
+        try
+        {
+            if (pick.UseDefault)
+                UserMetadata.ResetArt(_library, AppPaths.ArtworkDir, item.Id, kind);
+            else if (pick.File is { } file)
+                UserMetadata.SetArt(_library, AppPaths.ArtworkDir, item.Id, kind, file);
+            else if (pick.Candidate is { } candidate)
+            {
+                StatusText = "Downloading image…";
+                await sources.UseAsync(item.Id, kind, candidate);
+            }
+            Refresh(item.Id);
+            StatusText = pick.UseDefault
+                ? $"“{item.Title}” uses the default {(kind == ArtKind.Logo ? "logo" : "background")} again."
+                : $"{(kind == ArtKind.Logo ? "Logo" : "Background")} updated for “{item.Title}”.";
+        }
+        catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException or InvalidOperationException
+                                       or UnauthorizedAccessException)
+        {
+            await _ui.ShowMessageAsync(kind == ArtKind.Logo ? "Choose Logo" : "Choose Background", ex.Message);
+        }
+        _ui.RestoreFocus();
+    }
+
+    [RelayCommand] private Task ChooseBackgroundAsync() => ChooseArtAsync(ArtKind.KeyArt);
+    [RelayCommand] private Task ChooseLogoAsync() => ChooseArtAsync(ArtKind.Logo);
+
     /// <summary>Returns the metadata service, or offers IGDB Settings when no credentials are set.</summary>
     private async Task<MetadataService?> RequireMetadataAsync()
     {
@@ -84,11 +193,19 @@ public sealed partial class MainViewModel
     private async Task IgdbSettingsAsync()
     {
         var (id, secret) = _library.IgdbCredentials;
-        var vm = new IgdbSettingsViewModel(id, secret, _ui, (i, s) => new IgdbClient(i, s));
+        var vm = new IgdbSettingsViewModel(id, secret, _ui, (i, s) => new IgdbClient(i, s))
+        {
+            SteamGridDbKey = _library.SteamGridDbKey,
+            SteamGridDbFactory = key => new SteamGridDbClient(key),
+        };
         if (await _ui.ShowIgdbSettingsAsync(vm))
         {
+            var hadKey = _library.HasSteamGridDbKey;
             _library.IgdbCredentials = (vm.ClientId, vm.ClientSecret);
-            StatusText = _library.HasIgdbCredentials ? "IGDB credentials saved." : "IGDB credentials cleared.";
+            _library.SteamGridDbKey = vm.SteamGridDbKey;
+            StatusText = "Metadata settings saved.";
+            if (!hadKey && _library.HasSteamGridDbKey && _all.Any(i => i.IsMatched))
+                StatusText += " Use Metadata → Get Missing Logos to look for more logos for your matched games.";
         }
         _ui.RestoreFocus();
     }
@@ -106,8 +223,9 @@ public sealed partial class MainViewModel
         try
         {
             await service.ApplyMatchAsync(e.Id, game);
+            var logos = await FetchLogosAsync([_library.GetEdition(e.Id)!]);
             Refresh(e.Id);
-            StatusText = $"Matched “{e.Title}” to {game.Name} on IGDB.";
+            StatusText = $"Matched “{e.Title}” to {game.Name} on IGDB." + (logos > 0 ? " Logo added." : "");
         }
         catch (Exception ex) when (ex is IgdbException or HttpRequestException or IOException)
         {
@@ -124,7 +242,10 @@ public sealed partial class MainViewModel
         try
         {
             StatusText = $"Refreshing “{e.Title}” from IGDB…";
-            StatusText = await service.RefreshAsync(e)
+            var refreshed = await service.RefreshAsync(e);
+            if (refreshed)
+                await FetchLogosAsync([_library.GetEdition(e.Id)!], replace: true);
+            StatusText = refreshed
                 ? $"Refreshed “{e.Title}” from IGDB. Your own description and artwork were kept."
                 : $"IGDB no longer has the matched game for “{e.Title}”. Use Change Match….";
             Refresh(e.Id);
@@ -169,8 +290,15 @@ public sealed partial class MainViewModel
             // Network-bound and asynchronous, so it stays on the UI thread: the database connection
             // is never used from two threads, and the window stays responsive between requests.
             var s = await service.MatchAllAsync(editions, progress, _matchAllCts.Token);
+            var logos = 0;
+            if (!s.Cancelled)
+            {
+                StatusText = "Getting logos…";
+                logos = await FetchLogosAsync(_library.ListEditions().Where(e => e.IgdbId is not null).ToList());
+            }
             Refresh();
             var text = $"IGDB: {s.Matched} matched";
+            if (logos > 0) text += $", {logos} logo(s)";
             if (s.NeedsMatch + s.NotFound > 0) text += $", {s.NeedsMatch + s.NotFound} need a manual match (filter: Needs IGDB match)";
             if (s.Failed > 0) text += $", {s.Failed} failed";
             if (s.Cancelled) text += " · cancelled";
@@ -231,8 +359,6 @@ public sealed partial class MainViewModel
     }
 
     [RelayCommand] private Task SetCoverAsync() => SetArtAsync(ArtKind.Cover);
-    [RelayCommand] private Task SetKeyArtAsync() => SetArtAsync(ArtKind.KeyArt);
-    [RelayCommand] private Task SetLogoAsync() => SetArtAsync(ArtKind.Logo);
 
     [RelayCommand]
     private void ResetArtwork()

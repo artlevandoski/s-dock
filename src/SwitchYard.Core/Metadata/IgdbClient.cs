@@ -42,6 +42,18 @@ public sealed record IgdbImage
     [JsonPropertyName("image_id")] public string ImageId { get; init; } = "";
 }
 
+/// <summary>A game logo from IGDB's <c>logos</c> endpoint (each logo belongs to one game).</summary>
+public sealed record IgdbLogo
+{
+    [JsonPropertyName("id")] public long Id { get; init; }
+    [JsonPropertyName("image_id")] public string ImageId { get; init; } = "";
+    [JsonPropertyName("width")] public int Width { get; init; }
+    [JsonPropertyName("height")] public int Height { get; init; }
+    [JsonPropertyName("alpha_channel")] public bool AlphaChannel { get; init; }
+    [JsonPropertyName("animated")] public bool Animated { get; init; }
+    [JsonPropertyName("image_type")] public IgdbNamed? ImageType { get; init; }
+}
+
 internal sealed record TwitchToken
 {
     [JsonPropertyName("access_token")] public string AccessToken { get; init; } = "";
@@ -49,6 +61,7 @@ internal sealed record TwitchToken
 }
 
 [JsonSerializable(typeof(List<IgdbGame>))]
+[JsonSerializable(typeof(List<IgdbLogo>))]
 [JsonSerializable(typeof(List<IgdbNamed>))]
 [JsonSerializable(typeof(TwitchToken))]
 internal sealed partial class IgdbJsonContext : JsonSerializerContext;
@@ -200,6 +213,33 @@ public sealed partial class IgdbClient : IDisposable
 
     public async Task<IgdbGame?> GetBySlugAsync(string slug, CancellationToken ct = default) =>
         (await GamesAsync($"fields {GameFields}; where slug = \"{Escape(slug)}\"; limit 1;", ct)).FirstOrDefault();
+
+    /// <summary>
+    /// The game's logos, best first: transparent (alpha channel) and still images before others.
+    /// See <c>message Logo</c> in https://api.igdb.com/v4/igdbapi.proto.
+    /// </summary>
+    public async Task<List<IgdbLogo>> LogosAsync(long gameId, CancellationToken ct = default)
+    {
+        var json = await QueryAsync("logos",
+            $"fields id,image_id,width,height,alpha_channel,animated,image_type.name; where game = {gameId}; limit 50;", ct);
+        var logos = JsonSerializer.Deserialize(json, IgdbJsonContext.Default.ListIgdbLogo) ?? [];
+        return logos.Where(l => l.ImageId.Length > 0)
+                    .OrderByDescending(l => l.AlphaChannel)
+                    .ThenBy(l => l.Animated)
+                    .ThenByDescending(l => l.Width * l.Height)
+                    .ToList();
+    }
+
+    /// <summary>Image URL as PNG, which keeps a logo's transparent background.</summary>
+    public static string PngImageUrl(string imageId, string size) => $"{ImageBase}t_{size}/{imageId}.png";
+
+    public async Task<byte[]> DownloadPngAsync(string imageId, string size, CancellationToken ct = default)
+    {
+        using var resp = await _http.GetAsync(PngImageUrl(imageId, size), ct);
+        if (!resp.IsSuccessStatusCode)
+            throw new IgdbException($"Couldn't download artwork ({(int)resp.StatusCode}).", resp.StatusCode);
+        return await resp.Content.ReadAsByteArrayAsync(ct);
+    }
 
     /// <summary>Checks the credentials by signing in and making one small request.</summary>
     public async Task TestAsync(CancellationToken ct = default) => await SwitchPlatformsAsync(ct);

@@ -3,11 +3,12 @@
         xmlns:vm="using:SwitchYard.App.ViewModels"
         x:Class="SwitchYard.App.Views.IgdbSettingsWindow"
         x:DataType="vm:IgdbSettingsViewModel"
-        Title="IGDB Settings"
-        Width="640" SizeToContent="Height" CanResize="False"
+        Title="Metadata Settings"
+        Width="660" SizeToContent="Height" CanResize="False"
         WindowStartupLocation="CenterOwner">
   <StackPanel Margin="20" Spacing="12">
-    <TextBlock Text="IGDB artwork and descriptions" FontSize="17" FontWeight="Bold" />
+    <!-- IGDB -->
+    <TextBlock Text="IGDB: covers, logos, backgrounds and descriptions" FontSize="17" FontWeight="Bold" />
     <TextBlock Text="{Binding Explanation}" TextWrapping="Wrap" />
     <StackPanel Orientation="Horizontal" Spacing="8">
       <Button Content="Open Twitch developer console" Command="{Binding OpenTwitchConsoleCommand}" />
@@ -20,14 +21,32 @@
       <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ClientSecret}" PasswordChar="*" Margin="0,4"
                FontFamily="Consolas, monospace" />
     </Grid>
-    <TextBlock Text="{Binding StorageNote}" Classes="muted" TextWrapping="Wrap" FontSize="12" />
-    <SelectableTextBlock Text="{Binding Status}" TextWrapping="Wrap" Classes.warning="{Binding StatusIsError}" />
-    <Grid ColumnDefinitions="Auto,*,Auto,Auto">
-      <Button Content="Test Connection" Command="{Binding TestCommand}" />
-      <Button Grid.Column="2" Content="Save" Classes="accent" MinWidth="90" HorizontalContentAlignment="Center"
-              Command="{Binding SaveCommand}" Margin="0,0,8,0" />
-      <Button Grid.Column="3" Content="Cancel" MinWidth="90" HorizontalContentAlignment="Center"
-              Command="{Binding CancelCommand}" IsCancel="True" />
+    <Grid ColumnDefinitions="Auto,*">
+      <Button Content="Test IGDB" Command="{Binding TestCommand}" />
+      <SelectableTextBlock Grid.Column="1" Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Margin="10,0,0,0" Classes.warning="{Binding StatusIsError}" />
     </Grid>
+
+    <Border BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0" Margin="0,6,0,0" />
+
+    <!-- SteamGridDB -->
+    <TextBlock Text="SteamGridDB: more logos and backgrounds (optional)" FontSize="17" FontWeight="Bold" />
+    <TextBlock Text="{Binding SteamGridDbExplanation}" TextWrapping="Wrap" />
+    <Grid ColumnDefinitions="120,*,Auto">
+      <TextBlock Text="API key:" VerticalAlignment="Center" />
+      <TextBox Grid.Column="1" Text="{Binding SteamGridDbKey}" PasswordChar="*" FontFamily="Consolas, monospace" />
+      <Button Grid.Column="2" Content="Get a key" Command="{Binding OpenSteamGridDbCommand}" Margin="8,0,0,0" />
+    </Grid>
+    <Grid ColumnDefinitions="Auto,*">
+      <Button Content="Test SteamGridDB" Command="{Binding TestSteamGridDbCommand}" />
+      <SelectableTextBlock Grid.Column="1" Text="{Binding SteamGridDbStatus}" TextWrapping="Wrap" VerticalAlignment="Center"
+                           Margin="10,0,0,0" Classes.warning="{Binding SteamGridDbStatusIsError}" />
+    </Grid>
+
+    <TextBlock Text="{Binding StorageNote}" Classes="muted" TextWrapping="Wrap" FontSize="12" Margin="0,6,0,0" />
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8">
+      <Button Content="Save" Classes="accent" MinWidth="90" HorizontalContentAlignment="Center" Command="{Binding SaveCommand}" />
+      <Button Content="Cancel" MinWidth="90" HorizontalContentAlignment="Center" Command="{Binding CancelCommand}" IsCancel="True" />
+    </StackPanel>
   </StackPanel>
 </Window>

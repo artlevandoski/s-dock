@@ -20,6 +20,22 @@ public sealed class FakeIgdb : HttpMessageHandler
         "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==");
 
     public List<IgdbGame> Games { get; } = [];
+
+    /// <summary>Logos by IGDB game ID, served from the <c>logos</c> endpoint.</summary>
+    public Dictionary<long, List<IgdbLogo>> Logos { get; } = [];
+
+    /// <summary>Simulate an API without the logos endpoint (404).</summary>
+    public bool NoLogosEndpoint { get; set; }
+
+    public static IgdbLogo Logo(long id, bool transparent = true, string? type = null, int width = 800, int height = 300) => new()
+    {
+        Id = id,
+        ImageId = $"lo{id}",
+        Width = width,
+        Height = height,
+        AlphaChannel = transparent,
+        ImageType = type is null ? null : new IgdbNamed { Id = 1, Name = type },
+    };
     public bool RejectCredentials { get; set; }
     public int UnauthorizedResponsesLeft { get; set; }
     public Func<string, byte[]>? ImageBytes { get; set; }
@@ -44,6 +60,7 @@ public sealed class FakeIgdb : HttpMessageHandler
         Platforms = [.. platforms],
         Cover = new() { ImageId = $"co{id}" },
         Artworks = [new() { ImageId = $"ar{id}" }],
+        Screenshots = [new() { ImageId = $"sc{id}a" }, new() { ImageId = $"sc{id}b" }],
     };
 
     public IgdbClient Client() => new("test-client-id", "test-secret", this) { Throttle = false };
@@ -82,6 +99,9 @@ public sealed class FakeIgdb : HttpMessageHandler
             {
                 "platforms" => Json($"[{{\"id\":{Switch1Platform},\"name\":\"Nintendo Switch\"}},{{\"id\":{Switch2Platform},\"name\":\"Nintendo Switch 2\"}}]"),
                 "games" => Json(JsonSerializer.Serialize(Answer(body))),
+                "logos" when NoLogosEndpoint => new HttpResponseMessage(HttpStatusCode.NotFound),
+                "logos" => Json(JsonSerializer.Serialize(
+                    Logos.GetValueOrDefault(long.Parse(Regex.Match(body, @"where game = (\d+)").Groups[1].Value), []))),
                 _ => new HttpResponseMessage(HttpStatusCode.NotFound),
             };
         }

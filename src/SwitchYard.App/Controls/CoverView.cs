@@ -22,10 +22,16 @@ public sealed class CoverView : Control
     public static readonly StyledProperty<IImage?> ImageProperty =
         AvaloniaProperty.Register<CoverView, IImage?>(nameof(Image));
 
+    /// <summary>Show the "SWITCH 1 / SWITCH 2" band along the bottom (off in the game selector).</summary>
+    public static readonly StyledProperty<bool> ShowGenerationBandProperty =
+        AvaloniaProperty.Register<CoverView, bool>(nameof(ShowGenerationBand), defaultValue: true);
+
     static CoverView()
     {
-        AffectsRender<CoverView>(TitleProperty, GenerationProperty, IsMissingProperty, ImageProperty);
+        AffectsRender<CoverView>(TitleProperty, GenerationProperty, IsMissingProperty, ImageProperty, ShowGenerationBandProperty);
     }
+
+    public bool ShowGenerationBand { get => GetValue(ShowGenerationBandProperty); set => SetValue(ShowGenerationBandProperty, value); }
 
     public IImage? Image { get => GetValue(ImageProperty); set => SetValue(ImageProperty, value); }
     public string? Title { get => GetValue(TitleProperty); set => SetValue(TitleProperty, value); }
@@ -90,13 +96,16 @@ public sealed class CoverView : Control
                 ctx.DrawRectangle(fill, null, rect);
             }
 
-            // Generation band: slimmer and translucent over artwork.
-            var bandH = h * (image is null ? 0.13 : 0.10);
-            var band = new Rect(0, h - bandH, w, bandH);
-            ctx.DrawRectangle(new SolidColorBrush(Color.FromArgb(image is null ? (byte)110 : (byte)160, 0, 0, 0)), null, band);
-            var label = Text(Generations.Label(Generation ?? Generations.Unclassified).ToUpperInvariant(),
-                Math.Max(9, h * (image is null ? 0.05 : 0.042)), new SolidColorBrush(Color.FromArgb(220, 255, 255, 255)), w);
-            ctx.DrawText(label, new Point(0, band.Y + (bandH - label.Height) / 2));
+            // Generation band: slimmer and translucent over artwork; hidden in the game selector.
+            var bandH = ShowGenerationBand ? h * (image is null ? 0.13 : 0.10) : 0;
+            if (ShowGenerationBand)
+            {
+                var band = new Rect(0, h - bandH, w, bandH);
+                ctx.DrawRectangle(new SolidColorBrush(Color.FromArgb(image is null ? (byte)110 : (byte)160, 0, 0, 0)), null, band);
+                var label = Text(Generations.Label(Generation ?? Generations.Unclassified).ToUpperInvariant(),
+                    Math.Max(9, h * (image is null ? 0.05 : 0.042)), new SolidColorBrush(Color.FromArgb(220, 255, 255, 255)), w);
+                ctx.DrawText(label, new Point(0, band.Y + (bandH - label.Height) / 2));
+            }
 
             if (image is null)
             {

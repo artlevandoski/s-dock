@@ -71,8 +71,10 @@
       <MenuItem Header="_Metadata">
         <MenuItem Header="_Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
         <MenuItem Header="_Cancel Matching" Command="{Binding CancelMatchingCommand}" IsVisible="{Binding IsMatchingAll}" />
+        <MenuItem Header="Get Missing _Logos" Command="{Binding GetMissingLogosCommand}"
+                  ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
         <Separator />
-        <MenuItem Header="IGDB _Settings…" Command="{Binding IgdbSettingsCommand}" />
+        <MenuItem Header="Metadata _Settings…" Command="{Binding IgdbSettingsCommand}" />
       </MenuItem>
     </Menu>
 
@@ -123,7 +125,11 @@
                          Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
                          IsMissing="{Binding SelectedIsMissing}" Image="{Binding SelectedCover}" />
             <StackPanel Spacing="2">
-              <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+              <!-- Clear logo in place of the name when the game has one -->
+              <Image Source="{Binding SelectedLogo}" MaxHeight="72" HorizontalAlignment="Left" IsVisible="{Binding HasLogo}"
+                     ToolTip.Tip="{Binding SelectedTitle}" Margin="0,2,0,4" />
+              <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"
+                         IsVisible="{Binding !HasLogo}" />
               <TextBlock Text="{Binding SelectedFactsLine}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsMatched}" />
             </StackPanel>
             <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSelection}">
@@ -137,11 +143,13 @@
                     <MenuItem Header="Remove Match" Command="{Binding RemoveMatchCommand}" IsEnabled="{Binding IsMatched}" />
                     <Separator />
                     <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
+                    <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}"
+                              ToolTip.Tip="Pick the image shown behind the carousel" />
+                    <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}"
+                              ToolTip.Tip="Pick the clear logo shown in place of the game name" />
                     <MenuItem Header="Set Cover Image…" Command="{Binding SetCoverCommand}" />
-                    <MenuItem Header="Set Key Art…" Command="{Binding SetKeyArtCommand}" />
-                    <MenuItem Header="Set Logo…" Command="{Binding SetLogoCommand}" />
-                    <MenuItem Header="Use IGDB Artwork" Command="{Binding ResetArtworkCommand}"
-                              ToolTip.Tip="Remove your own cover, key art and logo for this game" />
+                    <MenuItem Header="Use Default Artwork" Command="{Binding ResetArtworkCommand}"
+                              ToolTip.Tip="Remove your own cover, background and logo for this game" />
                   </MenuFlyout>
                 </DropDownButton.Flyout>
               </DropDownButton>
@@ -212,7 +220,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:EditionItem">
               <StackPanel Width="156" Spacing="6" ToolTip.Tip="{Binding Tooltip}">
-                <c:CoverView Width="150" Height="212" HorizontalAlignment="Center" Image="{Binding Cover}"
+                <c:CoverView Width="150" Height="212" HorizontalAlignment="Center" Image="{Binding Cover}" ShowGenerationBand="False"
                              Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
                 <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" MaxWidth="150" />
               </StackPanel>
@@ -244,7 +252,7 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:EditionItem">
-                <c:CoverView Width="200" Height="283" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}"
+                <c:CoverView Width="200" Height="283" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
                              Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -259,6 +267,8 @@
             <Separator />
             <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
             <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
+            <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
+            <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
           </ContextMenu>
         </Panel.ContextMenu>
       </Panel>

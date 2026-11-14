@@ -130,6 +130,12 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
         if (keyArt is null) TryDelete(Path.Combine(dir, "keyart.jpg"));
 
         var existing = library.GetMetadata(editionId);
+        if (library.GetEdition(editionId)?.IgdbId is { } previous && previous != game.Id)
+        {
+            // A different game: its SteamGridDB link and logo belonged to the old match.
+            if (existing.LogoFile is not null) TryDelete(Path.Combine(artworkDir, existing.LogoFile));
+            existing = existing with { LogoFile = null, SteamGridDbId = null };
+        }
         library.SaveMetadata(existing with
         {
             IgdbName = game.Name,
@@ -160,10 +166,12 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
         var m = library.GetMetadata(editionId);
         foreach (var f in new[] { m.CoverFile, m.KeyArtFile })
             if (f is not null) TryDelete(Path.Combine(artworkDir, f));
+        if (m.LogoFile is not null) TryDelete(Path.Combine(artworkDir, m.LogoFile));
         library.SaveMetadata(m with
         {
             IgdbName = null, IgdbSlug = null, IgdbUrl = null, Summary = null, Genres = [],
             ReleaseYear = null, CoverFile = null, KeyArtFile = null, FetchedAt = null,
+            LogoFile = null, SteamGridDbId = null,
         });
         library.SetIgdbId(editionId, null);
     }
@@ -200,14 +208,20 @@ public static class UserMetadata
         var ext = Path.GetExtension(sourceFile).ToLowerInvariant();
         if (ext is not (".png" or ".jpg" or ".jpeg" or ".webp" or ".bmp"))
             throw new InvalidOperationException("Choose a PNG, JPEG, WebP or BMP image.");
+        SetArtBytes(library, artworkDir, editionId, kind, File.ReadAllBytes(sourceFile), ext);
+    }
+
+    /// <summary>Stores image bytes (picked in a chooser, or copied from a file) as the user's own art.</summary>
+    public static void SetArtBytes(LibraryStore library, string artworkDir, string editionId, ArtKind kind, byte[] bytes, string ext)
+    {
         var dir = Path.Combine(artworkDir, editionId);
         Directory.CreateDirectory(dir);
         var m = library.GetMetadata(editionId);
         var previous = kind switch { ArtKind.Cover => m.UserCoverFile, ArtKind.KeyArt => m.UserKeyArtFile, _ => m.UserLogoFile };
         if (previous is not null)
             try { File.Delete(Path.Combine(artworkDir, previous)); } catch (IOException) { }
-        var target = Path.Combine(dir, UserFileName(kind) + ext);
-        File.Copy(sourceFile, target, overwrite: true);
+        var target = Path.Combine(dir, UserFileName(kind) + ext.ToLowerInvariant());
+        File.WriteAllBytes(target, bytes);
         var rel = Path.GetRelativePath(artworkDir, target);
         library.SaveMetadata(kind switch
         {

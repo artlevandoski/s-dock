@@ -63,6 +63,14 @@ public sealed class FakeUi : IUiServices
         return OnMatch(vm);
     }
 
+    /// <summary>Choose Background… / Choose Logo…: loads the candidates, then lets the test pick.</summary>
+    public Func<ArtPickerViewModel, ArtPick?> OnArtPicker { get; set; } = _ => null;
+    public async Task<ArtPick?> ShowArtPickerAsync(ArtPickerViewModel vm)
+    {
+        await vm.StartAsync();
+        return OnArtPicker(vm);
+    }
+
     public string? NextEditedText { get; set; }
     public Task<string?> EditTextAsync(string title, string explanation, string initial) => Task.FromResult(NextEditedText);
 

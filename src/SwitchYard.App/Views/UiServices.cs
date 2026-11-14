@@ -84,6 +84,9 @@ public sealed class UiServices(MainWindow main) : IUiServices
     public Task<SwitchYard.Core.Metadata.IgdbGame?> ShowMatchAsync(MatchViewModel vm) =>
         ShowDialog<SwitchYard.Core.Metadata.IgdbGame>(new MatchWindow(vm));
 
+    public Task<ArtPick?> ShowArtPickerAsync(ArtPickerViewModel vm) =>
+        ShowDialog<ArtPick>(new ArtPickerWindow(vm));
+
     public Task<string?> EditTextAsync(string title, string explanation, string initial) =>
         ShowDialog<string>(new TextEditWindow(title, explanation, initial));
 

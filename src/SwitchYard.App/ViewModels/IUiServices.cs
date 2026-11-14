@@ -23,6 +23,9 @@ public interface IUiServices
     /// <summary>Match on IGDB…: returns the chosen game, or null if cancelled.</summary>
     Task<SwitchYard.Core.Metadata.IgdbGame?> ShowMatchAsync(MatchViewModel vm);
 
+    /// <summary>Choose Background… / Choose Logo…: returns the pick, or null if cancelled.</summary>
+    Task<ArtPick?> ShowArtPickerAsync(ArtPickerViewModel vm);
+
     /// <summary>Multi-line text editor. Returns the text, or null if cancelled.</summary>
     Task<string?> EditTextAsync(string title, string explanation, string initial);
 

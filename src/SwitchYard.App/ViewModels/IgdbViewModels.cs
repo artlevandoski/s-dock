@@ -34,7 +34,7 @@ public sealed partial class IgdbSettingsViewModel : ObservableObject
         "Client ID and a new Client Secret here.";
 
     public string StorageNote =>
-        "Stored only in Switch Yard's data folder on this computer, never in the app or the git repository.";
+        "Keys are stored only in Switch Yard's data folder on this computer, never in the app or the git repository.";
 
     [ObservableProperty][NotifyCanExecuteChangedFor(nameof(TestCommand))] public partial string ClientId { get; set; }
     [ObservableProperty][NotifyCanExecuteChangedFor(nameof(TestCommand))] public partial string ClientSecret { get; set; }
@@ -66,6 +66,42 @@ public sealed partial class IgdbSettingsViewModel : ObservableObject
             IsTesting = false;
         }
     }
+
+    // ---------------------------------------------------------- SteamGridDB
+    public const string SteamGridDbApiUrl = "https://www.steamgriddb.com/profile/preferences/api";
+
+    public string SteamGridDbExplanation =>
+        "Logos come from IGDB first. SteamGridDB, a community artwork site, adds more logos for games " +
+        "IGDB lacks, plus extra backgrounds. Sign in there (free), open Preferences → API, generate an " +
+        "API key and paste it here.";
+
+    public Func<string, SteamGridDbClient>? SteamGridDbFactory { get; init; }
+
+    [ObservableProperty][NotifyCanExecuteChangedFor(nameof(TestSteamGridDbCommand))] public partial string SteamGridDbKey { get; set; } = "";
+    [ObservableProperty] public partial string SteamGridDbStatus { get; set; } = "";
+    [ObservableProperty] public partial bool SteamGridDbStatusIsError { get; set; }
+
+    private bool CanTestSteamGridDb() => SteamGridDbFactory is not null && SteamGridDbKey.Trim().Length > 0;
+
+    [RelayCommand(CanExecute = nameof(CanTestSteamGridDb))]
+    private async Task TestSteamGridDbAsync()
+    {
+        SteamGridDbStatus = "Connecting to SteamGridDB…";
+        SteamGridDbStatusIsError = false;
+        try
+        {
+            using var client = SteamGridDbFactory!(SteamGridDbKey);
+            await client.TestAsync();
+            SteamGridDbStatus = "Connected. Clear logos will be fetched for matched games.";
+        }
+        catch (Exception ex) when (ex is IgdbException or HttpRequestException or TaskCanceledException)
+        {
+            SteamGridDbStatus = ex is IgdbException ? ex.Message : "Couldn't reach SteamGridDB. Check your internet connection.";
+            SteamGridDbStatusIsError = true;
+        }
+    }
+
+    [RelayCommand] private void OpenSteamGridDb() => _ui.OpenUrl(SteamGridDbApiUrl);
 
     [RelayCommand] private void OpenTwitchConsole() => _ui.OpenUrl(TwitchConsoleUrl);
     [RelayCommand] private void OpenIgdbDocs() => _ui.OpenUrl(IgdbDocsUrl);
@@ -134,8 +170,10 @@ public sealed partial class MatchViewModel : ObservableObject
 
     partial void OnAnyPlatformChanged(bool value) => _ = SearchAsync();
 
-    /// <summary>Runs the first search when the dialog opens.</summary>
-    public Task StartAsync() => SearchAsync();
+    private Task? _started;
+
+    /// <summary>Runs the first search when the dialog opens (once, however often it's called).</summary>
+    public Task StartAsync() => _started ??= SearchAsync();
 
     [RelayCommand]
     private async Task SearchAsync()
