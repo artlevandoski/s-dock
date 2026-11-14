@@ -109,6 +109,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
 | TitleDB (fake server) | download saved once and skipped when unchanged; lookup by title ID prefers the full listing over demos; updates map to their base game; text, icon, banner and screenshots saved; images only from Nintendo's image server; a failed image is counted and retried next time; works offline from the saved copy; yours → TitleDB → IGDB display order; Not in TitleDB filter; offered once after the first import; schema v7 upgrade |
+| Fixing a game | Clear Match and Artwork removes both matches, all descriptions and pictures and the artwork folder but keeps the sort title, and can look the game up again; Refresh from TitleDB re-downloads its pictures and says when a title ID isn't listed; the carousel right-click menu has no Play, Launch With, Play Version or Add Version File; SteamGridDB images are downloaded without the API key (the image server refuses it) |
 | Browsing | sort titles order games and persist (blank or the title clears it); schema v8 upgrade; SEGA AGES by title prefix, in Arcade Archives only when ticked, with its own series filter; background setting (artwork, colour from the cover, plain) remembered; cover colour follows the artwork and is toned down for readable text; carousel covers and details band keep their size and place while browsing |
 | Logos | each game's logo is fetched right after it is matched; Get Missing Logos only visits matched games without one, reports added / not found / failed, and can be cancelled |
 | Large libraries | grid and carousel share one view across libraries; artwork comes from a background cache (covers, backgrounds, logos) and is re-decoded when the file changes; artwork can be replaced while the cache reads it; carousel centring with virtualization; opt-in 863-game stress test |
@@ -282,6 +283,13 @@ repository.
 - After the first import, Switch Yard offers to do this; once TitleDB is downloaded, newly
   imported games are filled in automatically.
 - **Choose Background…** lists the eShop banner and screenshots first.
+- **Fixing one game** (Game Actions or right-click):
+  - **Refresh from TitleDB** downloads its text, icon and banner again, replacing stale or
+    broken downloads. Your own description and pictures stay.
+  - **Clear Match and Artwork…** starts it over: its TitleDB and IGDB matches, descriptions
+    and every picture (including ones you chose) are removed and its artwork folder deleted.
+    Its files, versions, sort title and settings stay. Then look it up in TitleDB again, or
+    leave it bare and match it on IGDB yourself.
 - IGDB and SteamGridDB stay as backups: logos come from them, and games TitleDB doesn't list
   (**More filters → Not in TitleDB**) can still be matched on IGDB. Your own description and
   pictures always come first, then TitleDB, then IGDB.

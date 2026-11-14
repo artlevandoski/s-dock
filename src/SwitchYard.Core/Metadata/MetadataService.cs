@@ -173,6 +173,30 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
     }
 
     /// <summary>Forgets the IGDB match and its cached artwork. The user's own text and art stay.</summary>
+    /// <summary>
+    /// Clear Match and Artwork: forgets the TitleDB and IGDB matches, the SteamGridDB game, every description and
+    /// every picture for a game (downloaded and your own), and deletes its artwork folder. Its files, versions,
+    /// sort title, library, emulator choice and hidden state are kept.
+    /// </summary>
+    public static void ClearAll(LibraryStore library, string artworkDir, string editionId)
+    {
+        library.InTransaction(() =>
+        {
+            library.DeleteMetadata(editionId);
+            library.SetIgdbId(editionId, null);
+        });
+        var dir = Path.Combine(artworkDir, editionId);
+        try
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // A file still in use: delete what we can; nothing refers to the rest any more.
+            foreach (var f in Directory.EnumerateFiles(dir)) TryDelete(f);
+        }
+    }
+
     public static void RemoveMatch(LibraryStore library, string artworkDir, string editionId)
     {
         var m = library.GetMetadata(editionId);

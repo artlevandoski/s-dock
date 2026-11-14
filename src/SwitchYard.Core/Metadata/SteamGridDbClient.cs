@@ -46,11 +46,14 @@ public sealed class SteamGridDbClient : IDisposable
     public const string ApiBase = "https://www.steamgriddb.com/api/v2/";
 
     private readonly HttpClient _http;
+    private readonly string _apiKey;
 
     public SteamGridDbClient(string apiKey, HttpMessageHandler? handler = null)
     {
         _http = handler is null ? new HttpClient() : new HttpClient(handler);
-        _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey.Trim());
+        // The key goes only with API requests: SteamGridDB's image server refuses (401) any download that
+        // carries it, and it has no business seeing the key anyway.
+        _apiKey = apiKey.Trim();
         _http.DefaultRequestHeaders.UserAgent.ParseAdd("SwitchYard/0.1");
         _http.Timeout = TimeSpan.FromSeconds(30);
     }
@@ -60,7 +63,9 @@ public sealed class SteamGridDbClient : IDisposable
     private async Task<List<T>> GetAsync<T>(string path, System.Text.Json.Serialization.Metadata.JsonTypeInfo<SgdbResponse<T>> type,
         CancellationToken ct)
     {
-        using var resp = await _http.GetAsync(ApiBase + path, ct);
+        using var request = new HttpRequestMessage(HttpMethod.Get, ApiBase + path);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _apiKey);
+        using var resp = await _http.SendAsync(request, ct);
         if (resp.StatusCode is HttpStatusCode.Unauthorized or HttpStatusCode.Forbidden)
             throw new IgdbException("SteamGridDB didn't accept the API key. Check it in Metadata Settings.", resp.StatusCode);
         if (resp.StatusCode == HttpStatusCode.NotFound)
@@ -106,9 +111,10 @@ public sealed class SteamGridDbClient : IDisposable
         if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme != Uri.UriSchemeHttps ||
             !(uri.Host.EndsWith("steamgriddb.com", StringComparison.OrdinalIgnoreCase)))
             throw new IgdbException("Unexpected image address from SteamGridDB.");
-        using var resp = await _http.GetAsync(uri, ct);
+        using var resp = await _http.GetAsync(uri, ct); // no API key: see the constructor
         if (!resp.IsSuccessStatusCode)
-            throw new IgdbException($"Couldn't download the image ({(int)resp.StatusCode}).", resp.StatusCode);
+            throw new HttpRequestException($"Couldn't download the image from SteamGridDB ({(int)resp.StatusCode}).",
+                null, resp.StatusCode); // a failed image, not a bad key: never stops a whole logo run
         return await resp.Content.ReadAsByteArrayAsync(ct);
     }
 

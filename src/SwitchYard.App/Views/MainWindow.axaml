@@ -30,6 +30,9 @@
       <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
       <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
       <Separator />
+      <MenuItem Header="Refresh from TitleDB" Command="{Binding RefreshFromTitleDbCommand}" />
+      <MenuItem Header="Clear Match and Artwork…" Command="{Binding ClearMatchAndArtworkCommand}" />
+      <Separator />
       <MenuItem Header="Game Settings (Grid view)" Command="{Binding ShowGridCommand}" />
     </MenuFlyout>
   </Window.Resources>
@@ -539,18 +542,22 @@
           </DockPanel>
 
           <Panel.ContextMenu>
-            <ContextMenu>
-              <MenuItem Header="Play" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
-              <MenuItem Header="Launch With…" Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}" />
-              <MenuItem Header="Play Version…" Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}" />
-              <Separator />
-              <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
+            <ContextMenu x:Name="CoverContextMenu">
+              <!-- Playing and versions are grid-only here; the carousel has Play and Game Actions on screen. -->
+              <MenuItem Header="Play" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
+              <MenuItem Header="Launch With…" Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
+              <MenuItem Header="Play Version…" Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}" IsVisible="{Binding IsGrid}" />
+              <Separator IsVisible="{Binding IsGrid}" />
+              <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" IsVisible="{Binding IsGrid}" />
               <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
               <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}" />
               <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}" />
               <Separator />
               <MenuItem Header="Sort Title…" Command="{Binding SetSortTitleCommand}" />
               <MenuItem Header="{Binding HideMenuLabel}" Command="{Binding ToggleHiddenCommand}" />
+              <Separator />
+              <MenuItem Header="Refresh from TitleDB" Command="{Binding RefreshFromTitleDbCommand}" />
+              <MenuItem Header="Clear Match and Artwork…" Command="{Binding ClearMatchAndArtworkCommand}" />
             </ContextMenu>
           </Panel.ContextMenu>
         </Panel>

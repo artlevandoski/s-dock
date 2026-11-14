@@ -628,6 +628,10 @@ public sealed class LibraryStore : IDisposable
         return r.Read() ? ReadMetadata(r) : EditionMetadata.Empty(editionId);
     }
 
+    /// <summary>Forgets everything downloaded or chosen for a game's details (its files and settings stay).</summary>
+    public void DeleteMetadata(string editionId) =>
+        Exec("DELETE FROM edition_metadata WHERE edition_id = $e", ("$e", editionId));
+
     public Dictionary<string, EditionMetadata> AllMetadata()
     {
         var result = new Dictionary<string, EditionMetadata>();

@@ -133,6 +133,68 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>
+    /// Game Actions → Clear Match and Artwork: start this game over. Everything downloaded or chosen for it is
+    /// removed; then it's offered a fresh look-up in TitleDB.
+    /// </summary>
+    [RelayCommand]
+    private async Task ClearMatchAndArtworkAsync()
+    {
+        if (SelectedItem is not { } item || IsMatchingAll) return;
+        var choice = await _ui.ChooseAsync("Clear Match and Artwork", $"Start “{item.Title}” over?",
+            "Removes its TitleDB and IGDB matches, descriptions, cover, background and logo, including any you chose " +
+            "yourself, and deletes its artwork folder. The game's files, versions, sort title and settings stay.\n\n" +
+            "Look it up in TitleDB again afterwards, or leave it bare and match it on IGDB yourself.",
+            ClearAndRefetch, ClearOnly, "Cancel");
+        if (choice is not (ClearAndRefetch or ClearOnly)) { _ui.RestoreFocus(); return; }
+        MetadataService.ClearAll(_library, AppPaths.ArtworkDir, item.Id);
+        Refresh(item.Id);
+        StatusText = $"Cleared the match and artwork for “{item.Title}”.";
+        if (choice == ClearAndRefetch)
+            await RefreshFromTitleDbAsync();
+        _ui.RestoreFocus();
+    }
+
+    private const string ClearAndRefetch = "Clear and Look Up Again", ClearOnly = "Clear Only";
+
+    /// <summary>
+    /// Game Actions → Refresh from TitleDB: fetch this game's text, icon and banner again (replacing the downloaded
+    /// ones). Your own description and pictures stay.
+    /// </summary>
+    [RelayCommand]
+    private async Task RefreshFromTitleDbAsync()
+    {
+        if (SelectedItem is not { } item || IsMatchingAll) return;
+        if (!TitleDb.HasFile)
+        {
+            if (await _ui.ConfirmAsync("TitleDB", "TitleDB hasn't been downloaded yet (about 90 MB). Download it and fill in your library now?"))
+                await UpdateFromTitleDbAsync();
+            return;
+        }
+        _matchAllCts = new CancellationTokenSource();
+        OnPropertyChanged(nameof(IsMatchingAll));
+        try
+        {
+            StatusText = $"Refreshing “{item.Title}” from TitleDB…";
+            var s = await new TitleDbService(_library, TitleDb, AppPaths.ArtworkDir)
+                .ApplyAsync([item.Edition], null, _matchAllCts.Token, refresh: true);
+            Refresh(item.Id);
+            StatusText = s.Found == 0
+                ? $"“{item.Title}” isn't in TitleDB" + (item.Edition.ConsoleTitleId is { } tid ? $" (title ID {tid})." : " (no title ID in its file name).")
+                : $"Refreshed “{item.Title}” from TitleDB." + (s.ImagesFailed > 0 ? " Some pictures couldn't be downloaded; try again later." : "");
+        }
+        catch (Exception ex) when (ex is InvalidDataException or System.Text.Json.JsonException or IOException)
+        {
+            await _ui.ShowMessageAsync("Refresh from TitleDB", ex.Message);
+        }
+        finally
+        {
+            _matchAllCts.Dispose();
+            _matchAllCts = null;
+            OnPropertyChanged(nameof(IsMatchingAll));
+        }
+    }
+
     private sealed class InlineProgress<T>(Action<T> report) : IProgress<T>
     {
         public void Report(T value) => report(value);

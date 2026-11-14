@@ -38,6 +38,9 @@ public sealed class FakeSteamGridDb : HttpMessageHandler
         Requests.Add(url);
         AuthHeaders.Add(request.Headers.Authorization?.ToString());
 
+        // Like the real image server: a request that carries the API key is refused.
+        if (url.StartsWith("https://cdn2.steamgriddb.com/") && request.Headers.Authorization is not null)
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.Unauthorized));
         if (url.StartsWith("https://cdn2.steamgriddb.com/"))
             return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
             {

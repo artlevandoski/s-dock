@@ -37,8 +37,13 @@ public sealed class FakeUi : IUiServices
     public Task ShowMessageAsync(string title, string message) { Messages.Add(message); return Task.CompletedTask; }
     public bool ConfirmResult { get; set; }
     public Task<bool> ConfirmAsync(string title, string message) { Messages.Add(message); return Task.FromResult(ConfirmResult); }
+    /// <summary>Answers ChooseAsync with this button label when it's offered (default: closed).</summary>
+    public string? ChooseButton { get; set; }
     public Task<string?> ChooseAsync(string title, string heading, string message, params string[] buttons)
-    { Messages.Add(heading + "\n" + message); return Task.FromResult<string?>(null); }
+    {
+        Messages.Add(heading + "\n" + message);
+        return Task.FromResult(ChooseButton is { } b && buttons.Contains(b) ? b : null);
+    }
     public Task<bool> ShowImportPreviewAsync(ImportPreviewViewModel vm) => Task.FromResult(AcceptImport);
     public Task<bool> ShowEmulatorSettingsAsync(EmulatorProfilesViewModel vm) => Task.FromResult(false);
 

@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Microsoft.Data.Sqlite;
 using SwitchYard.App.ViewModels;
@@ -321,5 +322,87 @@ public sealed class TitleDbTests : IDisposable
         await vm.ImportFolderAsync(folder);
         Assert.DoesNotContain(ui.Messages, m => m.Contains("about 90 MB")); // already downloaded: no question
         Assert.Equal(2, lib.AllMetadata().Values.Count(m => m.HasTitleDb));
+    }
+
+    // ------------------------------------------------------------- fixing a game
+    [AvaloniaFact]
+    public async Task Clear_match_and_artwork_starts_a_game_over()
+    {
+        Seed();
+        using var lib = _env.OpenLibrary();
+        var zelda = lib.AddEdition("Zelda", Generations.Switch1, _env.Game(), consoleTitleId: Zelda);
+        lib.SetSortTitle(zelda, "Legend of Zelda");
+        using var launcher = new EmulatorLauncher();
+        var ui = new FakeUi { ChooseButton = "Clear Only" };
+        var vm = Vm(lib, ui, launcher);
+        await vm.UpdateFromTitleDbCommand.ExecuteAsync(null);
+        SwitchYard.Core.Metadata.UserMetadata.SetArtBytes(lib, ArtDir, zelda, ArtKind.KeyArt, FakeIgdb.TinyPng, ".png");
+        lib.SetIgdbId(zelda, 1003);
+        var folder = Path.Combine(ArtDir, zelda);
+        Assert.NotEmpty(Directory.GetFiles(folder));
+        vm.Select(zelda);
+
+        await vm.ClearMatchAndArtworkCommand.ExecuteAsync(null);
+        var m = lib.GetMetadata(zelda);
+        Assert.False(m.HasTitleDb);
+        Assert.Null(m.DisplayKeyArtFile);
+        Assert.Null(m.DisplayCoverFile);
+        Assert.Null(lib.GetEdition(zelda)!.IgdbId);
+        Assert.False(Directory.Exists(folder));
+        Assert.Equal("Legend of Zelda", lib.GetEdition(zelda)!.SortTitle); // settings kept
+        Assert.Equal("", vm.SelectedSummary);
+
+        ui.ChooseButton = "Clear and Look Up Again";
+        await vm.ClearMatchAndArtworkCommand.ExecuteAsync(null);
+        Assert.Equal("Breath of the Wild", lib.GetMetadata(zelda).TdbName);
+        Assert.True(File.Exists(Path.Combine(ArtDir, lib.GetMetadata(zelda).TdbIconFile!)));
+    }
+
+    [AvaloniaFact]
+    public async Task Refresh_from_titledb_downloads_the_pictures_again()
+    {
+        Seed();
+        using var lib = _env.OpenLibrary();
+        var zelda = lib.AddEdition("Zelda", Generations.Switch1, _env.Game(), consoleTitleId: Zelda);
+        lib.AddEdition("Homebrew", Generations.Switch1, _env.Game("Homebrew.nsp"), consoleTitleId: Missing);
+        using var launcher = new EmulatorLauncher();
+        var vm = Vm(lib, new FakeUi(), launcher);
+        await vm.UpdateFromTitleDbCommand.ExecuteAsync(null);
+        var icon = Path.Combine(ArtDir, lib.GetMetadata(zelda).TdbIconFile!);
+        File.WriteAllBytes(icon, [1, 2, 3]); // a stale or broken picture
+        vm.Select(zelda);
+        await vm.RefreshFromTitleDbCommand.ExecuteAsync(null);
+        Assert.Equal(FakeIgdb.TinyPng, File.ReadAllBytes(icon));
+        Assert.Equal("Refreshed “Zelda” from TitleDB.", vm.StatusText);
+
+        vm.Select(lib.ListEditions().First(e => e.Title == "Homebrew").Id);
+        await vm.RefreshFromTitleDbCommand.ExecuteAsync(null);
+        Assert.Contains("isn't in TitleDB (title ID 0100000000001000)", vm.StatusText);
+    }
+
+    [AvaloniaFact]
+    public void Carousel_right_click_has_no_play_or_version_items()
+    {
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Zelda", Generations.Switch1, _env.Game(), consoleTitleId: Zelda);
+        using var launcher = new EmulatorLauncher();
+        var vm = Vm(lib, new FakeUi(), launcher);
+        var window = new SwitchYard.App.Views.MainWindow { DataContext = vm, Width = 1180, Height = 780 };
+        window.Show();
+        var menu = window.FindControl<Avalonia.Controls.ContextMenu>("CoverContextMenu")!;
+        bool Shown(string header) => menu.Items.OfType<Avalonia.Controls.MenuItem>().First(i => i.Header as string == header).IsVisible;
+        string[] gridOnly = ["Play", "Launch With…", "Play Version…", "Add Version File…"];
+        var owner = (Control)menu.Parent!;
+        menu.Open(owner); // bindings connect when it opens, as on a right-click
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.All(gridOnly, h => Assert.True(Shown(h)));
+        menu.Close();
+        vm.IsCarousel = true;
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        menu.Open(owner);
+        Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+        Assert.All(gridOnly, h => Assert.False(Shown(h)));
+        Assert.True(Shown("Clear Match and Artwork…"));
+        window.Close();
     }
 }
