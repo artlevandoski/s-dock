@@ -86,6 +86,17 @@ public static class AppPaths
 
     public static string DatabasePath => Path.Combine(DataDir, "library.sqlite3");
 
+    /// <summary>Cached and user-supplied artwork, one folder per game.</summary>
+    public static string ArtworkDir
+    {
+        get
+        {
+            var d = Path.Combine(DataDir, "artwork");
+            Directory.CreateDirectory(d);
+            return d;
+        }
+    }
+
     public static string LogDir
     {
         get

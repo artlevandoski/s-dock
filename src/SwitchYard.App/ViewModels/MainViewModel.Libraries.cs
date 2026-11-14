@@ -22,6 +22,7 @@ public sealed record FilterOption(string Value, string Label)
 {
     public const string AllValue = "all";
     public const string MissingValue = "missing";
+    public const string NeedsMatchValue = "needs_match";
 
     public static readonly IReadOnlyList<FilterOption> Generation =
     [
@@ -30,6 +31,7 @@ public sealed record FilterOption(string Value, string Label)
         new(Generations.Switch2, "Switch 2"),
         new(Generations.Unclassified, "Unclassified"),
         new(MissingValue, "Missing files"),
+        new(NeedsMatchValue, "Needs IGDB match"),
     ];
 
     public static readonly IReadOnlyList<FilterOption> SeriesWithoutNeogeo =
@@ -216,7 +218,14 @@ public sealed partial class MainViewModel
         var q = SearchText.Trim();
         if (q.Length > 0 && !item.Title.Contains(q, StringComparison.OrdinalIgnoreCase)) return false;
         var g = GenerationFilter?.Value ?? FilterOption.AllValue;
-        if (g == FilterOption.MissingValue ? !item.IsMissing : g != FilterOption.AllValue && item.Generation != g) return false;
+        var keep = g switch
+        {
+            FilterOption.AllValue => true,
+            FilterOption.MissingValue => item.IsMissing,
+            FilterOption.NeedsMatchValue => !item.IsMatched,
+            _ => item.Generation == g,
+        };
+        if (!keep) return false;
         if (IsArcade && (SeriesFilter?.Value ?? FilterOption.AllValue) is var s && s != FilterOption.AllValue && item.Series != s) return false;
         return true;
     }

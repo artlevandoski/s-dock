@@ -17,6 +17,17 @@ public interface IUiServices
 
     /// <summary>Play Version…: returns the file to launch, or null if closed without playing.</summary>
     Task<string?> ShowVersionsAsync(VersionsViewModel vm);
+
+    Task<bool> ShowIgdbSettingsAsync(IgdbSettingsViewModel vm);
+
+    /// <summary>Match on IGDB…: returns the chosen game, or null if cancelled.</summary>
+    Task<SwitchYard.Core.Metadata.IgdbGame?> ShowMatchAsync(MatchViewModel vm);
+
+    /// <summary>Multi-line text editor. Returns the text, or null if cancelled.</summary>
+    Task<string?> EditTextAsync(string title, string explanation, string initial);
+
+    /// <summary>Opens a web page in the user's browser.</summary>
+    void OpenUrl(string url);
     void OpenFolder(string path);
 
     /// <summary>Bring Switch Yard back to the front with focus on the selected cover (or the open dialog).</summary>

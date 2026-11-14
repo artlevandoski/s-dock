@@ -78,6 +78,22 @@ public sealed class UiServices(MainWindow main) : IUiServices
     public Task<string?> ShowVersionsAsync(VersionsViewModel vm) =>
         ShowDialog<string>(new VersionsWindow(vm));
 
+    public async Task<bool> ShowIgdbSettingsAsync(IgdbSettingsViewModel vm) =>
+        await ShowDialog<bool>(new IgdbSettingsWindow(vm));
+
+    public Task<SwitchYard.Core.Metadata.IgdbGame?> ShowMatchAsync(MatchViewModel vm) =>
+        ShowDialog<SwitchYard.Core.Metadata.IgdbGame>(new MatchWindow(vm));
+
+    public Task<string?> EditTextAsync(string title, string explanation, string initial) =>
+        ShowDialog<string>(new TextEditWindow(title, explanation, initial));
+
+    public void OpenUrl(string url)
+    {
+        // Only web links; the URLs come from Switch Yard itself (Twitch console, IGDB docs).
+        if (Uri.TryCreate(url, UriKind.Absolute, out var uri) && uri.Scheme == Uri.UriSchemeHttps)
+            Process.Start(new ProcessStartInfo { FileName = uri.AbsoluteUri, UseShellExecute = true });
+    }
+
     public void OpenFolder(string path) =>
         Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
 

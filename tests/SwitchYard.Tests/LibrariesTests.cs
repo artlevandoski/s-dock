@@ -74,7 +74,7 @@ public sealed class LibrariesTests : IDisposable
             cmd.ExecuteNonQuery();
         }
         using var upgraded = _env.OpenLibrary();
-        Assert.Equal(3, upgraded.StoredSchemaVersion);
+        Assert.Equal(LibraryStore.SchemaVersion, upgraded.StoredSchemaVersion);
         Assert.Empty(upgraded.LibraryOverrides());
     }
 

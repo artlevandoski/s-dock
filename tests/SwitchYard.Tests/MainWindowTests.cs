@@ -52,6 +52,23 @@ public sealed class FakeUi : IUiServices
 
     public string? NextPickedFile { get; set; }
 
+    public Func<IgdbSettingsViewModel, bool> OnIgdbSettings { get; set; } = _ => false;
+    public Task<bool> ShowIgdbSettingsAsync(IgdbSettingsViewModel vm) => Task.FromResult(OnIgdbSettings(vm));
+
+    /// <summary>Match on IGDB…: runs the dialog's first search, then lets the test choose.</summary>
+    public Func<MatchViewModel, SwitchYard.Core.Metadata.IgdbGame?> OnMatch { get; set; } = _ => null;
+    public async Task<SwitchYard.Core.Metadata.IgdbGame?> ShowMatchAsync(MatchViewModel vm)
+    {
+        await vm.StartAsync();
+        return OnMatch(vm);
+    }
+
+    public string? NextEditedText { get; set; }
+    public Task<string?> EditTextAsync(string title, string explanation, string initial) => Task.FromResult(NextEditedText);
+
+    public List<string> OpenedUrls { get; } = [];
+    public void OpenUrl(string url) => OpenedUrls.Add(url);
+
     public void OpenFolder(string path) { }
     public void RestoreFocus() => FocusRestores++;
 }

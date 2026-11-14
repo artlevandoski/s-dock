@@ -68,6 +68,12 @@
         <Separator />
         <MenuItem Header="Open Emulators _Folder" Command="{Binding OpenEmulatorsFolderCommand}" />
       </MenuItem>
+      <MenuItem Header="_Metadata">
+        <MenuItem Header="_Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
+        <MenuItem Header="_Cancel Matching" Command="{Binding CancelMatchingCommand}" IsVisible="{Binding IsMatchingAll}" />
+        <Separator />
+        <MenuItem Header="IGDB _Settings…" Command="{Binding IgdbSettingsCommand}" />
+      </MenuItem>
     </Menu>
 
     <!-- Toolbar: actions on the left, library tabs in the middle, view toggle on the right -->
@@ -113,10 +119,33 @@
         </StackPanel>
         <ScrollViewer>
           <StackPanel Spacing="10">
-            <c:CoverView Width="120" Height="192" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
+            <c:CoverView Width="120" Height="170" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
                          Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
-                         IsMissing="{Binding SelectedIsMissing}" />
-            <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+                         IsMissing="{Binding SelectedIsMissing}" Image="{Binding SelectedCover}" />
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding SelectedFactsLine}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsMatched}" />
+            </StackPanel>
+            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSelection}">
+              <TextBlock Text="{Binding MatchStatusText}" Classes="muted" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding MatchStatusText}" />
+              <DropDownButton Grid.Column="1" Content="Metadata" Margin="8,0,0,0">
+                <DropDownButton.Flyout>
+                  <MenuFlyout Placement="BottomEdgeAlignedRight">
+                    <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
+                    <MenuItem Header="Refresh from IGDB" Command="{Binding RefreshMetadataCommand}" IsEnabled="{Binding IsMatched}" />
+                    <MenuItem Header="Remove Match" Command="{Binding RemoveMatchCommand}" IsEnabled="{Binding IsMatched}" />
+                    <Separator />
+                    <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
+                    <MenuItem Header="Set Cover Image…" Command="{Binding SetCoverCommand}" />
+                    <MenuItem Header="Set Key Art…" Command="{Binding SetKeyArtCommand}" />
+                    <MenuItem Header="Set Logo…" Command="{Binding SetLogoCommand}" />
+                    <MenuItem Header="Use IGDB Artwork" Command="{Binding ResetArtworkCommand}"
+                              ToolTip.Tip="Remove your own cover, key art and logo for this game" />
+                  </MenuFlyout>
+                </DropDownButton.Flyout>
+              </DropDownButton>
+            </Grid>
             <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding HasSelection}">
               <Grid.Styles>
                 <Style Selector="Grid > TextBlock">
@@ -144,7 +173,8 @@
               <Button Grid.Column="1" Content="Add Version File…" Command="{Binding AddVersionFileCommand}"
                       ToolTip.Tip="Attach another file of this game (an update, revision or alternate dump)" />
             </Grid>
-            <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" />
+            <SelectableTextBlock Text="{Binding SelectedSummary}" TextWrapping="Wrap" IsVisible="{Binding HasSummary}" />
+            <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" Classes="muted" FontSize="12" />
             <TextBlock Classes="warning" FontWeight="Bold" TextWrapping="Wrap" IsVisible="{Binding ShowMissing}"
                        Text="This game file can't be found. It may have been moved, renamed, or be on a drive that isn't connected." />
             <Button Content="Locate File…" Command="{Binding LocateFileCommand}" IsVisible="{Binding ShowMissing}" />
@@ -182,7 +212,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:EditionItem">
               <StackPanel Width="156" Spacing="6" ToolTip.Tip="{Binding Tooltip}">
-                <c:CoverView Width="150" Height="240" HorizontalAlignment="Center"
+                <c:CoverView Width="150" Height="212" HorizontalAlignment="Center" Image="{Binding Cover}"
                              Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
                 <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" MaxWidth="150" />
               </StackPanel>
@@ -190,10 +220,15 @@
           </ListBox.ItemTemplate>
         </ListBox>
 
+        <!-- Landscape key art of the selected game, dimmed behind the carousel -->
+        <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" Opacity="0.22" IsVisible="{Binding IsCarousel}"
+               IsHitTestVisible="False" />
         <DockPanel IsVisible="{Binding IsCarousel}">
           <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="20,0,20,18" HorizontalAlignment="Center">
+            <Image Source="{Binding SelectedLogo}" MaxHeight="90" MaxWidth="420" IsVisible="{Binding HasLogo}"
+                   HorizontalAlignment="Center" />
             <TextBlock Text="{Binding SelectedTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"
-                       TextAlignment="Center" TextWrapping="Wrap" />
+                       TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !HasLogo}" />
             <TextBlock Text="{Binding CarouselSubtitle}" Classes="muted" HorizontalAlignment="Center" />
             <TextBlock Text="← → browse  ·  Enter play  ·  controller: D-pad, A to play, LB/RB library, Y view"
                        Classes="muted" FontSize="12" HorizontalAlignment="Center" Margin="0,6,0,0" />
@@ -209,7 +244,7 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:EditionItem">
-                <c:CoverView Width="200" Height="320" ToolTip.Tip="{Binding Tooltip}"
+                <c:CoverView Width="200" Height="283" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}"
                              Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -223,6 +258,7 @@
             <MenuItem Header="Play Version…" Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}" />
             <Separator />
             <MenuItem Header="Add Version File…" Command="{Binding AddVersionFileCommand}" />
+            <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
           </ContextMenu>
         </Panel.ContextMenu>
       </Panel>

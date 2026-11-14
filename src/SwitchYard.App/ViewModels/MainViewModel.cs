@@ -2,12 +2,36 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using SwitchYard.Core;
+using SwitchYard.Core.Metadata;
 
 namespace SwitchYard.App.ViewModels;
 
-public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary)
+public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null)
 {
+    /// <summary>Covers are decoded at this width (about 2× their on-screen size in the grid).</summary>
+    public const int CoverDecodeWidth = 300;
+
+    private Avalonia.Media.Imaging.Bitmap? _cover;
+    private bool _coverLoaded;
+
     public Edition Edition { get; } = edition;
+    public EditionMetadata Metadata { get; } = metadata ?? EditionMetadata.Empty(edition.Id);
+    public bool IsMatched => Edition.IgdbId is not null;
+
+    /// <summary>The cover to show: the user's image, else IGDB's, else null (generated placeholder).</summary>
+    public Avalonia.Media.Imaging.Bitmap? Cover
+    {
+        get
+        {
+            if (!_coverLoaded)
+            {
+                _coverLoaded = true;
+                if (Metadata.DisplayCoverFile is { } f)
+                    _cover = Controls.ArtCache.Load(Path.Combine(AppPaths.ArtworkDir, f), CoverDecodeWidth);
+            }
+            return _cover;
+        }
+    }
     public string Id => Edition.Id;
     public string Title => Edition.Title;
     public string Generation => Edition.Generation;
@@ -32,10 +56,13 @@ public sealed partial class MainViewModel : ObservableObject
     public ObservableCollection<EditionItem> Items { get; } = [];
     public IReadOnlyList<GenerationOption> GenerationOptions => GenerationOption.Library;
 
-    public MainViewModel(LibraryStore library, EmulatorLauncher launcher, IUiServices ui)
+    /// <param name="igdbFactory">Creates the IGDB client from the saved credentials (tests pass a fake).</param>
+    public MainViewModel(LibraryStore library, EmulatorLauncher launcher, IUiServices ui,
+        Func<LibraryStore, IgdbClient?>? igdbFactory = null)
     {
         _library = library;
         _ui = ui;
+        _igdbFactory = igdbFactory ?? DefaultIgdbFactory;
         Launcher = launcher;
         Launcher.Launched += OnLaunched;
         Launcher.Finished += OnFinished;
@@ -47,7 +74,9 @@ public sealed partial class MainViewModel : ObservableObject
     // ------------------------------------------------------------- state
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection), nameof(CanPlay), nameof(SelectedTitle), nameof(SelectedGeneration),
-        nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing), nameof(VersionsText), nameof(HasVersions), nameof(CarouselSubtitle))]
+        nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing), nameof(VersionsText), nameof(HasVersions), nameof(CarouselSubtitle),
+        nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
+        nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]
@@ -172,8 +201,10 @@ public sealed partial class MainViewModel : ObservableObject
         selectId ??= SelectedItem?.Id;
         var overrides = _library.LibraryOverrides();
         var includeNeogeo = _library.IncludeAcaNeogeo;
+        var metadata = _library.AllMetadata();
         _all = _library.ListEditions()
-            .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo), overrides.ContainsKey(e.Id)))
+            .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo), overrides.ContainsKey(e.Id),
+                metadata.GetValueOrDefault(e.Id)))
             .ToList();
         foreach (var tab in LibraryTabs)
             tab.Count = _all.Count(i => i.Library == tab.Id);

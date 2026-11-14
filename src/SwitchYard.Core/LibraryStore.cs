@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Text.Json;
 using Microsoft.Data.Sqlite;
+using SwitchYard.Core.Metadata;
 
 namespace SwitchYard.Core;
 
@@ -10,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 3;
+    public const int SchemaVersion = 4;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -67,6 +68,23 @@ public sealed class LibraryStore : IDisposable
         CREATE TABLE IF NOT EXISTS generation_defaults (
             generation TEXT PRIMARY KEY CHECK (generation IN ('switch1', 'switch2')),
             profile_id TEXT NOT NULL REFERENCES emulator_profiles(id) ON DELETE CASCADE
+        );
+        -- v4: descriptive metadata and artwork. IGDB fields and the user's edits live in separate columns.
+        CREATE TABLE IF NOT EXISTS edition_metadata (
+            edition_id       TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            igdb_name        TEXT,
+            igdb_slug        TEXT,
+            igdb_url         TEXT,
+            summary          TEXT,
+            genres_json      TEXT,
+            release_year     INTEGER,
+            cover_file       TEXT,
+            keyart_file      TEXT,
+            fetched_at       TEXT,
+            user_summary     TEXT,
+            user_cover_file  TEXT,
+            user_keyart_file TEXT,
+            user_logo_file   TEXT
         );
         -- v3: manual library assignment (Main Library / Arcade Archives), apart from game records.
         CREATE TABLE IF NOT EXISTS edition_library_overrides (
@@ -142,6 +160,11 @@ public sealed class LibraryStore : IDisposable
         {
             // v2 -> v3: library overrides table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '3' WHERE key = 'schema_version'");
+        }
+        if (version < 4)
+        {
+            // v3 -> v4: metadata table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '4' WHERE key = 'schema_version'");
         }
     }
 
@@ -441,6 +464,80 @@ public sealed class LibraryStore : IDisposable
     }
 
     /// <summary>Sets (or with null clears) the profile a specific game always launches with.</summary>
+    // ------------------------------------------------------------------ metadata
+    public const string IgdbClientIdKey = "igdb_client_id";
+    public const string IgdbClientSecretKey = "igdb_client_secret";
+
+    /// <summary>The user's own Twitch/IGDB credentials, kept in the local data folder only.</summary>
+    public (string ClientId, string ClientSecret) IgdbCredentials
+    {
+        get => (GetSetting(IgdbClientIdKey) ?? "", GetSetting(IgdbClientSecretKey) ?? "");
+        set
+        {
+            SetSetting(IgdbClientIdKey, value.ClientId.Trim());
+            SetSetting(IgdbClientSecretKey, value.ClientSecret.Trim());
+        }
+    }
+
+    public bool HasIgdbCredentials => IgdbCredentials is { ClientId.Length: > 0, ClientSecret.Length: > 0 };
+
+    public void SetIgdbId(string editionId, long? igdbId) =>
+        Exec("UPDATE editions SET igdb_id = $i, updated_at = $t WHERE id = $id", ("$i", igdbId), ("$t", UtcNow()), ("$id", editionId));
+
+    private static EditionMetadata ReadMetadata(SqliteDataReader r) => new()
+    {
+        EditionId = r.GetString(r.GetOrdinal("edition_id")),
+        IgdbName = Str(r, "igdb_name"),
+        IgdbSlug = Str(r, "igdb_slug"),
+        IgdbUrl = Str(r, "igdb_url"),
+        Summary = Str(r, "summary"),
+        Genres = Str(r, "genres_json") is { } g ? JsonSerializer.Deserialize(g, CoreJsonContext.Default.ListString) ?? [] : [],
+        ReleaseYear = Long(r, "release_year") is { } y ? (int)y : null,
+        CoverFile = Str(r, "cover_file"),
+        KeyArtFile = Str(r, "keyart_file"),
+        FetchedAt = Str(r, "fetched_at"),
+        UserSummary = Str(r, "user_summary"),
+        UserCoverFile = Str(r, "user_cover_file"),
+        UserKeyArtFile = Str(r, "user_keyart_file"),
+        UserLogoFile = Str(r, "user_logo_file"),
+    };
+
+    public EditionMetadata GetMetadata(string editionId)
+    {
+        using var cmd = Cmd("SELECT * FROM edition_metadata WHERE edition_id = $e", ("$e", editionId));
+        using var r = cmd.ExecuteReader();
+        return r.Read() ? ReadMetadata(r) : EditionMetadata.Empty(editionId);
+    }
+
+    public Dictionary<string, EditionMetadata> AllMetadata()
+    {
+        var result = new Dictionary<string, EditionMetadata>();
+        using var cmd = Cmd("SELECT * FROM edition_metadata");
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+        {
+            var m = ReadMetadata(r);
+            result[m.EditionId] = m;
+        }
+        return result;
+    }
+
+    public void SaveMetadata(EditionMetadata m) => Exec("""
+        INSERT INTO edition_metadata(edition_id, igdb_name, igdb_slug, igdb_url, summary, genres_json, release_year,
+                                     cover_file, keyart_file, fetched_at, user_summary, user_cover_file,
+                                     user_keyart_file, user_logo_file)
+        VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul)
+        ON CONFLICT(edition_id) DO UPDATE SET
+            igdb_name = excluded.igdb_name, igdb_slug = excluded.igdb_slug, igdb_url = excluded.igdb_url,
+            summary = excluded.summary, genres_json = excluded.genres_json, release_year = excluded.release_year,
+            cover_file = excluded.cover_file, keyart_file = excluded.keyart_file, fetched_at = excluded.fetched_at,
+            user_summary = excluded.user_summary, user_cover_file = excluded.user_cover_file,
+            user_keyart_file = excluded.user_keyart_file, user_logo_file = excluded.user_logo_file
+        """, ("$e", m.EditionId), ("$n", m.IgdbName), ("$s", m.IgdbSlug), ("$u", m.IgdbUrl), ("$sum", m.Summary),
+             ("$g", m.Genres.Count == 0 ? null : JsonSerializer.Serialize(m.Genres.ToList(), CoreJsonContext.Default.ListString)),
+             ("$y", m.ReleaseYear), ("$c", m.CoverFile), ("$k", m.KeyArtFile), ("$f", m.FetchedAt),
+             ("$us", m.UserSummary), ("$uc", m.UserCoverFile), ("$uk", m.UserKeyArtFile), ("$ul", m.UserLogoFile));
+
     // ----------------------------------------------------------------- libraries
     public const string IncludeNeogeoKey = "include_aca_neogeo";
 

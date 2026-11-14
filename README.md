@@ -4,9 +4,10 @@ An independent Windows frontend for certain game libraries. You bring your own g
 your own emulator installation. Switch Yard does not include or download games, firmware,
 keys, or system files.
 
-**Status:** Milestone 3. Browse Main Library and Arcade Archives in a grid or a
-controller-friendly carousel, set up several emulator profiles, and keep several versions
-of a game. Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/).
+**Status:** Milestone 4. Browse Main Library and Arcade Archives in a grid or a
+controller-friendly carousel with artwork and descriptions from IGDB, set up several
+emulator profiles, and keep several versions of a game. Built with C# / .NET 10 and
+[Avalonia](https://avaloniaui.net/).
 
 ## Requirements
 
@@ -101,6 +102,10 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Carousel | the centred cover is 15–20% larger than its neighbours and sits in the middle; switching views keeps the selection |
 | Versions | add, remove and choose the main file; Play Version… launches the chosen file once; duplicates can be attached at import; Switch 2 editions are never matched to Switch 1 titles |
 | Controller | buttons fire once, directions repeat when held, stick deadzone, held buttons ignored on return; D-pad moves the carousel, LB/RB switch library, Y switches view |
+| IGDB (fake service) | one sign-in reused, credentials sent with every request, expired token renewed once, clear message for bad credentials, pasted links/slugs/IDs parsed, search text can't break the query |
+| Matching | platform-aware by generation (both for Unclassified); confident matches only (same title, platform as tie-breaker); match-all summary, never re-matches, stops on bad credentials, can be cancelled |
+| Metadata | description, genres, year, IGDB ID and cached artwork saved; refresh keeps the user's text and images; remove match keeps user edits; credentials stored locally only |
+| Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
 | UI | missing-file state, Play without a profile, details dropdown, all windows render |
 
@@ -181,6 +186,41 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 
   Input is ignored while another app, such as the emulator, is in front.
 
+### Milestone 4: IGDB metadata and artwork
+
+**One-time setup.** IGDB requires free Twitch developer credentials, and each user brings
+their own, so no shared secret ships with Switch Yard:
+
+1. Sign in at the [Twitch developer console](https://dev.twitch.tv/console/apps) and click
+   **Register Your Application**. Use any name, OAuth redirect `http://localhost`, category
+   *Application Integration*, client type *Confidential*.
+2. Open the application, copy the **Client ID**, and click **New Secret** to get a
+   **Client Secret**.
+3. In Switch Yard: **Metadata → IGDB Settings…**, paste both, click **Test Connection**,
+   then **Save**.
+
+The credentials are stored only in `data\library.sqlite3` on this computer, never in the
+app or the repository.
+
+**Using it**
+
+- **Metadata → Match Unmatched Games** searches IGDB for every unmatched game, limited to
+  the game's platform (Nintendo Switch or Nintendo Switch 2; both for Unclassified). Only
+  clear matches are applied: same title (ignoring case, punctuation and ™), and if several
+  games share it, the only one on the right platform. The rest show under the **Needs IGDB
+  match** filter.
+- **Match on IGDB…** (details panel → **Metadata**, or right-click a cover) shows an editable
+  search with cover previews, year and platforms, a *Search all platforms* option, and a
+  box for an IGDB link, slug or numeric ID. On a matched game it becomes **Change Match…**.
+- The chosen IGDB ID is saved, and the cover and landscape key art are downloaded once into
+  `data\artwork\`, so they travel with the portable folder and work offline.
+- **Edit Description…**, **Set Cover Image…**, **Set Key Art…** and **Set Logo…** store your
+  own text and images separately. **Refresh from IGDB** updates IGDB's data but never
+  replaces yours; **Use IGDB Artwork** removes your images.
+- The carousel shows the selected game's key art behind the covers, and its logo in place
+  of the title when you've set one. IGDB has no game logos, so logos come from you.
+- Videos are planned for later.
+
 ## Windows smoke test (real Eden)
 
 Run by hand with your Eden install and game folder. Record results below.
@@ -208,6 +248,11 @@ Run by hand with your Eden install and game folder. Record results below.
    LB/RB, Y). Launch from the carousel and exit the emulator; the same cover comes back
    centred. Pressing buttons while the emulator is in front must not affect Switch Yard.
 9. Add a second file to a game (Add Version File…), then use Play Version… to launch it.
+10. Enter your IGDB credentials (Test Connection must succeed), run **Match Unmatched
+    Games**, and check covers, descriptions and genres. Use **Needs IGDB match** and fix
+    one game with **Match on IGDB…** (try a pasted igdb.com link).
+11. Edit a description and set your own cover, then **Refresh from IGDB**: both must stay.
+    Move the whole folder (or restart offline) and confirm the artwork still shows.
 
 ### Results
 
@@ -226,3 +271,5 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 7 Libraries and per-library state | | |
 | | C# | | 8 Carousel, keyboard and controller | | |
 | | C# | | 9 Versions and Play Version… | | |
+| | C# | | 10 IGDB setup and matching | | |
+| | C# | | 11 User edits kept, offline artwork | | |
