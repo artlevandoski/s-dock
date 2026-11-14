@@ -1,6 +1,6 @@
 # Switch Yard
 
-An independent Windows frontend for Switch 1 and Switch 2 game libraries. You bring
+An independent Windows frontend for certain game libraries. You bring
 your own game files and your own emulator installation. Switch Yard does not include
 or download games, firmware, keys, or system files.
 
