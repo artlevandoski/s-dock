@@ -27,6 +27,14 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>
+    /// Settings → Background. Avalonia's check and radio menu items only draw the tick, so each item runs this
+    /// command and the tick follows the setting.
+    /// </summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void SetBackground(string? style) =>
+        BackgroundStyle = style is BackgroundColor or BackgroundPlain ? style : BackgroundArt;
+
     // For the three radio items in Settings → Background.
     public bool BackgroundIsArt { get => BackgroundStyle == BackgroundArt; set { if (value) BackgroundStyle = BackgroundArt; } }
     public bool BackgroundIsColor { get => BackgroundStyle == BackgroundColor; set { if (value) BackgroundStyle = BackgroundColor; } }

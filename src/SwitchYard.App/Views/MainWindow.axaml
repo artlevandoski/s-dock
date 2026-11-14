@@ -201,28 +201,34 @@
                     Command="{Binding AddFolderCommand}" ToolTip.Tip="Add a folder of games (Ctrl+O)">
               <PathIcon Data="{StaticResource IconFolderPlus}" Width="20" Height="20" />
             </Button>
-            <Button Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center" ToolTip.Tip="Settings">
+            <Button x:Name="SettingsButton" Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center" ToolTip.Tip="Settings">
               <PathIcon Data="{StaticResource IconSettings}" Width="22" Height="22" />
               <Button.Flyout>
                 <MenuFlyout Placement="BottomEdgeAlignedRight">
                   <MenuItem Header="Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
                   <MenuItem Header="Emulator Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
                   <MenuItem Header="Background">
-                    <MenuItem Header="Game Artwork" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsArt}"
+                    <MenuItem Header="Game Artwork" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsArt, Mode=OneWay}"
+                              Command="{Binding SetBackgroundCommand}" CommandParameter="art"
                               ToolTip.Tip="The game's banner or chosen background behind the covers" />
-                    <MenuItem Header="Color from Game" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsColor}"
+                    <MenuItem Header="Color from Game" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsColor, Mode=OneWay}"
+                              Command="{Binding SetBackgroundCommand}" CommandParameter="color"
                               ToolTip.Tip="A gradient in the main colour of the selected game's cover" />
-                    <MenuItem Header="Plain" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsPlain}"
+                    <MenuItem Header="Plain" ToggleType="Radio" GroupName="Background" IsChecked="{Binding BackgroundIsPlain, Mode=OneWay}"
+                              Command="{Binding SetBackgroundCommand}" CommandParameter="plain"
                               ToolTip.Tip="Switch Yard's own dark background" />
                   </MenuItem>
                   <MenuItem Header="Playing">
-                    <MenuItem Header="Start Games in Full Screen" ToggleType="CheckBox" IsChecked="{Binding StartGamesFullScreen}"
+                    <MenuItem Header="Start Games in Full Screen" ToggleType="CheckBox" IsChecked="{Binding StartGamesFullScreen, Mode=OneWay}"
+                              Command="{Binding ToggleStartGamesFullScreenCommand}"
                               ToolTip.Tip="Adds Eden's full-screen switch (-f) when a game starts" />
                     <Separator />
                     <MenuItem Header="Esc or Start+Select: Press Once to Exit" ToggleType="Radio" GroupName="ExitPresses"
-                              IsChecked="{Binding ExitWithOnePress}" />
+                              IsChecked="{Binding ExitWithOnePress, Mode=OneWay}"
+                              Command="{Binding SetExitPressesCommand}" CommandParameter="1" />
                     <MenuItem Header="Esc or Start+Select: Press Twice to Exit" ToggleType="Radio" GroupName="ExitPresses"
-                              IsChecked="{Binding ExitWithTwoPresses}"
+                              IsChecked="{Binding ExitWithTwoPresses, Mode=OneWay}"
+                              Command="{Binding SetExitPressesCommand}" CommandParameter="2"
                               ToolTip.Tip="The first press shows a note; press again within 3 seconds to close the game" />
                   </MenuItem>
                   <Separator />

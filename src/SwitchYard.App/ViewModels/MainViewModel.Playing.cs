@@ -42,6 +42,13 @@ public partial class MainViewModel
         set => ExitWithTwoPresses = !value;
     }
 
+    // The Playing menu's items run these (Avalonia's check and radio menu items only draw the tick).
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleStartGamesFullScreen() => StartGamesFullScreen = !StartGamesFullScreen;
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void SetExitPresses(string? presses) => ExitWithTwoPresses = presses != "1";
+
     /// <summary>
     /// Closes the running game's emulator the way its close button would (so it shuts down cleanly), stopping it
     /// if it hasn't exited within a few seconds. Switch Yard comes back to the front when it has.
