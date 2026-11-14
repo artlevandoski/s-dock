@@ -142,6 +142,15 @@ public sealed partial class MainViewModel
     [RelayCommand]
     private void ToggleView() => IsCarousel = !IsCarousel;
 
+    [RelayCommand]
+    private void ShowGrid() => IsCarousel = false;
+
+    [RelayCommand]
+    private void ShowCarousel() => IsCarousel = true;
+
+    /// <summary>No games at all (as opposed to none matching the filters): offer Add Folder.</summary>
+    public bool IsLibraryEmpty => _all.Count == 0;
+
     // ----------------------------------------------------------------- search and filters
     [ObservableProperty]
     public partial string SearchText { get; set; } = "";
@@ -245,13 +254,14 @@ public sealed partial class MainViewModel
         OnPropertyChanged(nameof(HasActiveFilters));
         OnPropertyChanged(nameof(EmptyText));
         OnPropertyChanged(nameof(ShowEmpty));
+        OnPropertyChanged(nameof(IsLibraryEmpty));
     }
 
     public bool ShowEmpty => !HasItems;
 
     public string EmptyText =>
         _all.Count == 0
-            ? "Your library is empty.\nClick Add Folder… to scan a folder of your game files.\nThen open Emulator Settings… and set up your emulator."
+            ? "Your library is empty.\nAdd a folder of your game files to get started,\nthen set up your emulator from the menu."
             : _all.Any(i => i.Library == CurrentLibrary)
                 ? "No games match the search or filters."
                 : IsArcade

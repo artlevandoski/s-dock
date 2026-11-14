@@ -6,7 +6,7 @@
         x:DataType="vm:MainViewModel"
         Title="Switch Yard"
         Icon="avares://SwitchYard/Assets/switchyard.ico"
-        Width="1180" Height="780" MinWidth="820" MinHeight="560"
+        Width="1240" Height="800" MinWidth="900" MinHeight="600"
         WindowStartupLocation="CenterScreen">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
@@ -17,6 +17,57 @@
   </Window.KeyBindings>
 
   <Window.Styles>
+    <!-- Grid: cards without the default list highlight; a coral ring marks the selected cover. -->
+    <Style Selector="ListBox#CoverList ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="6,8,6,10" />
+      <!-- The coral ring and lift show selection; no extra keyboard focus rectangle -->
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.ring">
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="3" />
+      <Setter Property="CornerRadius" Value="13" />
+      <Setter Property="Padding" Value="2" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.12" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:pointerover Border.ring">
+      <Setter Property="RenderTransform" Value="scale(1.03)" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:selected Border.ring">
+      <Setter Property="BorderBrush" Value="{StaticResource SyAccent}" />
+      <Setter Property="RenderTransform" Value="scale(1.04)" />
+    </Style>
+    <Style Selector="TextBlock.card-title">
+      <Setter Property="Foreground" Value="{StaticResource SyMuted}" />
+      <Setter Property="FontSize" Value="13" />
+    </Style>
+    <Style Selector="ListBox#CoverList ListBoxItem:selected TextBlock.card-title">
+      <Setter Property="Foreground" Value="{StaticResource SyText}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
     <!-- Carousel: the selected cover is ~18% larger than its neighbours, with a short animation. -->
     <Style Selector="ListBox#CarouselList ListBoxItem">
       <Setter Property="Padding" Value="0" />
@@ -24,7 +75,8 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="RenderTransform" Value="scale(1)" />
-      <Setter Property="Opacity" Value="0.7" />
+      <Setter Property="Opacity" Value="0.6" />
+      <Setter Property="FocusAdorner" Value="{x:Null}" />
       <Setter Property="Transitions">
         <Transitions>
           <TransformOperationsTransition Property="RenderTransform" Duration="0:0:0.16" />
@@ -49,167 +101,238 @@
     <Style Selector="ListBox#CarouselList ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="Transparent" />
     </Style>
+    <Style Selector="ListBox#CarouselList ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+
+    <!-- Details panel form rows -->
+    <Style Selector="Grid.form > TextBlock">
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="0,0,10,0" />
+      <Setter Property="Foreground" Value="{StaticResource SyMuted}" />
+    </Style>
+    <Style Selector="Grid.form > ComboBox">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Margin" Value="0,3" />
+    </Style>
   </Window.Styles>
 
   <DockPanel>
-    <Menu DockPanel.Dock="Top">
-      <MenuItem Header="_Library">
-        <MenuItem Header="_Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
-        <Separator />
-        <MenuItem Header="_Next Library" InputGesture="Ctrl+Tab" Command="{Binding NextLibraryCommand}" />
-        <MenuItem Header="_Grid / Carousel" InputGesture="Ctrl+G" Command="{Binding ToggleViewCommand}" />
-        <Separator />
-        <MenuItem Header="Open _Data Folder" Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolderTip}" />
-        <Separator />
-        <MenuItem Header="_Quit" Click="Quit_Click" />
-      </MenuItem>
-      <MenuItem Header="_Emulator">
-        <MenuItem Header="Emulator _Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
-        <Separator />
-        <MenuItem Header="Open Emulators _Folder" Command="{Binding OpenEmulatorsFolderCommand}" />
-      </MenuItem>
-      <MenuItem Header="_Metadata">
-        <MenuItem Header="_Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
-        <MenuItem Header="_Cancel Matching" Command="{Binding CancelMatchingCommand}" IsVisible="{Binding IsMatchingAll}" />
-        <MenuItem Header="Get Missing _Logos" Command="{Binding GetMissingLogosCommand}"
-                  ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
-        <Separator />
-        <MenuItem Header="Metadata _Settings…" Command="{Binding IgdbSettingsCommand}" />
-      </MenuItem>
-    </Menu>
-
-    <!-- Toolbar: actions on the left, library tabs in the middle, view toggle on the right -->
-    <Border DockPanel.Dock="Top" Padding="8,4" BorderBrush="#30FFFFFF" BorderThickness="0,0,0,1">
-      <Grid ColumnDefinitions="Auto,*,Auto">
-        <StackPanel Orientation="Horizontal" Spacing="6">
-          <Button Content="Add Folder…" Command="{Binding AddFolderCommand}" />
-          <Button Content="Emulator Settings…" Command="{Binding EmulatorSettingsCommand}" />
+    <!-- ============================== Top bar ============================== -->
+    <Border DockPanel.Dock="Top" Background="{StaticResource SySurface}" Padding="16,10"
+            BorderBrush="{StaticResource SyBorder}" BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto,*">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <Image Source="avares://SwitchYard/Assets/switchyard.png" Width="28" Height="28" />
+          <TextBlock Text="Switch Yard" FontSize="18" FontWeight="Bold" VerticalAlignment="Center" />
         </StackPanel>
-        <TabStrip Grid.Column="1" HorizontalAlignment="Center" ItemsSource="{Binding LibraryTabs}"
-                  SelectedItem="{Binding SelectedLibraryTab}" ToolTip.Tip="Switch library (Ctrl+Tab)">
-          <TabStrip.ItemTemplate>
-            <DataTemplate x:DataType="vm:LibraryTab">
-              <TextBlock Text="{Binding Header}" />
-            </DataTemplate>
-          </TabStrip.ItemTemplate>
-        </TabStrip>
-        <Button Grid.Column="2" Content="{Binding ViewToggleLabel}" Command="{Binding ToggleViewCommand}"
-                ToolTip.Tip="Switch between grid and carousel (Ctrl+G)" />
+
+        <Border Grid.Column="1" Background="{StaticResource SySurface2}" CornerRadius="20" Padding="2"
+                BorderBrush="{StaticResource SyBorder}" BorderThickness="1">
+          <TabStrip Classes="pills" Background="Transparent" ItemsSource="{Binding LibraryTabs}"
+                    SelectedItem="{Binding SelectedLibraryTab}" ToolTip.Tip="Switch library (Ctrl+Tab, or LB/RB)">
+            <TabStrip.ItemTemplate>
+              <DataTemplate x:DataType="vm:LibraryTab">
+                <TextBlock Text="{Binding Header}" />
+              </DataTemplate>
+            </TabStrip.ItemTemplate>
+          </TabStrip>
+        </Border>
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Center">
+          <Panel Width="240" Margin="0,0,8,0">
+            <TextBox x:Name="SearchBox" Classes="search" Text="{Binding SearchText}" PlaceholderText="Search (Ctrl+F)" />
+            <PathIcon Data="{StaticResource IconSearch}" Width="15" Height="15" Margin="13,0,0,0"
+                      HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource SyMuted}"
+                      IsHitTestVisible="False" />
+          </Panel>
+          <ToggleButton Classes="icon" IsChecked="{Binding IsGrid, Mode=OneWay}" Command="{Binding ShowGridCommand}"
+                        ToolTip.Tip="Grid (Ctrl+G)">
+            <PathIcon Data="{StaticResource IconGrid}" Width="18" Height="18" />
+          </ToggleButton>
+          <ToggleButton Classes="icon" IsChecked="{Binding IsCarousel, Mode=OneWay}" Command="{Binding ShowCarouselCommand}"
+                        ToolTip.Tip="Carousel (Ctrl+G)">
+            <PathIcon Data="{StaticResource IconCarousel}" Width="18" Height="18" />
+          </ToggleButton>
+          <Button Classes="icon" Command="{Binding AddFolderCommand}" ToolTip.Tip="Add a folder of games (Ctrl+O)">
+            <PathIcon Data="{StaticResource IconFolderPlus}" Width="18" Height="18" />
+          </Button>
+          <Button Classes="icon" ToolTip.Tip="Menu">
+            <PathIcon Data="{StaticResource IconMenu}" Width="18" Height="18" />
+            <Button.Flyout>
+              <MenuFlyout Placement="BottomEdgeAlignedRight">
+                <MenuItem Header="Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
+                <MenuItem Header="Emulator Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+                <Separator />
+                <MenuItem Header="Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
+                <MenuItem Header="Cancel Matching" Command="{Binding CancelMatchingCommand}" IsVisible="{Binding IsMatchingAll}" />
+                <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}"
+                          ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
+                <MenuItem Header="Metadata Settings…" Command="{Binding IgdbSettingsCommand}" />
+                <Separator />
+                <MenuItem Header="Open Data Folder" Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolderTip}" />
+                <MenuItem Header="Open Emulators Folder" Command="{Binding OpenEmulatorsFolderCommand}" />
+                <Separator />
+                <MenuItem Header="Quit" Click="Quit_Click" />
+              </MenuFlyout>
+            </Button.Flyout>
+          </Button>
+        </StackPanel>
       </Grid>
     </Border>
 
-    <Border DockPanel.Dock="Bottom" Padding="10,4" BorderBrush="#30FFFFFF" BorderThickness="0,1,0,0">
-      <TextBlock x:Name="StatusLine" Text="{Binding StatusText}" Classes="muted" />
+    <!-- ============================== Status bar ============================== -->
+    <Border DockPanel.Dock="Bottom" Background="{StaticResource SySurface}" Padding="16,5"
+            BorderBrush="{StaticResource SyBorder}" BorderThickness="0,1,0,0">
+      <TextBlock x:Name="StatusLine" Text="{Binding StatusText}" Classes="muted" FontSize="12" />
     </Border>
 
-    <!-- Details panel -->
-    <Border DockPanel.Dock="Right" Width="330" BorderBrush="#30FFFFFF" BorderThickness="1,0,0,0">
-      <DockPanel Margin="16">
-        <StackPanel DockPanel.Dock="Bottom" Spacing="6">
-          <TextBlock Text="{Binding RouteText}" Classes="muted" TextWrapping="Wrap" HorizontalAlignment="Center"
-                     TextAlignment="Center" IsVisible="{Binding HasSelection}" />
-          <Button x:Name="PlayButton" Classes="primary accent"
-                  Content="{Binding PlayLabel}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
-          <Grid ColumnDefinitions="*,6,*">
-            <Button Content="Launch With…" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}"
-                    ToolTip.Tip="Pick an emulator for this launch only" />
-            <Button Grid.Column="2" Content="Play Version…" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
-                    Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}"
-                    ToolTip.Tip="Launch another file of this game, or choose its main file" />
-          </Grid>
-        </StackPanel>
-        <ScrollViewer>
-          <StackPanel Spacing="10">
-            <c:CoverView Width="120" Height="170" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
-                         Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
-                         IsMissing="{Binding SelectedIsMissing}" Image="{Binding SelectedCover}" />
-            <StackPanel Spacing="2">
-              <!-- Clear logo in place of the name when the game has one -->
-              <Image Source="{Binding SelectedLogo}" MaxHeight="72" HorizontalAlignment="Left" IsVisible="{Binding HasLogo}"
-                     ToolTip.Tip="{Binding SelectedTitle}" Margin="0,2,0,4" />
-              <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap"
-                         IsVisible="{Binding !HasLogo}" />
-              <TextBlock Text="{Binding SelectedFactsLine}" Classes="muted" TextWrapping="Wrap" IsVisible="{Binding IsMatched}" />
+    <!-- ============================== Details panel (grid view) ============================== -->
+    <Border DockPanel.Dock="Right" Width="340" Background="{StaticResource SySurface}" IsVisible="{Binding IsGrid}"
+            BorderBrush="{StaticResource SyBorder}" BorderThickness="1,0,0,0">
+      <Panel>
+        <TextBlock Text="Select a game" Classes="muted" HorizontalAlignment="Center" VerticalAlignment="Center"
+                   IsVisible="{Binding !HasSelection}" />
+        <ScrollViewer IsVisible="{Binding HasSelection}">
+          <StackPanel>
+            <!-- Banner: the game's background art, fading into the panel -->
+            <Panel Height="150" ClipToBounds="True">
+              <Border Background="{Binding SelectedGeneration, Converter={x:Static vm:Converters.GenerationBanner}}" />
+              <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" />
+              <Border>
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                    <GradientStop Offset="0" Color="#10171A20" />
+                    <GradientStop Offset="0.55" Color="#80171A20" />
+                    <GradientStop Offset="1" Color="#FF171A20" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
+            </Panel>
+
+            <StackPanel Margin="18,0,18,18" Spacing="12">
+              <!-- Cover overlapping the banner, with logo (or title) beside it -->
+              <Grid ColumnDefinitions="Auto,*">
+                <c:CoverView Width="96" Height="136" Margin="0,-70,14,0" VerticalAlignment="Top"
+                             Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
+                             IsMissing="{Binding SelectedIsMissing}" Image="{Binding SelectedCover}" ShowGenerationBand="False" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
+                  <Image Source="{Binding SelectedLogo}" MaxHeight="58" HorizontalAlignment="Left" IsVisible="{Binding HasLogo}"
+                         ToolTip.Tip="{Binding SelectedTitle}" />
+                  <TextBlock Text="{Binding SelectedTitle}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap"
+                             IsVisible="{Binding !HasLogo}" />
+                  <TextBlock Text="{Binding DetailsFactsLine}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                </StackPanel>
+              </Grid>
+
+              <StackPanel Spacing="8">
+                <Button x:Name="PlayButton" Classes="primary accent" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconPlay}" Width="18" Height="18" />
+                    <TextBlock Text="{Binding PlayLabel}" />
+                  </StackPanel>
+                </Button>
+                <Grid ColumnDefinitions="*,8,*">
+                  <Button Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}"
+                          ToolTip.Tip="Pick an emulator for this launch only" Content="Launch With…" />
+                  <Button Grid.Column="2" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Command="{Binding PlayVersionCommand}" IsEnabled="{Binding CanPlay}"
+                          ToolTip.Tip="Launch another file of this game, or choose its main file" Content="Play Version…" />
+                </Grid>
+                <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                           HorizontalAlignment="Center" TextAlignment="Center" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding ShowMissing}">
+                <TextBlock Classes="warning" FontWeight="SemiBold" TextWrapping="Wrap"
+                           Text="This game file can't be found. It may have been moved, renamed, or be on a drive that isn't connected." />
+                <Button Classes="subtle" Content="Locate File…" Command="{Binding LocateFileCommand}" />
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasSummary}">
+                <TextBlock Text="ABOUT" Classes="section" />
+                <SelectableTextBlock Text="{Binding SelectedSummary}" TextWrapping="Wrap" LineHeight="20" />
+              </StackPanel>
+
+              <Expander Header="Game settings" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch">
+                <StackPanel Spacing="10">
+                  <Grid Classes="form" ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto">
+                    <TextBlock Grid.Row="0" Text="Generation" />
+                    <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding GenerationOptions}"
+                              SelectedItem="{Binding SelectedGenerationOption}" />
+                    <TextBlock Grid.Row="1" Text="Emulator" />
+                    <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding EmulatorChoices}"
+                              SelectedItem="{Binding SelectedEmulatorChoice}" ToolTip.Tip="Which emulator Play uses for this game" />
+                    <TextBlock Grid.Row="2" Text="Library" />
+                    <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding LibraryChoices}"
+                              SelectedItem="{Binding SelectedLibraryChoice}"
+                              ToolTip.Tip="Automatic places Arcade Archives titles by name; pick a library to override it" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding VersionsText}" VerticalAlignment="Center" Classes="muted" />
+                    <Button Grid.Column="1" Classes="subtle" Content="Add Version File…" Command="{Binding AddVersionFileCommand}"
+                            ToolTip.Tip="Attach another file of this game (an update, revision or alternate dump)" />
+                  </Grid>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <TextBlock Text="{Binding MatchStatusText}" Classes="muted" VerticalAlignment="Center"
+                               TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding MatchStatusText}" />
+                    <DropDownButton Grid.Column="1" Content="Metadata" Margin="8,0,0,0">
+                      <DropDownButton.Flyout>
+                        <MenuFlyout Placement="BottomEdgeAlignedRight">
+                          <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
+                          <MenuItem Header="Refresh from IGDB" Command="{Binding RefreshMetadataCommand}" IsEnabled="{Binding IsMatched}" />
+                          <MenuItem Header="Remove Match" Command="{Binding RemoveMatchCommand}" IsEnabled="{Binding IsMatched}" />
+                          <Separator />
+                          <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
+                          <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}"
+                                    ToolTip.Tip="Pick the image shown behind the carousel" />
+                          <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}"
+                                    ToolTip.Tip="Pick the clear logo shown in place of the game name" />
+                          <MenuItem Header="Set Cover Image…" Command="{Binding SetCoverCommand}" />
+                          <MenuItem Header="Use Default Artwork" Command="{Binding ResetArtworkCommand}"
+                                    ToolTip.Tip="Remove your own cover, background and logo for this game" />
+                        </MenuFlyout>
+                      </DropDownButton.Flyout>
+                    </DropDownButton>
+                  </Grid>
+                  <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" Classes="muted" FontSize="12" />
+                </StackPanel>
+              </Expander>
             </StackPanel>
-            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSelection}">
-              <TextBlock Text="{Binding MatchStatusText}" Classes="muted" VerticalAlignment="Center"
-                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding MatchStatusText}" />
-              <DropDownButton Grid.Column="1" Content="Metadata" Margin="8,0,0,0">
-                <DropDownButton.Flyout>
-                  <MenuFlyout Placement="BottomEdgeAlignedRight">
-                    <MenuItem Header="{Binding MatchMenuLabel}" Command="{Binding MatchOnIgdbCommand}" />
-                    <MenuItem Header="Refresh from IGDB" Command="{Binding RefreshMetadataCommand}" IsEnabled="{Binding IsMatched}" />
-                    <MenuItem Header="Remove Match" Command="{Binding RemoveMatchCommand}" IsEnabled="{Binding IsMatched}" />
-                    <Separator />
-                    <MenuItem Header="Edit Description…" Command="{Binding EditDescriptionCommand}" />
-                    <MenuItem Header="Choose Background…" Command="{Binding ChooseBackgroundCommand}"
-                              ToolTip.Tip="Pick the image shown behind the carousel" />
-                    <MenuItem Header="Choose Logo…" Command="{Binding ChooseLogoCommand}"
-                              ToolTip.Tip="Pick the clear logo shown in place of the game name" />
-                    <MenuItem Header="Set Cover Image…" Command="{Binding SetCoverCommand}" />
-                    <MenuItem Header="Use Default Artwork" Command="{Binding ResetArtworkCommand}"
-                              ToolTip.Tip="Remove your own cover, background and logo for this game" />
-                  </MenuFlyout>
-                </DropDownButton.Flyout>
-              </DropDownButton>
-            </Grid>
-            <Grid ColumnDefinitions="Auto,*" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding HasSelection}">
-              <Grid.Styles>
-                <Style Selector="Grid > TextBlock">
-                  <Setter Property="VerticalAlignment" Value="Center" />
-                  <Setter Property="Margin" Value="0,0,8,0" />
-                </Style>
-                <Style Selector="Grid > ComboBox">
-                  <Setter Property="HorizontalAlignment" Value="Stretch" />
-                  <Setter Property="Margin" Value="0,3" />
-                </Style>
-              </Grid.Styles>
-              <TextBlock Grid.Row="0" Text="Generation:" />
-              <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding GenerationOptions}"
-                        SelectedItem="{Binding SelectedGenerationOption}" />
-              <TextBlock Grid.Row="1" Text="Emulator:" />
-              <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding EmulatorChoices}"
-                        SelectedItem="{Binding SelectedEmulatorChoice}" ToolTip.Tip="Which emulator Play uses for this game" />
-              <TextBlock Grid.Row="2" Text="Library:" />
-              <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding LibraryChoices}"
-                        SelectedItem="{Binding SelectedLibraryChoice}"
-                        ToolTip.Tip="Automatic places Arcade Archives titles by name; pick a library to override it" />
-            </Grid>
-            <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding HasSelection}">
-              <TextBlock Text="{Binding VersionsText}" VerticalAlignment="Center" Classes="muted" />
-              <Button Grid.Column="1" Content="Add Version File…" Command="{Binding AddVersionFileCommand}"
-                      ToolTip.Tip="Attach another file of this game (an update, revision or alternate dump)" />
-            </Grid>
-            <SelectableTextBlock Text="{Binding SelectedSummary}" TextWrapping="Wrap" IsVisible="{Binding HasSummary}" />
-            <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" Classes="muted" FontSize="12" />
-            <TextBlock Classes="warning" FontWeight="Bold" TextWrapping="Wrap" IsVisible="{Binding ShowMissing}"
-                       Text="This game file can't be found. It may have been moved, renamed, or be on a drive that isn't connected." />
-            <Button Content="Locate File…" Command="{Binding LocateFileCommand}" IsVisible="{Binding ShowMissing}" />
           </StackPanel>
         </ScrollViewer>
-      </DockPanel>
+      </Panel>
     </Border>
 
-    <!-- Search and filters for the current library -->
-    <Border DockPanel.Dock="Top" Padding="10,8" BorderBrush="#18FFFFFF" BorderThickness="0,0,0,1">
+    <!-- ============================== Filters ============================== -->
+    <Border DockPanel.Dock="Top" Padding="16,10,16,6">
       <StackPanel Orientation="Horizontal" Spacing="8">
-        <TextBox x:Name="SearchBox" Width="260" Text="{Binding SearchText}" PlaceholderText="Search this library (Ctrl+F)" />
-        <ComboBox ItemsSource="{Binding GenerationFilterOptions}" SelectedItem="{Binding GenerationFilter}" MinWidth="150" />
-        <ComboBox ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
+        <ComboBox Classes="chip" ItemsSource="{Binding GenerationFilterOptions}" SelectedItem="{Binding GenerationFilter}" MinWidth="150" />
+        <ComboBox Classes="chip" ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
                   IsVisible="{Binding IsArcade}" />
         <CheckBox Content="Include ACA NEOGEO" IsChecked="{Binding IncludeAcaNeogeo}" IsVisible="{Binding IsArcade}"
                   ToolTip.Tip="Show ACA NEOGEO titles here instead of in Main Library" />
-        <Button Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
+        <Button Classes="subtle" Content="Clear filters" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
       </StackPanel>
     </Border>
 
-    <!-- Covers: grid or carousel, sharing one selection -->
+    <!-- ============================== Covers ============================== -->
     <Grid>
-      <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" TextAlignment="Center" Classes="muted"
-                 FontSize="16" Text="{Binding EmptyText}" IsVisible="{Binding ShowEmpty}" />
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="14" IsVisible="{Binding ShowEmpty}">
+        <PathIcon Data="{StaticResource IconGamepad}" Width="56" Height="56" Foreground="{StaticResource SyBorder}" />
+        <TextBlock TextAlignment="Center" Classes="muted" FontSize="15" Text="{Binding EmptyText}" />
+        <Button Classes="accent" HorizontalAlignment="Center" Command="{Binding AddFolderCommand}" IsVisible="{Binding IsLibraryEmpty}">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <PathIcon Data="{StaticResource IconFolderPlus}" Width="16" Height="16" />
+            <TextBlock Text="Add Folder…" />
+          </StackPanel>
+        </Button>
+      </StackPanel>
+
       <Panel IsVisible="{Binding HasItems}">
-        <ListBox x:Name="CoverList" IsVisible="{Binding IsGrid}" Background="Transparent" Padding="8"
+        <!-- Grid -->
+        <ListBox x:Name="CoverList" IsVisible="{Binding IsGrid}" Background="Transparent" Padding="10,4,10,10"
                  ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
                  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
           <ListBox.ItemsPanel>
@@ -219,45 +342,79 @@
           </ListBox.ItemsPanel>
           <ListBox.ItemTemplate>
             <DataTemplate x:DataType="vm:EditionItem">
-              <StackPanel Width="156" Spacing="6" ToolTip.Tip="{Binding Tooltip}">
-                <c:CoverView Width="150" Height="212" HorizontalAlignment="Center" Image="{Binding Cover}" ShowGenerationBand="False"
-                             Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
-                <TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" HorizontalAlignment="Center" MaxWidth="150" />
+              <StackPanel Width="166" Spacing="8" ToolTip.Tip="{Binding Tooltip}">
+                <Border Classes="ring" HorizontalAlignment="Center">
+                  <c:CoverView Width="150" Height="212" Image="{Binding Cover}" ShowGenerationBand="False"
+                               Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                </Border>
+                <TextBlock Classes="card-title" Text="{Binding Title}" TextTrimming="CharacterEllipsis"
+                           HorizontalAlignment="Center" MaxWidth="156" />
               </StackPanel>
             </DataTemplate>
           </ListBox.ItemTemplate>
         </ListBox>
 
-        <!-- Landscape key art of the selected game, dimmed behind the carousel -->
-        <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" Opacity="0.22" IsVisible="{Binding IsCarousel}"
-               IsHitTestVisible="False" />
-        <DockPanel IsVisible="{Binding IsCarousel}">
-          <StackPanel DockPanel.Dock="Bottom" Spacing="4" Margin="20,0,20,18" HorizontalAlignment="Center">
-            <Image Source="{Binding SelectedLogo}" MaxHeight="90" MaxWidth="420" IsVisible="{Binding HasLogo}"
-                   HorizontalAlignment="Center" />
-            <TextBlock Text="{Binding SelectedTitle}" FontSize="24" FontWeight="Bold" HorizontalAlignment="Center"
-                       TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !HasLogo}" />
-            <TextBlock Text="{Binding CarouselSubtitle}" Classes="muted" HorizontalAlignment="Center" />
-            <TextBlock Text="← → browse  ·  Enter play  ·  controller: D-pad, A to play, LB/RB library, Y view"
-                       Classes="muted" FontSize="12" HorizontalAlignment="Center" Margin="0,6,0,0" />
-          </StackPanel>
-          <ListBox x:Name="CarouselList" Background="Transparent" VerticalAlignment="Center"
-                   ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
-                   ScrollViewer.HorizontalScrollBarVisibility="Hidden"
-                   ScrollViewer.VerticalScrollBarVisibility="Disabled">
-            <ListBox.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Orientation="Horizontal" />
-              </ItemsPanelTemplate>
-            </ListBox.ItemsPanel>
-            <ListBox.ItemTemplate>
-              <DataTemplate x:DataType="vm:EditionItem">
-                <c:CoverView Width="200" Height="283" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
-                             Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
-              </DataTemplate>
-            </ListBox.ItemTemplate>
-          </ListBox>
-        </DockPanel>
+        <!-- Carousel: full width, the game's background art behind it -->
+        <Panel IsVisible="{Binding IsCarousel}" ClipToBounds="True">
+          <Border Background="{Binding SelectedGeneration, Converter={x:Static vm:Converters.GenerationBanner}}" Opacity="0.35" />
+          <Image Source="{Binding SelectedKeyArt}" Stretch="UniformToFill" Opacity="0.55" IsHitTestVisible="False" />
+          <Border IsHitTestVisible="False">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Offset="0" Color="#B0101216" />
+                <GradientStop Offset="0.45" Color="#40101216" />
+                <GradientStop Offset="0.7" Color="#C0101216" />
+                <GradientStop Offset="1" Color="#F5101216" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Bottom" Spacing="10" Margin="40,0,40,26" HorizontalAlignment="Center" MaxWidth="820">
+              <Image Source="{Binding SelectedLogo}" MaxHeight="110" MaxWidth="520" IsVisible="{Binding HasLogo}"
+                     HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding SelectedTitle}" FontSize="32" FontWeight="Bold" HorizontalAlignment="Center"
+                         TextAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !HasLogo}" />
+              <TextBlock Text="{Binding CarouselSubtitle}" Classes="muted" HorizontalAlignment="Center" />
+              <TextBlock Text="{Binding SelectedSummary}" TextWrapping="Wrap" MaxLines="2" TextTrimming="WordEllipsis"
+                         TextAlignment="Center" HorizontalAlignment="Center" Foreground="#C8CDD4" IsVisible="{Binding HasSummary}" />
+              <StackPanel Orientation="Horizontal" Spacing="10" HorizontalAlignment="Center" Margin="0,6,0,0">
+                <Button Classes="primary accent" Width="200" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <PathIcon Data="{StaticResource IconPlay}" Width="18" Height="18" />
+                    <TextBlock Text="{Binding PlayLabel}" />
+                  </StackPanel>
+                </Button>
+                <Button Classes="subtle" MinHeight="46" Content="Launch With…" Command="{Binding LaunchWithCommand}"
+                        IsEnabled="{Binding CanPlay}" ToolTip.Tip="Pick an emulator for this launch only" />
+                <Button Classes="subtle" MinHeight="46" Content="Play Version…" Command="{Binding PlayVersionCommand}"
+                        IsEnabled="{Binding CanPlay}" ToolTip.Tip="Launch another file of this game" />
+                <Button Classes="subtle" MinHeight="46" Command="{Binding ShowGridCommand}" ToolTip.Tip="Details and game settings (grid view)">
+                  <PathIcon Data="{StaticResource IconTune}" Width="18" Height="18" />
+                </Button>
+              </StackPanel>
+              <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" HorizontalAlignment="Center" />
+              <TextBlock Text="← →  browse   ·   Enter  play   ·   controller: D-pad, A play, LB/RB library, Y view"
+                         Classes="muted" FontSize="11" HorizontalAlignment="Center" Opacity="0.75" />
+            </StackPanel>
+            <ListBox x:Name="CarouselList" Background="Transparent" VerticalAlignment="Center"
+                     ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Hidden"
+                     ScrollViewer.VerticalScrollBarVisibility="Disabled">
+              <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+              </ListBox.ItemsPanel>
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:EditionItem">
+                  <c:CoverView Width="200" Height="283" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
+                               Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Panel>
 
         <Panel.ContextMenu>
           <ContextMenu>

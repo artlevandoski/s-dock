@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia.Headless.XUnit;
 using Microsoft.Data.Sqlite;
 using SwitchYard.App.ViewModels;
@@ -365,6 +366,10 @@ public sealed class ArtworkTests : IDisposable
         var window = new SwitchYard.App.Views.MainWindow { DataContext = vm, Width = 1180, Height = 780 };
         window.Show();
         MainWindowTests.Capture(window, "m4b-grid.png");
+        var expander = window.GetVisualDescendants().OfType<Avalonia.Controls.Expander>().First();
+        expander.IsExpanded = true;
+        MainWindowTests.Capture(window, "m4b-grid-settings.png");
+        expander.IsExpanded = false;
         vm.IsCarousel = true;
         Avalonia.Threading.Dispatcher.UIThread.RunJobs();
         Thread.Sleep(250);
@@ -400,6 +405,6 @@ public sealed class ArtworkTests : IDisposable
     {
         var xaml = File.ReadAllText(Path.Combine(AppPaths.FindSourceRoot(AppContext.BaseDirectory)!,
             "src", "SwitchYard.App", "Views", "MainWindow.axaml"));
-        Assert.Equal(2, System.Text.RegularExpressions.Regex.Matches(xaml, "ShowGenerationBand=\"False\"").Count);
+        Assert.Equal(3, System.Text.RegularExpressions.Regex.Matches(xaml, "ShowGenerationBand=\"False\"").Count); // grid, carousel, details
     }
 }

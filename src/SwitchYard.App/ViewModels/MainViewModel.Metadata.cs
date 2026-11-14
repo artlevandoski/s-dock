@@ -178,6 +178,20 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>Details panel: "Switch 1 · Platform · Adventure · 2023".</summary>
+    public string DetailsFactsLine
+    {
+        get
+        {
+            if (SelectedItem is not { } item) return "";
+            var parts = new List<string> { Generations.Label(item.Generation) };
+            if (item.Series != ArcadeSeries.None) parts.Add(ArcadeSeries.Label(item.Series));
+            parts.AddRange(item.Metadata.Genres.Take(2));
+            if (item.Metadata.ReleaseYear is { } y) parts.Add(y.ToString());
+            return string.Join("  ·  ", parts);
+        }
+    }
+
     public string MatchStatusText => SelectedItem switch
     {
         null => "",
