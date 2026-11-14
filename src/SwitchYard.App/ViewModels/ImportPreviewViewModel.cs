@@ -81,7 +81,7 @@ public sealed partial class ImportPreviewViewModel : ObservableObject
     public ImportPreviewViewModel(ScanResult result, string folderGeneration)
     {
         Result = result;
-        FolderGeneration = GenerationOption.ForLibrary(folderGeneration);
+        _folderGeneration = GenerationOption.ForLibrary(folderGeneration);
         foreach (var e in result.Entries)
             Rows.Add(new ImportRow(this, e));
         UpdateSummary();
@@ -91,14 +91,19 @@ public sealed partial class ImportPreviewViewModel : ObservableObject
         $"{Result.Entries.Count} game file(s) found in {Result.Folder}. Nothing is imported until you click Import. " +
         "Your files are never moved or renamed.";
 
-    [ObservableProperty]
-    public partial GenerationOption FolderGeneration { get; set; }
+    private GenerationOption _folderGeneration = GenerationOption.Library[^1];
 
-    partial void OnFolderGenerationChanged(GenerationOption value)
+    /// <summary>Ignores the null a closing ComboBox pushes back, so Import always has a generation.</summary>
+    public GenerationOption FolderGeneration
     {
-        LibraryScanner.ApplyFolderGeneration(Result.Entries.Where(e => !e.InLibrary), value.Value);
-        foreach (var r in Rows) r.Refresh();
-        UpdateSummary();
+        get => _folderGeneration;
+        set
+        {
+            if (value is null || !SetProperty(ref _folderGeneration, value)) return;
+            LibraryScanner.ApplyFolderGeneration(Result.Entries.Where(e => !e.InLibrary), value.Value);
+            foreach (var r in Rows) r.Refresh();
+            UpdateSummary();
+        }
     }
 
     [ObservableProperty]

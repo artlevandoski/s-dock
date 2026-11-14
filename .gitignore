@@ -10,3 +10,11 @@ artifacts/
 .venv/
 __pycache__/
 .pytest_cache/
+
+# Portable data (library database, logs) and published builds
+/data/
+/publish/
+
+# Emulator builds placed locally (keep only the README)
+/emulators/*
+!/emulators/README.md

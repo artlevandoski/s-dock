@@ -10,7 +10,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 1;
+    public const int SchemaVersion = 2;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -63,14 +63,30 @@ public sealed class LibraryStore : IDisposable
             key   TEXT PRIMARY KEY,
             value TEXT
         );
+        -- v2: launch routing. Kept apart from editions so library data stays independent of emulators.
+        CREATE TABLE IF NOT EXISTS generation_defaults (
+            generation TEXT PRIMARY KEY CHECK (generation IN ('switch1', 'switch2')),
+            profile_id TEXT NOT NULL REFERENCES emulator_profiles(id) ON DELETE CASCADE
+        );
+        CREATE TABLE IF NOT EXISTS edition_launch_overrides (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            profile_id TEXT NOT NULL REFERENCES emulator_profiles(id) ON DELETE CASCADE
+        );
         """;
 
     private readonly SqliteConnection _conn;
 
     public string DatabaseFile { get; }
 
-    public LibraryStore(string databaseFile)
+    /// <summary>
+    /// Portable root: emulator paths inside it are stored relative to it and resolved on read.
+    /// Null stores every path as given (absolute).
+    /// </summary>
+    public string? PortableRoot { get; }
+
+    public LibraryStore(string databaseFile, string? portableRoot = null)
     {
+        PortableRoot = portableRoot is null ? null : Path.GetFullPath(portableRoot);
         DatabaseFile = Path.GetFullPath(databaseFile);
         Directory.CreateDirectory(Path.GetDirectoryName(DatabaseFile)!);
         _conn = new SqliteConnection(new SqliteConnectionStringBuilder
@@ -81,7 +97,42 @@ public sealed class LibraryStore : IDisposable
         _conn.Open();
         Exec("PRAGMA foreign_keys = ON");
         Exec(Schema);
-        Exec("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema_version', $v)", ("$v", SchemaVersion.ToString()));
+        Migrate();
+    }
+
+    /// <summary>Schema version recorded in the database (1 = Milestone 1, 2 = launch routing).</summary>
+    public int StoredSchemaVersion
+    {
+        get
+        {
+            using var cmd = Cmd("SELECT value FROM meta WHERE key = 'schema_version'");
+            return int.TryParse(cmd.ExecuteScalar() as string, out var v) ? v : 0;
+        }
+    }
+
+    private void Migrate()
+    {
+        var version = StoredSchemaVersion;
+        if (version == 0)
+        {
+            // Brand-new database: tables were just created at the current version.
+            Exec("INSERT INTO meta(key, value) VALUES ('schema_version', $v)", ("$v", SchemaVersion.ToString()));
+            return;
+        }
+        if (version < 2)
+        {
+            // v1 -> v2: the routing tables come from the schema script. Keep Play working exactly as
+            // before by making a lone existing profile the default for the generations it supports.
+            var profiles = ListProfiles();
+            if (profiles.Count == 1)
+            {
+                var p = profiles[0];
+                foreach (var g in new[] { Generations.Switch1, Generations.Switch2 })
+                    if (p.Supports(g))
+                        SetGenerationDefault(g, p.Id);
+            }
+            Exec("UPDATE meta SET value = '2' WHERE key = 'schema_version'");
+        }
     }
 
     public void Dispose() => _conn.Dispose();
@@ -279,13 +330,13 @@ public sealed class LibraryStore : IDisposable
             ("$k", key), ("$v", value));
 
     // ----------------------------------------------------------------- profiles
-    private static EmulatorProfile ReadProfile(SqliteDataReader r) => new()
+    private EmulatorProfile ReadProfile(SqliteDataReader r) => new()
     {
         Id = r.GetString(r.GetOrdinal("id")),
         Name = r.GetString(r.GetOrdinal("name")),
         Emulator = r.GetString(r.GetOrdinal("emulator")),
-        Executable = r.GetString(r.GetOrdinal("executable")),
-        WorkingDir = Str(r, "working_dir") ?? "",
+        Executable = AppPaths.FromStoredPath(r.GetString(r.GetOrdinal("executable")), PortableRoot),
+        WorkingDir = AppPaths.FromStoredPath(Str(r, "working_dir") ?? "", PortableRoot),
         Generation = r.GetString(r.GetOrdinal("generation")),
         Args = JsonSerializer.Deserialize(Str(r, "args_json") ?? "[]", CoreJsonContext.Default.ListString) ?? [],
     };
@@ -320,9 +371,73 @@ public sealed class LibraryStore : IDisposable
                 executable = excluded.executable, working_dir = excluded.working_dir,
                 generation = excluded.generation, args_json = excluded.args_json,
                 updated_at = excluded.updated_at
-            """, ("$id", p.Id), ("$name", p.Name), ("$emu", p.Emulator), ("$exe", p.Executable), ("$wd", p.WorkingDir),
+            """, ("$id", p.Id), ("$name", p.Name), ("$emu", p.Emulator), ("$exe", AppPaths.ToStoredPath(p.Executable, PortableRoot)),
+                 ("$wd", AppPaths.ToStoredPath(p.WorkingDir, PortableRoot)),
                  ("$gen", p.Generation), ("$args", JsonSerializer.Serialize(p.Args.ToList(), CoreJsonContext.Default.ListString)), ("$ts", ts));
     }
 
+    /// <summary>
+    /// Saves everything from Emulator Settings in one transaction: either all of it is written or,
+    /// if anything fails, nothing changes (no half-saved state where a removal went through alone).
+    /// </summary>
+    public void SaveEmulatorSettings(IEnumerable<string> removedIds, IReadOnlyList<EmulatorProfile> profiles,
+        string? switch1Default, string? switch2Default)
+    {
+        Exec("BEGIN IMMEDIATE");
+        try
+        {
+            foreach (var id in removedIds)
+                DeleteProfile(id);
+            foreach (var p in profiles)
+                SaveProfile(p);
+            SetGenerationDefault(Generations.Switch1, switch1Default);
+            SetGenerationDefault(Generations.Switch2, switch2Default);
+            Exec("COMMIT");
+        }
+        catch
+        {
+            Exec("ROLLBACK");
+            throw;
+        }
+    }
+
+    /// <summary>Deletes a profile. Defaults and per-game choices that used it are removed with it.</summary>
     public void DeleteProfile(string id) => Exec("DELETE FROM emulator_profiles WHERE id = $id", ("$id", id));
+
+    // ------------------------------------------------------------ launch routing
+    public string? GetGenerationDefault(string generation)
+    {
+        using var cmd = Cmd("SELECT profile_id FROM generation_defaults WHERE generation = $g", ("$g", generation));
+        return cmd.ExecuteScalar() as string;
+    }
+
+    /// <summary>Sets (or with null clears) the default profile for Switch 1 or Switch 2.</summary>
+    public void SetGenerationDefault(string generation, string? profileId)
+    {
+        if (generation is not (Generations.Switch1 or Generations.Switch2))
+            throw new ArgumentException($"Defaults exist only for Switch 1 and Switch 2, not {generation}");
+        if (profileId is null)
+            Exec("DELETE FROM generation_defaults WHERE generation = $g", ("$g", generation));
+        else
+            Exec("INSERT INTO generation_defaults(generation, profile_id) VALUES ($g, $p) " +
+                 "ON CONFLICT(generation) DO UPDATE SET profile_id = excluded.profile_id",
+                ("$g", generation), ("$p", profileId));
+    }
+
+    public string? GetLaunchOverride(string editionId)
+    {
+        using var cmd = Cmd("SELECT profile_id FROM edition_launch_overrides WHERE edition_id = $e", ("$e", editionId));
+        return cmd.ExecuteScalar() as string;
+    }
+
+    /// <summary>Sets (or with null clears) the profile a specific game always launches with.</summary>
+    public void SetLaunchOverride(string editionId, string? profileId)
+    {
+        if (profileId is null)
+            Exec("DELETE FROM edition_launch_overrides WHERE edition_id = $e", ("$e", editionId));
+        else
+            Exec("INSERT INTO edition_launch_overrides(edition_id, profile_id) VALUES ($e, $p) " +
+                 "ON CONFLICT(edition_id) DO UPDATE SET profile_id = excluded.profile_id",
+                ("$e", editionId), ("$p", profileId));
+    }
 }

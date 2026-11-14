@@ -69,8 +69,11 @@ public sealed class UiServices(MainWindow main) : IUiServices
     public async Task<bool> ShowImportPreviewAsync(ImportPreviewViewModel vm) =>
         await ShowDialog<bool>(new ImportPreviewWindow(vm));
 
-    public async Task<bool> ShowEmulatorSettingsAsync(EmulatorSettingsViewModel vm) =>
+    public async Task<bool> ShowEmulatorSettingsAsync(EmulatorProfilesViewModel vm) =>
         await ShowDialog<bool>(new EmulatorSettingsWindow(vm));
+
+    public async Task<bool> ShowProfilePickerAsync(ProfilePickerViewModel vm) =>
+        await ShowDialog<bool>(new ProfilePickerWindow(vm));
 
     public void OpenFolder(string path) =>
         Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });

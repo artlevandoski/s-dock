@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Markup.Xaml;
+using Avalonia.Threading;
 using SwitchYard.App.ViewModels;
 using SwitchYard.App.Views;
 using SwitchYard.Core;
@@ -15,12 +16,41 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            var library = new LibraryStore(AppPaths.DatabasePath);
+            // Portable: data\ beside the app. On first portable start, bring the earlier library across.
+            string? copiedFrom = null;
+            if (AppPaths.IsPortable)
+            {
+                try { copiedFrom = AppPaths.CopyLegacyLibrary(AppPaths.DataDir, AppPaths.UserProfileDir); }
+                catch (IOException ex) { LogError(ex); }
+            }
+            var library = new LibraryStore(AppPaths.DatabasePath, AppPaths.IsPortable ? AppPaths.PortableRoot : null);
+            if (AppPaths.IsPortable)
+            {
+                _ = AppPaths.EmulatorsDir; // create emulators\ so it's obvious where builds go
+                if (copiedFrom is not null)
+                    foreach (var p in library.ListProfiles())
+                        library.SaveProfile(p); // emulators inside the folder are now stored relative to it
+            }
             var window = new MainWindow();
             var ui = new UiServices(window);
             var launcher = new EmulatorLauncher(Path.Combine(AppPaths.LogDir, "last_launch.log"));
-            window.DataContext = new MainViewModel(library, launcher, ui);
+            var vm = new MainViewModel(library, launcher, ui);
+            if (copiedFrom is not null)
+                vm.StatusText = $"Your library was copied into {AppPaths.DataDir}. The original is still at {copiedFrom}.";
+            else if (!AppPaths.IsPortable && string.IsNullOrEmpty(Environment.GetEnvironmentVariable(AppPaths.DataDirEnv)))
+                vm.StatusText = $"Switch Yard's folder is read-only, so data is kept in {AppPaths.DataDir}.";
+            window.DataContext = vm;
             desktop.MainWindow = window;
+
+            // Safety net: log unexpected errors and keep the app running instead of closing it.
+            Dispatcher.UIThread.UnhandledException += (_, e) =>
+            {
+                var logPath = LogError(e.Exception);
+                e.Handled = true;
+                _ = ui.ShowMessageAsync("Something went wrong",
+                    $"Switch Yard hit an unexpected error and kept running, but the last action may not have finished.\n\n" +
+                    $"{e.Exception.GetType().Name}: {e.Exception.Message}\n\nDetails were saved to:\n{logPath}");
+            };
             desktop.Exit += (_, _) =>
             {
                 launcher.Dispose();
@@ -28,5 +58,17 @@ public partial class App : Application
             };
         }
         base.OnFrameworkInitializationCompleted();
+    }
+
+    /// <summary>Appends the error to logs\errors.log and returns the log path.</summary>
+    public static string LogError(Exception ex)
+    {
+        var path = Path.Combine(AppPaths.LogDir, "errors.log");
+        try
+        {
+            File.AppendAllText(path, $"==== {LibraryStore.UtcNow()}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}");
+        }
+        catch (IOException) { }
+        return path;
     }
 }

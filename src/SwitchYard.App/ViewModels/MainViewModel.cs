@@ -79,6 +79,9 @@ public sealed partial class MainViewModel : ObservableObject
 
     public string? SelectedId => SelectedItem?.Id;
 
+    /// <summary>Tag of the most recent launch (an edition ID, or the Test Launch tag).</summary>
+    public string? LastLaunchedTag { get; private set; }
+
     partial void OnSelectedItemChanged(EditionItem? value)
     {
         if (value is not null)
@@ -86,6 +89,7 @@ public sealed partial class MainViewModel : ObservableObject
         _suppressGenerationWrite = true;
         SelectedGenerationOption = value is null ? null : GenerationOption.ForLibrary(value.Generation);
         _suppressGenerationWrite = false;
+        RebuildEmulatorChoices();
     }
 
     partial void OnSelectedGenerationOptionChanged(GenerationOption? value)
@@ -94,6 +98,62 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         _library.SetGeneration(item.Id, value.Value);
         Refresh(item.Id);
+    }
+
+    // --------------------------------------------------- per-game emulator choice
+    /// <summary>Details-panel dropdown: "Use default (…)" plus every profile.</summary>
+    public ObservableCollection<ProfileChoice> EmulatorChoices { get; } = [];
+
+    [ObservableProperty]
+    public partial ProfileChoice? SelectedEmulatorChoice { get; set; }
+
+    [ObservableProperty]
+    public partial string RouteText { get; set; } = "";
+
+    private bool _rebuildingEmulatorChoices;
+
+    public void RebuildEmulatorChoices()
+    {
+        _rebuildingEmulatorChoices = true;
+        EmulatorChoices.Clear();
+        if (SelectedItem?.Edition is { } e)
+        {
+            var fallback = LaunchRouter.DefaultFor(_library, e.Generation);
+            EmulatorChoices.Add(new ProfileChoice(null, fallback is null ? "Use default (ask each time)" : $"Use default ({fallback.Name})"));
+            foreach (var p in _library.ListProfiles())
+            {
+                var compatible = e.Generation == Generations.Unclassified || p.Supports(e.Generation);
+                EmulatorChoices.Add(new ProfileChoice(p.Id, compatible ? p.Name : $"{p.Name} (set up for {Generations.Label(p.Generation)})"));
+            }
+            var chosen = _library.GetLaunchOverride(e.Id);
+            SelectedEmulatorChoice = EmulatorChoices.FirstOrDefault(c => c.Id == chosen) ?? EmulatorChoices[0];
+            var route = LaunchRouter.Resolve(_library, e);
+            RouteText = route.Source switch
+            {
+                RouteSource.GameChoice => $"Plays with {route.Profile!.Name} (this game's choice)",
+                RouteSource.GenerationDefault => $"Plays with {route.Profile!.Name} ({Generations.Label(e.Generation)} default)",
+                _ => _library.ListProfiles().Count == 0 ? "No emulator set up yet" : "Play will ask which emulator to use",
+            };
+        }
+        else
+        {
+            SelectedEmulatorChoice = null;
+            RouteText = "";
+        }
+        _rebuildingEmulatorChoices = false;
+    }
+
+    partial void OnSelectedEmulatorChoiceChanged(ProfileChoice? value)
+    {
+        if (_rebuildingEmulatorChoices || SelectedItem is not { } item) return;
+        if (value is null)
+        {
+            // The dropdown briefly clears while items change; fall back to "Use default".
+            RebuildEmulatorChoices();
+            return;
+        }
+        _library.SetLaunchOverride(item.Id, value.Id);
+        RebuildEmulatorChoices();
     }
 
     /// <summary>Reload from the database, rebuild the grid, and keep or restore the selection.</summary>
@@ -170,20 +230,27 @@ public sealed partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void OpenDataFolder() => _ui.OpenFolder(AppPaths.DataDir);
 
-    // ------------------------------------------------------------- emulator
-    public EmulatorProfile? ActiveProfile => _library.ListProfiles().FirstOrDefault();
+    public string DataFolderTip =>
+        $"Your library database and logs ({(AppPaths.IsPortable ? "portable" : "user profile")}):\n{AppPaths.DataDir}";
 
+    [RelayCommand]
+    private void OpenEmulatorsFolder() => _ui.OpenFolder(AppPaths.EmulatorsDir);
+
+    // ------------------------------------------------------------- emulator
     [RelayCommand]
     private async Task EmulatorSettingsAsync()
     {
         var sample = SelectedItem?.Edition.PrimaryFile is { Exists: true } f ? f.Path : null;
-        var vm = new EmulatorSettingsViewModel(ActiveProfile, Launcher, _ui, sample);
+        var vm = new EmulatorProfilesViewModel(_library.ListProfiles(),
+            _library.GetGenerationDefault(Generations.Switch1), _library.GetGenerationDefault(Generations.Switch2),
+            Launcher, _ui, sample, AppPaths.EmulatorsDir);
         try
         {
             if (await _ui.ShowEmulatorSettingsAsync(vm))
             {
-                _library.SaveProfile(vm.CurrentProfile());
+                vm.ApplyTo(_library);
                 StatusText = "Emulator settings saved.";
+                RebuildEmulatorChoices();
             }
         }
         finally
@@ -193,37 +260,68 @@ public sealed partial class MainViewModel : ObservableObject
         _ui.RestoreFocus();
     }
 
+    /// <summary>True when there are no profiles; offers to open Emulator Settings.</summary>
+    private async Task<bool> NoProfilesAsync()
+    {
+        if (_library.ListProfiles().Count > 0) return false;
+        if (await _ui.ConfirmAsync("Play", "No emulator is set up yet. Open Emulator Settings now?"))
+            await EmulatorSettingsAsync();
+        return true;
+    }
+
+    private async Task<bool> EmulatorBusyAsync()
+    {
+        if (!Launcher.IsRunning) return false;
+        await _ui.ShowMessageAsync("Play", "An emulator is already running. Close it first.");
+        return true;
+    }
+
     [RelayCommand]
     private Task PlayAsync() => PlaySelectedAsync();
 
+    /// <summary>Play: the game's choice, then its generation's default, then ask.</summary>
     public async Task<bool> PlaySelectedAsync()
     {
         if (SelectedItem?.Edition is not { } e) return false;
-        if (Launcher.IsRunning)
-        {
-            await _ui.ShowMessageAsync("Play", "An emulator is already running. Close it first.");
-            return false;
-        }
-        var profile = ActiveProfile;
+        if (await EmulatorBusyAsync() || await NoProfilesAsync()) return false;
+
+        var route = LaunchRouter.Resolve(_library, e);
+        var profile = route.Profile;
         if (profile is null)
         {
-            if (await _ui.ConfirmAsync("Play", "No emulator is set up yet. Open Emulator Settings now?"))
-                await EmulatorSettingsAsync();
-            return false;
+            var picker = new ProfilePickerViewModel(e, _library.ListProfiles(), oneTime: false);
+            if (!await _ui.ShowProfilePickerAsync(picker) || picker.Selected is not { } pick) return false;
+            profile = pick.Profile;
+            if (picker.RememberForGame)
+                _library.SetLaunchOverride(e.Id, profile.Id);
+            if (picker.MakeDefault && picker.CanMakeDefault)
+                _library.SetGenerationDefault(e.Generation, profile.Id);
+            RebuildEmulatorChoices();
         }
+        return await LaunchAsync(e, profile);
+    }
+
+    [RelayCommand]
+    private Task LaunchWithAsync() => LaunchSelectedWithAsync();
+
+    /// <summary>Launch With…: a one-time choice that saves nothing.</summary>
+    public async Task<bool> LaunchSelectedWithAsync()
+    {
+        if (SelectedItem?.Edition is not { } e) return false;
+        if (await EmulatorBusyAsync() || await NoProfilesAsync()) return false;
+        var picker = new ProfilePickerViewModel(e, _library.ListProfiles(), oneTime: true);
+        if (!await _ui.ShowProfilePickerAsync(picker) || picker.Selected is not { } pick) return false;
+        return await LaunchAsync(e, pick.Profile);
+    }
+
+    private async Task<bool> LaunchAsync(Edition e, EmulatorProfile profile)
+    {
         var game = e.PrimaryFile?.Path ?? "";
         var problems = LaunchArgs.Validate(profile, game);
         if (problems.Count > 0)
         {
-            await ShowLaunchProblemAsync(e, string.Join("\n\n", problems));
+            await ShowLaunchProblemAsync(e, $"Profile: {profile.Name}\n\n" + string.Join("\n\n", problems));
             return false;
-        }
-        if (!profile.Supports(e.Generation))
-        {
-            var text = $"“{e.Title}” is marked {Generations.Label(e.Generation)}, but the profile “{profile.Name}” " +
-                       $"is set up for {Generations.Label(profile.Generation)}.\n\nLaunch anyway?";
-            if (!await _ui.ConfirmAsync("Play", text))
-                return false;
         }
         IsRunning = true;
         if (!Launcher.Launch(profile, game, e.Id))
@@ -248,6 +346,7 @@ public sealed partial class MainViewModel : ObservableObject
     {
         var title = Items.FirstOrDefault(i => i.Id == tag)?.Title ?? "test game";
         StatusText = $"Emulator running (PID {pid}): {title}";
+        LastLaunchedTag = tag;
         IsRunning = true;
     }
 

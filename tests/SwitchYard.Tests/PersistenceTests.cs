@@ -71,6 +71,16 @@ public sealed class PersistenceTests : IDisposable
     }
 
     [Fact]
+    public void Emulators_folder_is_the_ignored_repo_folder_when_run_from_source()
+    {
+        var root = AppPaths.FindSourceRoot(AppContext.BaseDirectory);
+        Assert.NotNull(root);
+        Assert.True(File.Exists(Path.Combine(root, "emulators", "README.md")));
+        Assert.Contains("/emulators/*", File.ReadAllText(Path.Combine(root, ".gitignore")));
+        Assert.Null(AppPaths.FindSourceRoot(_env.Root)); // an installed copy falls back to LOCALAPPDATA
+    }
+
+    [Fact]
     public void Path_keys_match_the_python_build()
     {
         // Python: os.path.normcase(os.path.normpath(os.path.abspath(p)))

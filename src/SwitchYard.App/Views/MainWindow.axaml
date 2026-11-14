@@ -18,12 +18,14 @@
       <MenuItem Header="_Library">
         <MenuItem Header="_Add Folder…" InputGesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
         <Separator />
-        <MenuItem Header="Open _Data Folder" Command="{Binding OpenDataFolderCommand}" />
+        <MenuItem Header="Open _Data Folder" Command="{Binding OpenDataFolderCommand}" ToolTip.Tip="{Binding DataFolderTip}" />
         <Separator />
         <MenuItem Header="_Quit" Click="Quit_Click" />
       </MenuItem>
       <MenuItem Header="_Emulator">
         <MenuItem Header="Emulator _Settings…" InputGesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />
+        <Separator />
+        <MenuItem Header="Open Emulators _Folder" Command="{Binding OpenEmulatorsFolderCommand}" />
       </MenuItem>
     </Menu>
 
@@ -41,11 +43,18 @@
     <!-- Details panel -->
     <Border DockPanel.Dock="Right" Width="330" BorderBrush="#30FFFFFF" BorderThickness="1,0,0,0">
       <DockPanel Margin="16">
-        <Button x:Name="PlayButton" DockPanel.Dock="Bottom" Classes="primary accent"
-                Content="{Binding PlayLabel}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
+        <StackPanel DockPanel.Dock="Bottom" Spacing="6">
+          <TextBlock Text="{Binding RouteText}" Classes="muted" TextWrapping="Wrap" HorizontalAlignment="Center"
+                     TextAlignment="Center" IsVisible="{Binding HasSelection}" />
+          <Button x:Name="PlayButton" Classes="primary accent"
+                  Content="{Binding PlayLabel}" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
+          <Button Content="Launch With…" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                  Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}"
+                  ToolTip.Tip="Pick an emulator for this launch only" />
+        </StackPanel>
         <ScrollViewer>
           <StackPanel Spacing="10">
-            <c:CoverView Width="200" Height="320" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
+            <c:CoverView Width="160" Height="256" HorizontalAlignment="Center" IsVisible="{Binding HasSelection}"
                          Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
                          IsMissing="{Binding SelectedIsMissing}" />
             <TextBlock Text="{Binding SelectedTitle}" FontSize="20" FontWeight="Bold" TextWrapping="Wrap" />
@@ -54,6 +63,13 @@
               <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
                         ItemsSource="{Binding GenerationOptions}"
                         SelectedItem="{Binding SelectedGenerationOption}" />
+            </Grid>
+            <Grid ColumnDefinitions="Auto,*" IsVisible="{Binding HasSelection}">
+              <TextBlock Text="Emulator:" VerticalAlignment="Center" Margin="0,0,8,0" />
+              <ComboBox Grid.Column="1" HorizontalAlignment="Stretch"
+                        ItemsSource="{Binding EmulatorChoices}"
+                        SelectedItem="{Binding SelectedEmulatorChoice}"
+                        ToolTip.Tip="Which emulator Play uses for this game" />
             </Grid>
             <SelectableTextBlock Text="{Binding DetailsText}" TextWrapping="Wrap" />
             <TextBlock Classes="warning" FontWeight="Bold" TextWrapping="Wrap" IsVisible="{Binding ShowMissing}"
@@ -74,6 +90,12 @@
       <ListBox x:Name="CoverList" IsVisible="{Binding HasItems}" Background="Transparent" Padding="8"
                ItemsSource="{Binding Items}" SelectedItem="{Binding SelectedItem}"
                ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <ListBox.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="Play" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}" />
+            <MenuItem Header="Launch With…" Command="{Binding LaunchWithCommand}" IsEnabled="{Binding CanPlay}" />
+          </ContextMenu>
+        </ListBox.ContextMenu>
         <ListBox.ItemsPanel>
           <ItemsPanelTemplate>
             <WrapPanel />

@@ -12,7 +12,8 @@ public interface IUiServices
     Task<string?> ChooseAsync(string title, string heading, string message, params string[] buttons);
 
     Task<bool> ShowImportPreviewAsync(ImportPreviewViewModel vm);
-    Task<bool> ShowEmulatorSettingsAsync(EmulatorSettingsViewModel vm);
+    Task<bool> ShowEmulatorSettingsAsync(EmulatorProfilesViewModel vm);
+    Task<bool> ShowProfilePickerAsync(ProfilePickerViewModel vm);
     void OpenFolder(string path);
 
     /// <summary>Bring Switch Yard back to the front with focus on the selected cover (or the open dialog).</summary>

@@ -55,6 +55,21 @@ public sealed class TestEnv : IDisposable
 
     public LibraryStore OpenLibrary() => new(DbPath);
 
+    /// <summary>An Emulators folder with two "Eden" builds and some files that aren't emulators.</summary>
+    public string CreateEmulatorsFolder()
+    {
+        var dir = Path.Combine(Root, "emulators");
+        foreach (var rel in new[] { "Eden 0.2.1/eden.exe", "Eden nightly/eden.exe", "Eden 0.2.1/unins000.exe",
+                                    "Eden nightly/crashpad_handler.exe", "Eden nightly/eden-cli.exe", "Other Build/othernx.exe" })
+        {
+            var p = Path.Combine(dir, rel);
+            Directory.CreateDirectory(Path.GetDirectoryName(p)!);
+            File.Copy(FakeEmulatorExe, p, overwrite: true);
+        }
+        File.WriteAllText(Path.Combine(dir, "README.md"), "not an exe");
+        return dir;
+    }
+
     public static string FakeEmulatorExe
     {
         get

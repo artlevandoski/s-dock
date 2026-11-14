@@ -4,8 +4,9 @@ An independent Windows frontend for certain game libraries. You bring your own g
 your own emulator installation. Switch Yard does not include or download games, firmware,
 keys, or system files.
 
-**Status:** Milestone 1. Import a folder, browse the cover grid, configure one emulator
-profile, and Play. Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/).
+**Status:** Milestone 2. Import a folder, browse the cover grid, set up several emulator
+profiles, and choose which one each game launches with. Built with C# / .NET 10 and
+[Avalonia](https://avaloniaui.net/).
 
 ## Requirements
 
@@ -30,12 +31,40 @@ dotnet build -c Release
 
 Pass `--data-dir <folder>` to use a separate, throwaway library.
 
-Data lives in `%LOCALAPPDATA%\SwitchYard\`:
-- `library.sqlite3`: library, folders, emulator profile, last selection
-- `logs\last_launch.log`: emulator output from the most recent launch
+## Portable by default
 
-**Library → Open Data Folder** opens it. The database format is unchanged from the
-earlier Python build, so existing libraries open as they are.
+Switch Yard keeps its own files beside itself, so the whole folder can be copied to another
+PC or a USB drive:
+
+```
+SwitchYard\
+  SwitchYard.exe
+  data\        library.sqlite3 (library, profiles, defaults, last selection) and logs\
+  emulators\   emulator builds you place here
+```
+
+- Running from source, the repository is that folder: `data\` and `emulators\` sit at the
+  repo root and are git-ignored.
+- Emulator paths inside the folder (such as `emulators\Eden-Windows\eden.exe`) are stored
+  relative to it, so they keep working after the folder moves or gets a new drive letter.
+  Game folders and emulators elsewhere are stored as full paths.
+- If the folder can't be written to (for example under `C:\Program Files`), data goes to
+  `%LOCALAPPDATA%\SwitchYard` instead.
+- On the first portable start, a library from an earlier build in
+  `%LOCALAPPDATA%\SwitchYard` is copied into `data\`. The original stays where it was as
+  a backup.
+
+**Library → Open Data Folder** opens the data folder in use; its tooltip shows the path.
+
+### Portable build
+
+Packages the .NET runtime, so it runs on PCs without .NET installed:
+
+```powershell
+dotnet publish src\SwitchYard.App -c Release -r win-x64 --self-contained -o publish\SwitchYard
+```
+
+Copy `publish\SwitchYard` wherever you like. It is about 210 MB unzipped.
 
 ## Project layout
 
@@ -45,6 +74,8 @@ earlier Python build, so existing libraries open as they are.
 | `src/SwitchYard.App` | Avalonia desktop app: views, view models, generated placeholder covers |
 | `tests/SwitchYard.Tests` | xUnit tests, including headless UI tests |
 | `tests/FakeEmulator` | Stand-in emulator used by the launch tests |
+| `emulators/` | Your local emulator builds. Git-ignored except its README. |
+| `data/` | Your library and logs when run from source. Git-ignored. |
 
 ## Automated checks
 
@@ -63,9 +94,15 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Paths | spaces in game, emulator and working-directory paths pass through as single arguments |
 | Failures | missing executable, missing game, missing `{game}` argument, an `.exe` that can't start, a second launch while running |
 | Launch | fake process starts, exits, reports its exit code, and writes the launch log; Play returns to the same cover |
-| UI | missing-file state, Play without a profile, all windows render |
+| Launch routing | game's choice → generation default → ask; Unclassified games always ask; picker can remember for the game or as default; Launch With… saves nothing; two builds of the same emulator side by side |
+| Profiles | add, duplicate, remove; removing a profile clears games and defaults that used it; Emulators folder discovery skips uninstallers and helpers; unknown emulators get no unverified preset |
+| Portable | data and emulators beside the app; installed copies keep data outside the replaceable folder; read-only folders fall back to the user profile; old library copied once and kept; emulator paths survive the folder moving |
+| Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
+| UI | missing-file state, Play without a profile, details dropdown, all windows render |
 
-## How it works (Milestone 1)
+## How it works
+
+### Milestone 1: library and launching
 
 - **Add Folder…** scans recursively for `.nsp`, `.xci`, `.nsz`, `.xcz` and shows a preview.
   Choose a generation for the folder, correct individual rows, and edit titles. Suspected
@@ -83,6 +120,30 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   program and each argument passed separately, so there's no shell quoting. When the
   emulator exits, the cover you launched is selected again and gets focus.
 
+### Milestone 2: emulator profiles and launch routing
+
+- **Emulator Settings…** lists named profiles (Add, Duplicate, Remove), each with its own
+  executable, working directory, supported generation, arguments and Test Launch. Two
+  builds of the same emulator can sit side by side, such as "Eden 0.2.1" and "Eden nightly".
+- **Emulators folder:** builds placed in `emulators/` show up in Emulator Settings; **Add
+  as profile** names the profile after the build's folder. Eden builds get the Eden preset.
+  Other emulators get only `{game}` until their arguments are verified on a real Windows
+  build.
+- **Defaults:** choose a default profile for Switch 1 and for Switch 2.
+- **Per-game choice:** the **Emulator** dropdown in the details panel sets "Use default"
+  or a specific profile. The line above Play shows which profile it will use and why.
+- **Play** uses the game's own choice, then its generation's default, and otherwise asks.
+  The picker can remember the answer for the game or make it the generation default.
+  Unclassified games have no generation default.
+- **Launch With…** (details panel or right-click a cover) picks a profile for one launch
+  and saves nothing.
+- Emulator choices are stored apart from game records (`generation_defaults`,
+  `edition_launch_overrides`). Removing a profile clears any choices that used it.
+
+> Two builds of the same emulator may still share one settings and save folder (for Eden,
+> `%APPDATA%\eden`) unless a build runs in portable mode. Separating them is part of the
+> later Emulator Manager milestone.
+
 ## Windows smoke test (real Eden)
 
 Run by hand with your Eden install and game folder. Record results below.
@@ -97,6 +158,12 @@ Run by hand with your Eden install and game folder. Record results below.
 4. Rename or move one game file, and separately point the profile at a nonexistent exe.
    Confirm the app names what to fix (FILE MISSING / Locate File…, Emulator Settings…)
    and stays usable.
+5. Put an Eden build in `emulators/` (or two builds in separate folders). In Emulator
+   Settings, add each with **Add as profile**, set the Switch 1 default, and save. Check
+   the line above Play, then set one game's **Emulator** dropdown to the other profile and
+   confirm Play uses it.
+6. Use **Launch With…** on a game, pick a different profile, play, and exit. Confirm the
+   game's Emulator dropdown hasn't changed.
 
 ### Results
 
@@ -110,3 +177,5 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 2 Restart persistence | | |
 | | C# | | 3 Launch, exit, focus return | | |
 | | C# | | 4 Moved game / missing exe | | |
+| | C# | | 5 Two profiles, defaults, per-game choice | | |
+| | C# | | 6 Launch With… | | |

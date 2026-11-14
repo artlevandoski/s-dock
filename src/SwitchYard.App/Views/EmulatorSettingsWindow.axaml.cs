@@ -7,7 +7,7 @@ public partial class EmulatorSettingsWindow : Window
 {
     public EmulatorSettingsWindow() => InitializeComponent();
 
-    public EmulatorSettingsWindow(EmulatorSettingsViewModel vm) : this()
+    public EmulatorSettingsWindow(EmulatorProfilesViewModel vm) : this()
     {
         DataContext = vm;
         vm.CloseRequested += ok => Close(ok);
