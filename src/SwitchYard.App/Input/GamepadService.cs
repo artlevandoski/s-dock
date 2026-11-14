@@ -136,7 +136,7 @@ public sealed class GamepadService
                 case PadAction.PreviousLibrary: vm.PreviousLibraryCommand.Execute(null); main.FocusSelectedCover(); return;
                 case PadAction.NextLibrary: vm.NextLibraryCommand.Execute(null); main.FocusSelectedCover(); return;
                 case PadAction.ToggleView: vm.ToggleViewCommand.Execute(null); return;
-                case PadAction.LaunchWith: if (vm.CanPlay) vm.LaunchWithCommand.Execute(null); return;
+                case PadAction.GameActions: main.OpenGameActions(); return;
                 case PadAction.Play: if (vm.CanPlay) vm.PlayCommand.Execute(null); return;
             }
             // Nothing focused yet (e.g. right after start): put focus on the selected cover first.

@@ -178,6 +178,22 @@ public sealed partial class MainViewModel
         }
     }
 
+    /// <summary>Carousel tags after the generation: series and up to two genres.</summary>
+    public IReadOnlyList<string> SelectedTags
+    {
+        get
+        {
+            if (SelectedItem is not { } item) return [];
+            var tags = new List<string>();
+            if (item.Series != ArcadeSeries.None) tags.Add(ArcadeSeries.Label(item.Series));
+            tags.AddRange(item.Metadata.Genres.Take(2));
+            if (item.VersionCount > 1) tags.Add($"{item.VersionCount} versions");
+            return tags;
+        }
+    }
+
+    public string SelectedGenerationLabel => SelectedItem is { } i ? Generations.Label(i.Generation) : "";
+
     /// <summary>Details panel: "Switch 1 · Platform · Adventure · 2023".</summary>
     public string DetailsFactsLine
     {

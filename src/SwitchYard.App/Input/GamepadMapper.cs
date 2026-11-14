@@ -37,8 +37,8 @@ public enum PadAction
     NextLibrary,
     /// <summary>Y: switch grid / carousel.</summary>
     ToggleView,
-    /// <summary>X: Launch With….</summary>
-    LaunchWith,
+    /// <summary>X: open the Game Actions menu.</summary>
+    GameActions,
     /// <summary>Start: Play.</summary>
     Play,
 }
@@ -60,7 +60,7 @@ public sealed class GamepadMapper
         (PadButtons.LeftShoulder, PadAction.PreviousLibrary),
         (PadButtons.RightShoulder, PadAction.NextLibrary),
         (PadButtons.Y, PadAction.ToggleView),
-        (PadButtons.X, PadAction.LaunchWith),
+        (PadButtons.X, PadAction.GameActions),
         (PadButtons.Start, PadAction.Play),
     ];
 

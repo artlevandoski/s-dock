@@ -183,7 +183,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
   | B | back / cancel (closes dialogs) |
   | LB / RB | previous / next library |
   | Y | grid / carousel |
-  | X | Launch With… |
+  | X | Game Actions menu (Launch With…, Play Version…, artwork, …) |
   | Start | Play |
 
   Input is ignored while another app, such as the emulator, is in front.

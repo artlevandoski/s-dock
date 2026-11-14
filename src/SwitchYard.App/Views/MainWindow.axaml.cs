@@ -11,7 +11,7 @@ namespace SwitchYard.App.Views;
 
 public partial class MainWindow : Window
 {
-    private const double CarouselItemWidth = 200 + 2 * 22; // cover + horizontal margins
+    private const double CarouselItemWidth = 214 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
     private bool _closeConfirmed;
     private DispatcherTimer? _scrollAnimation;
 
@@ -95,6 +95,14 @@ public partial class MainWindow : Window
             _closeConfirmed = true;
             Close();
         }
+    }
+
+    /// <summary>Opens the Game Actions menu (controller X) next to the visible Game Actions button.</summary>
+    public void OpenGameActions()
+    {
+        if (Vm is not { HasSelection: true } vm) return;
+        Button anchor = vm.IsCarousel ? GameActionsButton : DetailsGameActionsButton;
+        anchor.Flyout?.ShowAt(anchor);
     }
 
     /// <summary>Focus the selected cover in whichever view is showing.</summary>

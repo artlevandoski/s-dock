@@ -11,10 +11,11 @@ public sealed partial class LibraryTab(string id) : ObservableObject
     public string Label => Libraries.Label(Id);
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Header))]
+    [NotifyPropertyChangedFor(nameof(Header), nameof(Tooltip))]
     public partial int Count { get; set; }
 
-    public string Header => $"{Label}  {Count}";
+    public string Header => Label;
+    public string Tooltip => $"{Label}: {Count} game(s)";
 }
 
 /// <summary>A filter dropdown entry. Shared instances so SelectedItem compares by reference.</summary>
@@ -26,13 +27,19 @@ public sealed record FilterOption(string Value, string Label)
 
     public static readonly IReadOnlyList<FilterOption> Generation =
     [
-        new(AllValue, "All generations"),
+        new(AllValue, "All Games"),
         new(Generations.Switch1, "Switch 1"),
         new(Generations.Switch2, "Switch 2"),
         new(Generations.Unclassified, "Unclassified"),
         new(MissingValue, "Missing files"),
         new(NeedsMatchValue, "Needs IGDB match"),
     ];
+
+    /// <summary>Shown as pills: All Games, Switch 1, Switch 2.</summary>
+    public static readonly IReadOnlyList<FilterOption> Primary = Generation.Take(3).ToList();
+
+    /// <summary>In the "More" dropdown: Unclassified, Missing files, Needs IGDB match.</summary>
+    public static readonly IReadOnlyList<FilterOption> More = Generation.Skip(3).ToList();
 
     public static readonly IReadOnlyList<FilterOption> SeriesWithoutNeogeo =
     [
@@ -127,10 +134,13 @@ public sealed partial class MainViewModel
 
     // ----------------------------------------------------------------- view
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(IsGrid), nameof(ViewToggleLabel))]
+    [NotifyPropertyChangedFor(nameof(IsGrid), nameof(ViewToggleLabel), nameof(BackdropOpacity))]
     public partial bool IsCarousel { get; set; }
 
     public bool IsGrid => !IsCarousel;
+
+    /// <summary>The selected game's art fills the window in the carousel and stays faint behind the grid.</summary>
+    public double BackdropOpacity => IsCarousel ? 0.8 : 0.16;
     public string ViewToggleLabel => IsCarousel ? "Grid View" : "Carousel View";
 
     partial void OnIsCarouselChanged(bool value)
@@ -167,9 +177,28 @@ public sealed partial class MainViewModel
     partial void OnGenerationFilterChanged(FilterOption value)
     {
         if (value is null) { GenerationFilter = FilterOption.Generation[0]; return; } // ComboBox teardown
+        OnPropertyChanged(nameof(PillFilter));
+        OnPropertyChanged(nameof(MoreFilter));
         if (_loadingState) return;
         _library.SetSetting(StateKey(CurrentLibrary, "generation"), value.Value);
         ApplyFilter();
+    }
+
+    public IReadOnlyList<FilterOption> PrimaryFilters => FilterOption.Primary;
+    public IReadOnlyList<FilterOption> MoreFilters => FilterOption.More;
+
+    /// <summary>The selected pill, or null when a "More" filter is active. Nulls pushed back by the list are ignored.</summary>
+    public FilterOption? PillFilter
+    {
+        get => FilterOption.Primary.Contains(GenerationFilter) ? GenerationFilter : null;
+        set { if (value is not null) GenerationFilter = value; }
+    }
+
+    /// <summary>The active "More" filter, or null when a pill is selected.</summary>
+    public FilterOption? MoreFilter
+    {
+        get => FilterOption.More.Contains(GenerationFilter) ? GenerationFilter : null;
+        set { if (value is not null) GenerationFilter = value; }
     }
 
     public IReadOnlyList<FilterOption> SeriesFilterOptions =>
