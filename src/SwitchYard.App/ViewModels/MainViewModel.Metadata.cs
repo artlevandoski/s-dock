@@ -59,7 +59,7 @@ public sealed partial class MainViewModel
         }
     }
 
-    private ArtworkSources Artwork => new(_library, Igdb, Sgdb, AppPaths.ArtworkDir);
+    private ArtworkSources Artwork => new(_library, Igdb, Sgdb, AppPaths.ArtworkDir, TitleDb);
 
     /// <summary>
     /// Fetches logos for the given games: IGDB's first, SteamGridDB's as a fallback. Quietly skipped
@@ -253,8 +253,10 @@ public sealed partial class MainViewModel
         get
         {
             if (SelectedItem?.Metadata is not { } m) return "";
-            var parts = m.Genres.Take(3).ToList();
-            if (m.ReleaseYear is { } y) parts.Add(y.ToString());
+            var parts = m.DisplayGenres.Take(3).ToList();
+            if (m.DisplayReleaseYear is { } y) parts.Add(y.ToString());
+            if (m.TdbPublisher is { } publisher) parts.Add(publisher);
+            if (m.TdbPlayers is { } players) parts.Add(players == 1 ? "1 player" : $"Up to {players} players");
             return string.Join("  ·  ", parts);
         }
     }
@@ -267,7 +269,7 @@ public sealed partial class MainViewModel
             if (SelectedItem is not { } item) return [];
             var tags = new List<string>();
             if (item.Series != ArcadeSeries.None) tags.Add(ArcadeSeries.Label(item.Series));
-            tags.AddRange(item.Metadata.Genres.Take(2));
+            tags.AddRange(item.Metadata.DisplayGenres.Take(2));
             if (item.VersionCount > 1) tags.Add($"{item.VersionCount} versions");
             return tags;
         }
@@ -283,8 +285,8 @@ public sealed partial class MainViewModel
             if (SelectedItem is not { } item) return "";
             var parts = new List<string> { Generations.Label(item.Generation) };
             if (item.Series != ArcadeSeries.None) parts.Add(ArcadeSeries.Label(item.Series));
-            parts.AddRange(item.Metadata.Genres.Take(2));
-            if (item.Metadata.ReleaseYear is { } y) parts.Add(y.ToString());
+            parts.AddRange(item.Metadata.DisplayGenres.Take(2));
+            if (item.Metadata.DisplayReleaseYear is { } y) parts.Add(y.ToString());
             return string.Join("  ·  ", parts);
         }
     }
@@ -292,6 +294,8 @@ public sealed partial class MainViewModel
     public string MatchStatusText => SelectedItem switch
     {
         null => "",
+        { Metadata.TdbName: { } tdb, IsMatched: true, Metadata.IgdbName: { } name } => $"TitleDB: {tdb}  ·  IGDB: {name}",
+        { Metadata.TdbName: { } tdb } => $"TitleDB: {tdb}",
         { IsMatched: true, Metadata.IgdbName: { } name } => $"IGDB: {name}",
         { IsMatched: true } => "IGDB: matched",
         _ => "Not matched on IGDB",
@@ -447,7 +451,7 @@ public sealed partial class MainViewModel
             item.Metadata.DisplaySummary ?? "");
         if (text is null) return;
         // Saving IGDB's own text unchanged doesn't count as an edit.
-        UserMetadata.SetSummary(_library, item.Id, text.Trim() == (item.Metadata.Summary ?? "").Trim() ? null : text);
+        UserMetadata.SetSummary(_library, item.Id, text.Trim() == (item.Metadata.DefaultSummary ?? "").Trim() ? null : text);
         Refresh(item.Id);
     }
 

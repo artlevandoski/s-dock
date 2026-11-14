@@ -25,6 +25,7 @@ public sealed record FilterOption(string Value, string Label)
     public const string MissingValue = "missing";
     public const string NeedsMatchValue = "needs_match";
     public const string HiddenValue = "hidden";
+    public const string NotInTitleDbValue = "not_in_titledb";
 
     public static readonly IReadOnlyList<FilterOption> Generation =
     [
@@ -33,6 +34,7 @@ public sealed record FilterOption(string Value, string Label)
         new(Generations.Switch2, "Switch 2"),
         new(Generations.Unclassified, "Unclassified"),
         new(MissingValue, "Missing files"),
+        new(NotInTitleDbValue, "Not in TitleDB"),
         new(NeedsMatchValue, "Needs IGDB match"),
         new(HiddenValue, "Hidden games"),
     ];
@@ -40,7 +42,7 @@ public sealed record FilterOption(string Value, string Label)
     /// <summary>Shown as pills: All Games, Switch 1, Switch 2.</summary>
     public static readonly IReadOnlyList<FilterOption> Primary = Generation.Take(3).ToList();
 
-    /// <summary>In the "More" dropdown: Unclassified, Missing files, Needs IGDB match, Hidden games.</summary>
+    /// <summary>In the "More" dropdown: Unclassified, Missing files, Not in TitleDB, Needs IGDB match, Hidden games.</summary>
     public static readonly IReadOnlyList<FilterOption> More = Generation.Skip(3).ToList();
 
     public static readonly IReadOnlyList<FilterOption> SeriesWithoutNeogeo =
@@ -269,6 +271,7 @@ public sealed partial class MainViewModel
             FilterOption.MissingValue => item.IsMissing,
             FilterOption.NeedsMatchValue => !item.IsMatched,
             FilterOption.HiddenValue => true,
+            FilterOption.NotInTitleDbValue => !item.Metadata.HasTitleDb,
             _ => item.Generation == g,
         };
         if (!keep) return false;

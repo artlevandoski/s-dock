@@ -33,9 +33,9 @@ public partial class App : Application
                         library.SaveProfile(p); // emulators inside the folder are now stored relative to it
             }
             var window = new MainWindow();
-            // Decode covers at the size they're drawn: the carousel's enlarged cover (~307 px) times the display scaling.
+            // Decode covers at the size they're drawn: the carousel's enlarged square cover (~354 px) times the display scaling.
             var scaling = window.Screens.Primary?.Scaling ?? 1.0;
-            Controls.ImageCache.Covers.DecodeWidth = (int)Math.Ceiling(Math.Clamp(307 * scaling, 260, 520));
+            Controls.ImageCache.Covers.DecodeWidth = (int)Math.Ceiling(Math.Clamp(354 * scaling, 300, 600));
             var ui = new UiServices(window);
             var launcher = new EmulatorLauncher(Path.Combine(AppPaths.LogDir, "last_launch.log"));
             var vm = new MainViewModel(library, launcher, ui);

@@ -215,8 +215,10 @@
                               ToolTip.Tip="The first press shows a note; press again within 3 seconds to close the game" />
                   </MenuItem>
                   <Separator />
-                  <MenuItem Header="Match Unmatched Games" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
-                  <MenuItem Header="Cancel" Command="{Binding CancelMatchingCommand}" ToolTip.Tip="Stop matching or fetching logos; everything done so far is kept" IsVisible="{Binding IsMatchingAll}" />
+                  <MenuItem Header="Update from TitleDB" Command="{Binding UpdateFromTitleDbCommand}" IsEnabled="{Binding !IsMatchingAll}"
+                            ToolTip.Tip="Names, descriptions, square icons and banners from the eShop's listings, matched by title ID" />
+                  <MenuItem Header="Match Unmatched Games on IGDB" Command="{Binding MatchUnmatchedCommand}" IsEnabled="{Binding !IsMatchingAll}" />
+                  <MenuItem Header="Cancel" Command="{Binding CancelMatchingCommand}" ToolTip.Tip="Stop the update, matching or logo fetching; everything done so far is kept" IsVisible="{Binding IsMatchingAll}" />
                   <MenuItem Header="Get Missing Logos" Command="{Binding GetMissingLogosCommand}" IsEnabled="{Binding !IsMatchingAll}"
                             ToolTip.Tip="Fetch logos (IGDB first, then SteamGridDB) for matched games that don't have one" />
                   <MenuItem Header="Metadata Settings…" Command="{Binding IgdbSettingsCommand}" />
@@ -318,7 +320,7 @@
 
               <StackPanel Margin="18,0,18,18" Spacing="12">
                 <Grid ColumnDefinitions="Auto,*">
-                  <c:CoverView Width="96" Height="136" Margin="0,-70,14,0" VerticalAlignment="Top"
+                  <c:CoverView Width="112" Height="112" Margin="0,-56,14,0" VerticalAlignment="Top"
                                Title="{Binding SelectedTitle}" Generation="{Binding SelectedGeneration}"
                                IsMissing="{Binding SelectedIsMissing}" Image="{Binding SelectedCover}" ShowGenerationBand="False" />
                   <StackPanel Grid.Column="1" VerticalAlignment="Bottom" Spacing="4">
@@ -427,13 +429,13 @@
             </ListBox.ItemsPanel>
             <ListBox.ItemTemplate>
               <DataTemplate x:DataType="vm:EditionItem">
-                <StackPanel Width="168" Spacing="8" ToolTip.Tip="{Binding Tooltip}">
+                <StackPanel Width="190" Spacing="8" ToolTip.Tip="{Binding Tooltip}">
                   <Border Classes="ring" HorizontalAlignment="Center">
-                    <c:CoverView Width="150" Height="212" Image="{Binding Cover}" ShowGenerationBand="False"
+                    <c:CoverView Width="172" Height="172" Image="{Binding Cover}" ShowGenerationBand="False"
                                  Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
                   </Border>
                   <TextBlock Classes="card-title" Text="{Binding Title}" TextTrimming="CharacterEllipsis"
-                             HorizontalAlignment="Center" MaxWidth="156" />
+                             HorizontalAlignment="Center" MaxWidth="178" />
                 </StackPanel>
               </DataTemplate>
             </ListBox.ItemTemplate>
@@ -508,7 +510,7 @@
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:EditionItem">
                   <Border Classes="ring" Padding="0" CornerRadius="16">
-                    <c:CoverView Width="260" Height="368" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
+                    <c:CoverView Width="300" Height="300" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
                                  Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
                   </Border>
                 </DataTemplate>

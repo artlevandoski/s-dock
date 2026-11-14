@@ -17,7 +17,8 @@ public sealed record ArtCandidate(
 /// automatically, and saves a chosen image as the user's own art (kept on refresh).
 /// Either client may be null when its credentials aren't set.
 /// </summary>
-public sealed class ArtworkSources(LibraryStore library, IgdbClient? igdb, SteamGridDbClient? sgdb, string artworkDir)
+public sealed class ArtworkSources(LibraryStore library, IgdbClient? igdb, SteamGridDbClient? sgdb, string artworkDir,
+    TitleDbClient? titleDb = null)
 {
     public const string IgdbBackgroundThumb = "screenshot_med"; // 569×320
 
@@ -45,10 +46,21 @@ public sealed class ArtworkSources(LibraryStore library, IgdbClient? igdb, Steam
         ct => sgdb!.DownloadAsync(img.Thumb.Length > 0 ? img.Thumb : img.Url, ct),
         ct => sgdb!.DownloadAsync(img.Url, ct));
 
-    /// <summary>Backgrounds: IGDB artworks and screenshots of the matched game, plus SteamGridDB heroes.</summary>
+    /// <summary>Backgrounds: the eShop banner and screenshots, IGDB artworks and screenshots, plus SteamGridDB heroes.</summary>
     public async Task<List<ArtCandidate>> BackgroundCandidatesAsync(Edition edition, CancellationToken ct = default)
     {
         var list = new List<ArtCandidate>();
+        if (titleDb is not null)
+        {
+            // The eShop banner and screenshots (from TitleDB), first.
+            var urls = library.GetMetadata(edition.Id).TdbArtUrls;
+            for (var i = 0; i < urls.Count; i++)
+            {
+                var url = urls[i];
+                list.Add(new ArtCandidate(i == 0 ? "eShop banner" : "eShop screenshot", 1920, 1080, ".jpg",
+                    ct2 => titleDb.DownloadImageAsync(url, ct2), ct2 => titleDb.DownloadImageAsync(url, ct2)));
+            }
+        }
         if (igdb is not null && edition.IgdbId is { } igdbId && await igdb.GetByIdAsync(igdbId, ct) is { } game)
         {
             foreach (var a in game.Artworks ?? [])

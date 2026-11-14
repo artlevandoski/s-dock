@@ -81,12 +81,14 @@ public sealed partial class MainViewModel : ObservableObject
 
     /// <param name="igdbFactory">Creates the IGDB client from the saved credentials (tests pass a fake).</param>
     public MainViewModel(LibraryStore library, EmulatorLauncher launcher, IUiServices ui,
-        Func<LibraryStore, IgdbClient?>? igdbFactory = null, Func<LibraryStore, SteamGridDbClient?>? sgdbFactory = null)
+        Func<LibraryStore, IgdbClient?>? igdbFactory = null, Func<LibraryStore, SteamGridDbClient?>? sgdbFactory = null,
+        Func<TitleDbClient>? titleDbFactory = null)
     {
         _library = library;
         _ui = ui;
         _igdbFactory = igdbFactory ?? DefaultIgdbFactory;
         _sgdbFactory = sgdbFactory ?? DefaultSgdbFactory;
+        _titleDbFactory = titleDbFactory ?? DefaultTitleDbFactory;
         Launcher = launcher;
         Launcher.Launched += OnLaunched;
         Launcher.Finished += OnFinished;
@@ -292,6 +294,7 @@ public sealed partial class MainViewModel : ObservableObject
         StatusText = $"Imported {summary.Added.Count} new game(s)" +
                      (summary.AddedVersions > 0 ? $" and {summary.AddedVersions} version file(s)" : "") +
                      $"; {summary.AlreadyPresent} already in library; {summary.Skipped} left out.";
+        await ApplyTitleDbToNewGamesAsync(summary.Added);
     }
 
     [RelayCommand]

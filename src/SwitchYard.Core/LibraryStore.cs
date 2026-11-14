@@ -11,7 +11,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 6;
+    public const int SchemaVersion = 7;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -86,7 +86,19 @@ public sealed class LibraryStore : IDisposable
             user_keyart_file TEXT,
             user_logo_file   TEXT,
             logo_file        TEXT,
-            steamgriddb_id   INTEGER
+            steamgriddb_id   INTEGER,
+            -- v7: TitleDB
+            tdb_title_id     TEXT,
+            tdb_name         TEXT,
+            tdb_summary      TEXT,
+            tdb_publisher    TEXT,
+            tdb_release_date INTEGER,
+            tdb_genres_json  TEXT,
+            tdb_players      INTEGER,
+            tdb_icon_file    TEXT,
+            tdb_banner_file  TEXT,
+            tdb_art_json     TEXT,
+            tdb_fetched_at   TEXT
         );
         -- v3: manual library assignment (Main Library / Arcade Archives), apart from game records.
         CREATE TABLE IF NOT EXISTS edition_library_overrides (
@@ -193,7 +205,31 @@ public sealed class LibraryStore : IDisposable
             // v5 -> v6: hidden games table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '6' WHERE key = 'schema_version'");
         }
+        if (version < 7)
+        {
+            // v6 -> v7: TitleDB columns on the existing metadata table.
+            var cols = new HashSet<string>();
+            using (var cmd = Cmd("SELECT name FROM pragma_table_info('edition_metadata')"))
+            using (var r = cmd.ExecuteReader())
+                while (r.Read()) cols.Add(r.GetString(0));
+            foreach (var (name, type) in TdbColumns)
+                if (!cols.Contains(name)) Exec($"ALTER TABLE edition_metadata ADD COLUMN {name} {type}");
+            Exec("UPDATE meta SET value = '7' WHERE key = 'schema_version'");
+        }
     }
+
+    private static readonly (string Name, string Type)[] TdbColumns =
+    [
+        ("tdb_title_id", "TEXT"), ("tdb_name", "TEXT"), ("tdb_summary", "TEXT"), ("tdb_publisher", "TEXT"),
+        ("tdb_release_date", "INTEGER"), ("tdb_genres_json", "TEXT"), ("tdb_players", "INTEGER"), ("tdb_icon_file", "TEXT"),
+        ("tdb_banner_file", "TEXT"), ("tdb_art_json", "TEXT"), ("tdb_fetched_at", "TEXT"),
+    ];
+
+    private static string? JsonList(IReadOnlyList<string> list) =>
+        list.Count == 0 ? null : JsonSerializer.Serialize(list.ToList(), CoreJsonContext.Default.ListString);
+
+    private static List<string> ListJson(string? json) =>
+        json is null ? [] : JsonSerializer.Deserialize(json, CoreJsonContext.Default.ListString) ?? [];
 
     public void Dispose()
     {
@@ -555,6 +591,17 @@ public sealed class LibraryStore : IDisposable
         UserLogoFile = Str(r, "user_logo_file"),
         LogoFile = Str(r, "logo_file"),
         SteamGridDbId = Long(r, "steamgriddb_id"),
+        TdbTitleId = Str(r, "tdb_title_id"),
+        TdbName = Str(r, "tdb_name"),
+        TdbSummary = Str(r, "tdb_summary"),
+        TdbPublisher = Str(r, "tdb_publisher"),
+        TdbReleaseDate = Long(r, "tdb_release_date") is { } d ? (int)d : null,
+        TdbGenres = ListJson(Str(r, "tdb_genres_json")),
+        TdbPlayers = Long(r, "tdb_players") is { } p ? (int)p : null,
+        TdbIconFile = Str(r, "tdb_icon_file"),
+        TdbBannerFile = Str(r, "tdb_banner_file"),
+        TdbArtUrls = ListJson(Str(r, "tdb_art_json")),
+        TdbFetchedAt = Str(r, "tdb_fetched_at"),
     };
 
     public EditionMetadata GetMetadata(string editionId)
@@ -580,20 +627,31 @@ public sealed class LibraryStore : IDisposable
     public void SaveMetadata(EditionMetadata m) => Exec("""
         INSERT INTO edition_metadata(edition_id, igdb_name, igdb_slug, igdb_url, summary, genres_json, release_year,
                                      cover_file, keyart_file, fetched_at, user_summary, user_cover_file,
-                                     user_keyart_file, user_logo_file, logo_file, steamgriddb_id)
-        VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul, $lf, $sg)
+                                     user_keyart_file, user_logo_file, logo_file, steamgriddb_id,
+                                     tdb_title_id, tdb_name, tdb_summary, tdb_publisher, tdb_release_date, tdb_genres_json,
+                                     tdb_players, tdb_icon_file, tdb_banner_file, tdb_art_json, tdb_fetched_at)
+        VALUES ($e, $n, $s, $u, $sum, $g, $y, $c, $k, $f, $us, $uc, $uk, $ul, $lf, $sg,
+                $ti, $tn, $ts, $tp, $td, $tg, $tpl, $tic, $tb, $ta, $tf)
         ON CONFLICT(edition_id) DO UPDATE SET
             igdb_name = excluded.igdb_name, igdb_slug = excluded.igdb_slug, igdb_url = excluded.igdb_url,
             summary = excluded.summary, genres_json = excluded.genres_json, release_year = excluded.release_year,
             cover_file = excluded.cover_file, keyart_file = excluded.keyart_file, fetched_at = excluded.fetched_at,
             user_summary = excluded.user_summary, user_cover_file = excluded.user_cover_file,
             user_keyart_file = excluded.user_keyart_file, user_logo_file = excluded.user_logo_file,
-            logo_file = excluded.logo_file, steamgriddb_id = excluded.steamgriddb_id
+            logo_file = excluded.logo_file, steamgriddb_id = excluded.steamgriddb_id,
+            tdb_title_id = excluded.tdb_title_id, tdb_name = excluded.tdb_name, tdb_summary = excluded.tdb_summary,
+            tdb_publisher = excluded.tdb_publisher, tdb_release_date = excluded.tdb_release_date,
+            tdb_genres_json = excluded.tdb_genres_json, tdb_players = excluded.tdb_players,
+            tdb_icon_file = excluded.tdb_icon_file, tdb_banner_file = excluded.tdb_banner_file,
+            tdb_art_json = excluded.tdb_art_json, tdb_fetched_at = excluded.tdb_fetched_at
         """, ("$e", m.EditionId), ("$n", m.IgdbName), ("$s", m.IgdbSlug), ("$u", m.IgdbUrl), ("$sum", m.Summary),
              ("$g", m.Genres.Count == 0 ? null : JsonSerializer.Serialize(m.Genres.ToList(), CoreJsonContext.Default.ListString)),
              ("$y", m.ReleaseYear), ("$c", m.CoverFile), ("$k", m.KeyArtFile), ("$f", m.FetchedAt),
              ("$us", m.UserSummary), ("$uc", m.UserCoverFile), ("$uk", m.UserKeyArtFile), ("$ul", m.UserLogoFile),
-             ("$lf", m.LogoFile), ("$sg", m.SteamGridDbId));
+             ("$lf", m.LogoFile), ("$sg", m.SteamGridDbId),
+             ("$ti", m.TdbTitleId), ("$tn", m.TdbName), ("$ts", m.TdbSummary), ("$tp", m.TdbPublisher),
+             ("$td", m.TdbReleaseDate), ("$tg", JsonList(m.TdbGenres)), ("$tpl", m.TdbPlayers), ("$tic", m.TdbIconFile),
+             ("$tb", m.TdbBannerFile), ("$ta", JsonList(m.TdbArtUrls)), ("$tf", m.TdbFetchedAt));
 
     // ----------------------------------------------------------------- libraries
     public const string IncludeNeogeoKey = "include_aca_neogeo";

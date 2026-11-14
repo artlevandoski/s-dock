@@ -108,6 +108,7 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Metadata | description, genres, year, IGDB ID and cached artwork saved; refresh keeps the user's text and images; remove match keeps user edits; credentials stored locally only |
 | Logos and backgrounds | IGDB logos used first (transparent preferred, PNG), work without SteamGridDB, fall back to SteamGridDB when IGDB has none or lacks the endpoint; SteamGridDB: exact-title game match (verified first), official logos ranked first, bad key and foreign image hosts refused; logo fetched once and the user's logo always wins; a new match drops the old game's logo; background choices from IGDB artworks, screenshots and SteamGridDB heroes, kept on refresh; choosers load once; schema v5 upgrade; selector covers have no generation banner |
 | Metadata UI | Needs IGDB match filter; Match on IGDB… with previews, link look-up and Change Match; all-platforms search; edit description and set/reset cover; IGDB Settings test connection; artwork renders in grid, carousel and dialogs |
+| TitleDB (fake server) | download saved once and skipped when unchanged; lookup by title ID prefers the full listing over demos; updates map to their base game; text, icon, banner and screenshots saved; images only from Nintendo's image server; a failed image is counted and retried next time; works offline from the saved copy; yours → TitleDB → IGDB display order; Not in TitleDB filter; offered once after the first import; schema v7 upgrade |
 | Logos | each game's logo is fetched right after it is matched; Get Missing Logos only visits matched games without one, reports added / not found / failed, and can be cancelled |
 | Large libraries | grid and carousel share one view across libraries; artwork comes from a background cache (covers, backgrounds, logos) and is re-decoded when the file changes; artwork can be replaced while the cache reads it; carousel centring with virtualization; opt-in 863-game stress test |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
@@ -256,6 +257,25 @@ repository.
   replaces yours; **Use Default Artwork** removes your images.
 - Videos are planned for later.
 
+### TitleDB: names, descriptions and square icons
+
+- [TitleDB](https://github.com/blawar/titledb) is the eShop's own listing of every game
+  (MIT-licensed data). Games are matched **exactly by their title ID**, which Switch Yard
+  already reads from the file names, so there's nothing to search and no account or key.
+- **Settings → Update from TitleDB** downloads the English (US) file once, about 90 MB, into
+  `data	itledb\`, then fills in every game it lists: name, description, publisher, release
+  date, genres, number of players, the square eShop icon (used as the cover) and the banner
+  (used as the background). Running it again only downloads TitleDB if there's a newer copy
+  and only fetches images that are missing. It can be cancelled from the same menu.
+- After the first import, Switch Yard offers to do this; once TitleDB is downloaded, newly
+  imported games are filled in automatically.
+- **Choose Background…** lists the eShop banner and screenshots first.
+- IGDB and SteamGridDB stay as backups: logos come from them, and games TitleDB doesn't list
+  (**More filters → Not in TitleDB**) can still be matched on IGDB. Your own description and
+  pictures always come first, then TitleDB, then IGDB.
+- Covers are square in the grid, carousel and details panel to suit the eShop icons; IGDB's
+  portrait covers are trimmed to fit when a game has no icon.
+
 ### Large libraries
 
 Switch Yard is tuned for libraries of hundreds of games:
@@ -330,6 +350,9 @@ Run by hand with your Eden install and game folder. Record results below.
     full screen). Play a game: Eden opens in full screen. Press Esc twice to close it and
     come back; play again and use Start + Select. Switch to *Press Once to Exit* and repeat.
 14. Hide a game, find it under **More filters → Hidden games**, and unhide it.
+15. Run **Update from TitleDB**. Covers become square eShop icons, banners appear behind the
+    carousel, and descriptions, publisher and players show in the details. Check
+    **More filters → Not in TitleDB** and run it again (it should finish quickly).
 
 ### Results
 
@@ -353,3 +376,4 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 12 Clear logos and Choose Background | | |
 | | C# | | 13 Full screen and leaving a game | | |
 | | C# | | 14 Hide and unhide | | |
+| | C# | | 15 TitleDB and square covers | | |

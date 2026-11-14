@@ -11,7 +11,7 @@ namespace SwitchYard.App.Views;
 
 public partial class MainWindow : Window
 {
-    private const double CarouselItemWidth = 260 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
+    private const double CarouselItemWidth = 300 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
     private bool _closeConfirmed;
     private DispatcherTimer? _scrollAnimation;
     private WindowState _stateBeforeFullScreen = WindowState.Normal;

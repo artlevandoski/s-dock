@@ -1,0 +1,140 @@
+using CommunityToolkit.Mvvm.Input;
+using SwitchYard.Core;
+using SwitchYard.Core.Metadata;
+
+namespace SwitchYard.App.ViewModels;
+
+/// <summary>
+/// TitleDB: the eShop's names, descriptions, square icons, banners and screenshots, matched exactly by title ID.
+/// It is the first source; IGDB and SteamGridDB fill in what it lacks (logos, and anything it doesn't list).
+/// </summary>
+public sealed partial class MainViewModel
+{
+    private readonly Func<TitleDbClient> _titleDbFactory;
+    private TitleDbClient? _titleDb;
+
+    private static TitleDbClient DefaultTitleDbFactory() => new(Path.Combine(AppPaths.DataDir, "titledb"));
+
+    private TitleDbClient TitleDb => _titleDb ??= _titleDbFactory();
+
+    public bool HasTitleDbFile => TitleDb.HasFile;
+
+    /// <summary>
+    /// Settings → Update from TitleDB: downloads TitleDB if there's a newer copy, then fills in every game it
+    /// lists. Images already downloaded are kept, so running it again is quick.
+    /// </summary>
+    [RelayCommand]
+    private async Task UpdateFromTitleDbAsync()
+    {
+        if (IsMatchingAll) return;
+        _matchAllCts = new CancellationTokenSource();
+        OnPropertyChanged(nameof(IsMatchingAll));
+        try
+        {
+            if (!await DownloadTitleDbAsync(_matchAllCts.Token)) return;
+            await ApplyTitleDbAsync(_all.Select(i => i.Edition).ToList(), _matchAllCts.Token);
+        }
+        finally
+        {
+            _matchAllCts.Dispose();
+            _matchAllCts = null;
+            OnPropertyChanged(nameof(IsMatchingAll));
+        }
+    }
+
+    /// <summary>Returns false if there's no usable copy of TitleDB afterwards.</summary>
+    private async Task<bool> DownloadTitleDbAsync(CancellationToken ct)
+    {
+        StatusText = "Checking for a newer TitleDB…";
+        var client = TitleDb;
+        // The download runs on a worker thread; each progress update hops back to the UI thread.
+        var context = SynchronizationContext.Current;
+        void Show((long Done, long? Total) p) => StatusText = p.Total is { } total
+            ? $"Downloading TitleDB… {p.Done >> 20} of {total >> 20} MB"
+            : $"Downloading TitleDB… {p.Done >> 20} MB";
+        var progress = new InlineProgress<(long Done, long? Total)>(p =>
+        {
+            if (context is null) Show(p);
+            else context.Post(_ => Show(p), null);
+        });
+        try
+        {
+            await Task.Run(() => client.DownloadAsync(progress, ct), ct);
+            return true;
+        }
+        catch (OperationCanceledException)
+        {
+            StatusText = "TitleDB download cancelled.";
+            return false;
+        }
+        catch (Exception ex) when (ex is HttpRequestException or IOException or UnauthorizedAccessException)
+        {
+            if (client.HasFile)
+            {
+                StatusText = "Couldn't check for a newer TitleDB; using the copy already downloaded.";
+                return true;
+            }
+            await _ui.ShowMessageAsync("TitleDB", "TitleDB couldn't be downloaded:\n\n" + ex.Message +
+                                                  "\n\nCheck your internet connection and try again.");
+            return false;
+        }
+    }
+
+    private async Task ApplyTitleDbAsync(IReadOnlyList<Edition> editions, CancellationToken ct)
+    {
+        var service = new TitleDbService(_library, TitleDb, AppPaths.ArtworkDir);
+        var progress = new InlineProgress<(int Done, int Total, string Title)>(p => StatusText = p.Done == 0
+            ? $"{p.Title}…"
+            : $"TitleDB ({p.Done} of {p.Total}): {p.Title}…");
+        TitleDbSummary s;
+        try
+        {
+            s = await service.ApplyAsync(editions, progress, ct);
+        }
+        catch (Exception ex) when (ex is InvalidDataException or System.Text.Json.JsonException)
+        {
+            await _ui.ShowMessageAsync("TitleDB", "The downloaded TitleDB file couldn't be read:\n\n" + ex.Message +
+                                                  "\n\nUse Update from TitleDB to download it again.");
+            return;
+        }
+        Refresh();
+        var text = $"TitleDB: {s.Found} found";
+        if (s.NotFound > 0) text += $", {s.NotFound} not listed (filter: Not in TitleDB)";
+        if (s.ImagesFailed > 0) text += $", {s.ImagesFailed} image(s) failed (run it again later)";
+        if (s.Cancelled) text += " · cancelled";
+        StatusText = text + ".";
+    }
+
+    /// <summary>After an import: fill in the new games from TitleDB, offering to download it the first time.</summary>
+    private async Task ApplyTitleDbToNewGamesAsync(IReadOnlyList<string> added)
+    {
+        if (added.Count == 0 || IsMatchingAll) return;
+        if (!TitleDb.HasFile)
+        {
+            if (await _ui.ConfirmAsync("TitleDB",
+                    "Fill in names, descriptions and pictures from TitleDB (the eShop's own listings)?\n\n" +
+                    "Games are matched by their title ID. Switch Yard downloads TitleDB once (about 90 MB) and keeps it " +
+                    "in its data folder. You can also do this later from Settings → Update from TitleDB."))
+                await UpdateFromTitleDbAsync();
+            return;
+        }
+        var editions = added.Select(_library.GetEdition).OfType<Edition>().ToList();
+        _matchAllCts = new CancellationTokenSource();
+        OnPropertyChanged(nameof(IsMatchingAll));
+        try
+        {
+            await ApplyTitleDbAsync(editions, _matchAllCts.Token);
+        }
+        finally
+        {
+            _matchAllCts.Dispose();
+            _matchAllCts = null;
+            OnPropertyChanged(nameof(IsMatchingAll));
+        }
+    }
+
+    private sealed class InlineProgress<T>(Action<T> report) : IProgress<T>
+    {
+        public void Report(T value) => report(value);
+    }
+}
