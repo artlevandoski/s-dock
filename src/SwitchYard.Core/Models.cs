@@ -56,6 +56,11 @@ public sealed class Edition
 
     public EditionFile? PrimaryFile => Files.FirstOrDefault(f => f.Role == "primary") ?? Files.FirstOrDefault();
 
+    /// <summary>Other files of the same game (alternate versions), launched with Play Version….</summary>
+    public IEnumerable<EditionFile> Alternates => Files.Where(f => f != PrimaryFile);
+
+    public bool HasVersions => Files.Count > 1;
+
     public bool IsMissing => PrimaryFile is not { Exists: true };
 }
 

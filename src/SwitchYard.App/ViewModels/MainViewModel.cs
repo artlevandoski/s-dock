@@ -5,13 +5,17 @@ using SwitchYard.Core;
 
 namespace SwitchYard.App.ViewModels;
 
-public sealed class EditionItem(Edition edition)
+public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary)
 {
     public Edition Edition { get; } = edition;
     public string Id => Edition.Id;
     public string Title => Edition.Title;
     public string Generation => Edition.Generation;
     public bool IsMissing { get; } = edition.IsMissing;
+    public string Library { get; } = library;
+    public bool PinnedToLibrary { get; } = pinnedToLibrary;
+    public string Series { get; } = ArcadeSeries.Detect(edition.Title);
+    public int VersionCount => Edition.Files.Count;
     public string Tooltip => IsMissing ? $"{Title}\nFile missing. Select it and use Locate File…" : Title;
 }
 
@@ -36,13 +40,14 @@ public sealed partial class MainViewModel : ObservableObject
         Launcher.Launched += OnLaunched;
         Launcher.Finished += OnFinished;
         Launcher.Failed += OnFailed;
-        Refresh(_library.GetSetting(LastSelectedKey));
+        InitLibraries();
+        Refresh();
     }
 
     // ------------------------------------------------------------- state
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasSelection), nameof(CanPlay), nameof(SelectedTitle), nameof(SelectedGeneration),
-        nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing))]
+        nameof(SelectedIsMissing), nameof(DetailsText), nameof(ShowMissing), nameof(VersionsText), nameof(HasVersions), nameof(CarouselSubtitle))]
     public partial EditionItem? SelectedItem { get; set; }
 
     [ObservableProperty]
@@ -84,8 +89,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     partial void OnSelectedItemChanged(EditionItem? value)
     {
-        if (value is not null)
+        if (value is not null && !_applyingFilter)
+        {
             _library.SetSetting(LastSelectedKey, value.Id);
+            _library.SetSetting(StateKey(CurrentLibrary, "selected"), value.Id);
+        }
+        RebuildLibraryChoices();
         _suppressGenerationWrite = true;
         SelectedGenerationOption = value is null ? null : GenerationOption.ForLibrary(value.Generation);
         _suppressGenerationWrite = false;
@@ -157,25 +166,40 @@ public sealed partial class MainViewModel : ObservableObject
     }
 
     /// <summary>Reload from the database, rebuild the grid, and keep or restore the selection.</summary>
+    /// <summary>Reload everything from the database, then show the current library with its filters.</summary>
     public void Refresh(string? selectId = null)
     {
         selectId ??= SelectedItem?.Id;
-        var editions = _library.ListEditions();
-        Items.Clear();
-        foreach (var e in editions)
-            Items.Add(new EditionItem(e));
-        OnPropertyChanged(nameof(HasItems));
-        SelectedItem = Items.FirstOrDefault(i => i.Id == selectId) ?? Items.FirstOrDefault();
-        var missing = Items.Count(i => i.IsMissing);
-        StatusText = $"{Items.Count} game(s) in library" + (missing > 0 ? $" · {missing} with missing files" : "");
+        var overrides = _library.LibraryOverrides();
+        var includeNeogeo = _library.IncludeAcaNeogeo;
+        _all = _library.ListEditions()
+            .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo), overrides.ContainsKey(e.Id)))
+            .ToList();
+        foreach (var tab in LibraryTabs)
+            tab.Count = _all.Count(i => i.Library == tab.Id);
+        ApplyFilter(selectId);
+        var missing = _all.Count(i => i.IsMissing);
+        StatusText = $"{_all.Count} game(s) in library" + (missing > 0 ? $" · {missing} with missing files" : "");
     }
 
+    /// <summary>
+    /// Selects a game, switching to its library (and clearing that library's search and filters if
+    /// they hide it). Used to return to the launched cover after the emulator exits.
+    /// </summary>
     public bool Select(string editionId)
     {
-        var item = Items.FirstOrDefault(i => i.Id == editionId);
-        if (item is null) return false;
-        SelectedItem = item;
-        return true;
+        if (Items.FirstOrDefault(i => i.Id == editionId) is { } visible)
+        {
+            SelectedItem = visible;
+            return true;
+        }
+        if (_all.FirstOrDefault(i => i.Id == editionId) is not { } item) return false;
+        if (item.Library != CurrentLibrary)
+            SelectedLibraryTab = LibraryTabs.First(t => t.Id == item.Library);
+        if (Items.All(i => i.Id != editionId))
+            ClearFilters();
+        ApplyFilter(editionId);
+        return SelectedItem?.Id == editionId;
     }
 
     // ------------------------------------------------------------- import
@@ -203,7 +227,11 @@ public sealed partial class MainViewModel : ObservableObject
             return;
         var summary = LibraryScanner.ImportEntries(_library, folder, preview.FolderGeneration.Value, result.Entries);
         Refresh(summary.Added.FirstOrDefault());
-        StatusText = $"Imported {summary.Added.Count} new game(s); {summary.AlreadyPresent} already in library; {summary.Skipped} left out.";
+        if (summary.Added.FirstOrDefault() is { } first)
+            Select(first); // show the library the first new game landed in
+        StatusText = $"Imported {summary.Added.Count} new game(s)" +
+                     (summary.AddedVersions > 0 ? $" and {summary.AddedVersions} version file(s)" : "") +
+                     $"; {summary.AlreadyPresent} already in library; {summary.Skipped} left out.";
     }
 
     [RelayCommand]
@@ -280,7 +308,8 @@ public sealed partial class MainViewModel : ObservableObject
     private Task PlayAsync() => PlaySelectedAsync();
 
     /// <summary>Play: the game's choice, then its generation's default, then ask.</summary>
-    public async Task<bool> PlaySelectedAsync()
+    /// <param name="filePath">A specific version to launch (Play Version…); null for the game's main file.</param>
+    public async Task<bool> PlaySelectedAsync(string? filePath = null)
     {
         if (SelectedItem?.Edition is not { } e) return false;
         if (await EmulatorBusyAsync() || await NoProfilesAsync()) return false;
@@ -298,7 +327,59 @@ public sealed partial class MainViewModel : ObservableObject
                 _library.SetGenerationDefault(e.Generation, profile.Id);
             RebuildEmulatorChoices();
         }
-        return await LaunchAsync(e, profile);
+        return await LaunchAsync(e, profile, filePath);
+    }
+
+    // ------------------------------------------------------------------ versions
+    public bool HasVersions => SelectedItem?.Edition.HasVersions ?? false;
+
+    /// <summary>Line under the carousel title: generation, series and versions.</summary>
+    public string CarouselSubtitle
+    {
+        get
+        {
+            if (SelectedItem is not { } item) return "";
+            var parts = new List<string> { Generations.Label(item.Generation) };
+            if (item.Series != ArcadeSeries.None) parts.Add(ArcadeSeries.Label(item.Series));
+            if (item.VersionCount > 1) parts.Add($"{item.VersionCount} versions");
+            if (item.IsMissing) parts.Add("file missing");
+            return string.Join("  ·  ", parts);
+        }
+    }
+
+    public string VersionsText => SelectedItem?.Edition is { } e && e.HasVersions
+        ? $"Versions: {e.Files.Count} files"
+        : "Versions: 1 file";
+
+    [RelayCommand]
+    private async Task PlayVersionAsync()
+    {
+        if (SelectedItem?.Edition is not { } e) return;
+        var vm = new VersionsViewModel(e, _library, _ui);
+        var play = await _ui.ShowVersionsAsync(vm);
+        Refresh(e.Id); // the main file or the list may have changed
+        if (play is not null)
+            await PlaySelectedAsync(play);
+    }
+
+    [RelayCommand]
+    private async Task AddVersionFileAsync()
+    {
+        if (SelectedItem?.Edition is not { } e) return;
+        var start = Path.GetDirectoryName(e.PrimaryFile?.Path);
+        var path = await _ui.PickFileAsync($"Add another version of {e.Title}", start, GameFileFilter.Name, GameFileFilter.Patterns);
+        if (path is null) return;
+        try
+        {
+            _library.AddFile(e.Id, path, new FileInfo(path).Length);
+        }
+        catch (InvalidOperationException ex)
+        {
+            await _ui.ShowMessageAsync("Add Version File", ex.Message);
+            return;
+        }
+        Refresh(e.Id);
+        StatusText = $"Added {Path.GetFileName(path)} as a version of “{e.Title}”. Use Play Version… to launch it.";
     }
 
     [RelayCommand]
@@ -314,9 +395,9 @@ public sealed partial class MainViewModel : ObservableObject
         return await LaunchAsync(e, pick.Profile);
     }
 
-    private async Task<bool> LaunchAsync(Edition e, EmulatorProfile profile)
+    private async Task<bool> LaunchAsync(Edition e, EmulatorProfile profile, string? filePath = null)
     {
-        var game = e.PrimaryFile?.Path ?? "";
+        var game = filePath ?? e.PrimaryFile?.Path ?? "";
         var problems = LaunchArgs.Validate(profile, game);
         if (problems.Count > 0)
         {

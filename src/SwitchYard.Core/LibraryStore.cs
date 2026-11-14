@@ -10,7 +10,7 @@ namespace SwitchYard.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 2;
+    public const int SchemaVersion = 3;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -67,6 +67,11 @@ public sealed class LibraryStore : IDisposable
         CREATE TABLE IF NOT EXISTS generation_defaults (
             generation TEXT PRIMARY KEY CHECK (generation IN ('switch1', 'switch2')),
             profile_id TEXT NOT NULL REFERENCES emulator_profiles(id) ON DELETE CASCADE
+        );
+        -- v3: manual library assignment (Main Library / Arcade Archives), apart from game records.
+        CREATE TABLE IF NOT EXISTS edition_library_overrides (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            library    TEXT NOT NULL CHECK (library IN ('main', 'arcade'))
         );
         CREATE TABLE IF NOT EXISTS edition_launch_overrides (
             edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
@@ -132,6 +137,11 @@ public sealed class LibraryStore : IDisposable
                         SetGenerationDefault(g, p.Id);
             }
             Exec("UPDATE meta SET value = '2' WHERE key = 'schema_version'");
+        }
+        if (version < 3)
+        {
+            // v2 -> v3: library overrides table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '3' WHERE key = 'schema_version'");
         }
     }
 
@@ -431,6 +441,102 @@ public sealed class LibraryStore : IDisposable
     }
 
     /// <summary>Sets (or with null clears) the profile a specific game always launches with.</summary>
+    // ----------------------------------------------------------------- libraries
+    public const string IncludeNeogeoKey = "include_aca_neogeo";
+
+    public bool IncludeAcaNeogeo
+    {
+        get => GetSetting(IncludeNeogeoKey) == "1";
+        set => SetSetting(IncludeNeogeoKey, value ? "1" : "0");
+    }
+
+    public Dictionary<string, string> LibraryOverrides()
+    {
+        var result = new Dictionary<string, string>();
+        using var cmd = Cmd("SELECT edition_id, library FROM edition_library_overrides");
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) result[r.GetString(0)] = r.GetString(1);
+        return result;
+    }
+
+    public string? GetLibraryOverride(string editionId)
+    {
+        using var cmd = Cmd("SELECT library FROM edition_library_overrides WHERE edition_id = $e", ("$e", editionId));
+        return cmd.ExecuteScalar() as string;
+    }
+
+    /// <summary>Pins a game to a library, or with null returns it to automatic (title prefix) placement.</summary>
+    public void SetLibraryOverride(string editionId, string? library)
+    {
+        if (library is null)
+            Exec("DELETE FROM edition_library_overrides WHERE edition_id = $e", ("$e", editionId));
+        else if (library is Libraries.Main or Libraries.Arcade)
+            Exec("INSERT INTO edition_library_overrides(edition_id, library) VALUES ($e, $l) " +
+                 "ON CONFLICT(edition_id) DO UPDATE SET library = excluded.library", ("$e", editionId), ("$l", library));
+        else
+            throw new ArgumentException($"Unknown library: {library}");
+    }
+
+    /// <summary>The library each edition is shown in.</summary>
+    public string LibraryOf(Edition edition, IReadOnlyDictionary<string, string>? overrides = null, bool? includeNeogeo = null) =>
+        ArcadeSeries.LibraryFor(edition.Title,
+            overrides is null ? GetLibraryOverride(edition.Id) : overrides.GetValueOrDefault(edition.Id),
+            includeNeogeo ?? IncludeAcaNeogeo);
+
+    // ------------------------------------------------------------------ versions
+    /// <summary>Adds another file (alternate version) to an edition.</summary>
+    public long AddFile(string editionId, string path, long? sizeBytes = null)
+    {
+        if (FindEditionByPath(path) is { } owner)
+            throw new InvalidOperationException(owner == editionId
+                ? "That file is already one of this game's versions."
+                : "That file already belongs to another library entry.");
+        var ts = UtcNow();
+        Exec("""
+            INSERT INTO edition_files(edition_id, folder_id, path, path_key, role, size_bytes, added_at, last_seen_at)
+            VALUES ($e, NULL, $p, $k, 'alternate', $s, $t, $t)
+            """, ("$e", editionId), ("$p", Path.GetFullPath(path)), ("$k", AppPaths.PathKey(path)), ("$s", sizeBytes), ("$t", ts));
+        using var cmd = Cmd("SELECT last_insert_rowid()");
+        return (long)cmd.ExecuteScalar()!;
+    }
+
+    /// <summary>Removes a version from the library (the file itself is not touched). The last file can't be removed.</summary>
+    public void RemoveFile(long fileId)
+    {
+        using var find = Cmd("SELECT edition_id, role FROM edition_files WHERE id = $id", ("$id", fileId));
+        using var r = find.ExecuteReader();
+        if (!r.Read()) return;
+        var editionId = r.GetString(0);
+        var wasPrimary = r.GetString(1) == "primary";
+        r.Close();
+        using (var count = Cmd("SELECT COUNT(*) FROM edition_files WHERE edition_id = $e", ("$e", editionId)))
+            if ((long)count.ExecuteScalar()! <= 1)
+                throw new InvalidOperationException("A game needs at least one file. Remove the game instead.");
+        Exec("DELETE FROM edition_files WHERE id = $id", ("$id", fileId));
+        if (wasPrimary)
+            Exec("UPDATE edition_files SET role = 'primary' WHERE id = (SELECT MIN(id) FROM edition_files WHERE edition_id = $e)",
+                ("$e", editionId));
+    }
+
+    /// <summary>Makes a file the one Play launches; the previous main file becomes an alternate.</summary>
+    public void SetPrimaryFile(long fileId)
+    {
+        using var find = Cmd("SELECT edition_id FROM edition_files WHERE id = $id", ("$id", fileId));
+        if (find.ExecuteScalar() is not string editionId) return;
+        Exec("BEGIN IMMEDIATE");
+        try
+        {
+            Exec("UPDATE edition_files SET role = 'alternate' WHERE edition_id = $e", ("$e", editionId));
+            Exec("UPDATE edition_files SET role = 'primary' WHERE id = $id", ("$id", fileId));
+            Exec("COMMIT");
+        }
+        catch
+        {
+            Exec("ROLLBACK");
+            throw;
+        }
+    }
+
     public void SetLaunchOverride(string editionId, string? profileId)
     {
         if (profileId is null)

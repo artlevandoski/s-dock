@@ -98,4 +98,19 @@ public sealed class PortableTests : IDisposable
         Assert.Equal(Path.Combine(newRoot, "emulators", "Eden-Windows"), profiles["Eden"].WorkingDir);
         Assert.Equal(external, profiles["Other"].Executable); // outside the folder: unchanged
     }
+
+    [Fact]
+    public void Separate_data_folder_still_resolves_emulators_inside_switch_yard()
+    {
+        // --data-dir puts the database elsewhere; relative emulator paths still mean "inside Switch Yard's folder".
+        var root = Path.Combine(_env.Root, "SwitchYard");
+        var exe = Path.Combine(root, "emulators", "Eden", "eden.exe");
+        var elsewhere = Path.Combine(_env.Root, "Throwaway Data", "library.sqlite3");
+        using (var lib = new LibraryStore(Path.Combine(root, "data", "library.sqlite3"), root))
+            lib.SaveProfile(EmulatorProfile.New("Eden", exe, LaunchArgs.EdenPreset));
+        Directory.CreateDirectory(Path.GetDirectoryName(elsewhere)!);
+        File.Copy(Path.Combine(root, "data", "library.sqlite3"), elsewhere);
+        using var other = new LibraryStore(elsewhere, root);
+        Assert.Equal(exe, Assert.Single(other.ListProfiles()).Executable);
+    }
 }

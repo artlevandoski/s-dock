@@ -27,7 +27,12 @@ public sealed class FakeUi : IUiServices
     public bool AcceptImport { get; set; } = true;
 
     public Task<string?> PickFolderAsync(string title, string? startDir = null) => Task.FromResult<string?>(null);
-    public Task<string?> PickFileAsync(string title, string? startDir, string filterName, params string[] patterns) => Task.FromResult<string?>(null);
+    public Task<string?> PickFileAsync(string title, string? startDir, string filterName, params string[] patterns)
+    {
+        var f = NextPickedFile;
+        NextPickedFile = null;
+        return Task.FromResult(f);
+    }
     public Task ShowMessageAsync(string title, string message) { Messages.Add(message); return Task.CompletedTask; }
     public bool ConfirmResult { get; set; }
     public Task<bool> ConfirmAsync(string title, string message) { Messages.Add(message); return Task.FromResult(ConfirmResult); }
@@ -40,6 +45,12 @@ public sealed class FakeUi : IUiServices
     public List<ProfilePickerViewModel> Pickers { get; } = [];
     public Func<ProfilePickerViewModel, bool> OnPick { get; set; } = _ => false;
     public Task<bool> ShowProfilePickerAsync(ProfilePickerViewModel vm) { Pickers.Add(vm); return Task.FromResult(OnPick(vm)); }
+
+    /// <summary>Play Version…: <see cref="OnVersions"/> decides which file to play (default: close).</summary>
+    public Func<VersionsViewModel, string?> OnVersions { get; set; } = _ => null;
+    public Task<string?> ShowVersionsAsync(VersionsViewModel vm) => Task.FromResult(OnVersions(vm));
+
+    public string? NextPickedFile { get; set; }
 
     public void OpenFolder(string path) { }
     public void RestoreFocus() => FocusRestores++;
@@ -74,7 +85,8 @@ public sealed class MainWindowTests : IDisposable
             var vm = new MainViewModel(lib, launcher, new FakeUi());
             Assert.False(vm.HasItems);
             await vm.ImportFolderAsync(folder);
-            Assert.Equal(5, vm.Items.Count);
+            Assert.Equal(4, vm.Items.Count); // Main Library; the Arcade Archives title is in its own tab
+            Assert.Equal([4, 1], vm.LibraryTabs.Select(t => t.Count));
             var profile = _env.FakeProfile(sleep: 0.3);
             lib.SaveProfile(profile);
             lib.SetGenerationDefault(Generations.Switch1, profile.Id);
@@ -90,7 +102,7 @@ public sealed class MainWindowTests : IDisposable
         {
             var ui = new FakeUi();
             var vm = new MainViewModel(lib, launcher, ui);
-            Assert.Equal(5, vm.Items.Count);
+            Assert.Equal(4, vm.Items.Count);
             Assert.Equal(targetId, vm.SelectedId);
             Assert.Equal("Fake Eden", Assert.Single(lib.ListProfiles()).Name);
 
@@ -120,7 +132,7 @@ public sealed class MainWindowTests : IDisposable
         var ui = new FakeUi();
         var vm = new MainViewModel(lib, launcher, ui);
         await vm.ImportFolderAsync(folder);
-        var gone = vm.Items.Single(i => i.Title.StartsWith("Arcade"));
+        var gone = vm.Items.Single(i => i.Title == "Super Placeholder Quest");
         File.Delete(gone.Edition.PrimaryFile!.Path);
         vm.Refresh(gone.Id);
 
@@ -172,7 +184,7 @@ public sealed class MainWindowTests : IDisposable
         Assert.Equal("Use default (Eden 0.2.1)", vm.EmulatorChoices[0].Label);
         var covers = window.FindControl<ListBox>("CoverList")!;
         Assert.True(covers.IsVisible);
-        Assert.Equal(5, covers.ItemCount);
+        Assert.Equal(4, covers.ItemCount);
         Capture(window, "main.png");
 
         var preview = new ImportPreviewWindow(new ImportPreviewViewModel(
@@ -197,7 +209,7 @@ public sealed class MainWindowTests : IDisposable
     }
 
     /// <summary>Renders a frame; saves it as PNG when SWITCHYARD_SCREENSHOTS names a folder.</summary>
-    private static void Capture(Window w, string name)
+    internal static void Capture(Window w, string name)
     {
         Dispatcher.UIThread.RunJobs();
         var frame = w.CaptureRenderedFrame();

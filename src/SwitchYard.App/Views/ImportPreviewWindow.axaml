@@ -56,8 +56,13 @@
                               SelectedItem="{Binding GenerationOption}" IsEnabled="{Binding IsEditable}" />
                     <TextBlock Grid.Column="3" Margin="6,0" VerticalAlignment="Center" Text="{Binding KindLabel}" />
                     <TextBlock Grid.Column="4" Margin="6,0" VerticalAlignment="Center" Text="{Binding TitleId}" FontFamily="Consolas, monospace" />
-                    <TextBlock Grid.Column="5" Margin="6,0" VerticalAlignment="Center" Text="{Binding Notes}" TextWrapping="Wrap"
-                               Classes.warning="{Binding IsFlagged}" Classes.muted="{Binding !IsFlagged}" />
+                    <StackPanel Grid.Column="5" Margin="6,0" VerticalAlignment="Center" Spacing="2">
+                      <TextBlock Text="{Binding Notes}" TextWrapping="Wrap"
+                                 Classes.warning="{Binding IsFlagged}" Classes.muted="{Binding !IsFlagged}" />
+                      <CheckBox Content="{Binding AddAsVersionLabel}" IsChecked="{Binding AddAsVersion}"
+                                IsVisible="{Binding CanAddAsVersion}" FontSize="12"
+                                ToolTip.Tip="Attach this file to that game; launch it with Play Version…" />
+                    </StackPanel>
                     <TextBlock Grid.Column="6" Margin="6,0" VerticalAlignment="Center" Text="{Binding Path}"
                                TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Path}" />
                   </Grid>

@@ -4,9 +4,9 @@ An independent Windows frontend for certain game libraries. You bring your own g
 your own emulator installation. Switch Yard does not include or download games, firmware,
 keys, or system files.
 
-**Status:** Milestone 2. Import a folder, browse the cover grid, set up several emulator
-profiles, and choose which one each game launches with. Built with C# / .NET 10 and
-[Avalonia](https://avaloniaui.net/).
+**Status:** Milestone 3. Browse Main Library and Arcade Archives in a grid or a
+controller-friendly carousel, set up several emulator profiles, and keep several versions
+of a game. Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/).
 
 ## Requirements
 
@@ -97,6 +97,10 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 | Launch routing | game's choice → generation default → ask; Unclassified games always ask; picker can remember for the game or as default; Launch With… saves nothing; two builds of the same emulator side by side |
 | Profiles | add, duplicate, remove; removing a profile clears games and defaults that used it; Emulators folder discovery skips uninstallers and helpers; unknown emulators get no unverified preset |
 | Portable | data and emulators beside the app; installed copies keep data outside the replaceable folder; read-only folders fall back to the user profile; old library copied once and kept; emulator paths survive the folder moving |
+| Libraries | Arcade Archives / Arcade Archives 2 / ACA NEOGEO by title prefix; manual pins and the NEOGEO option persist; per-library search, filters, view and selection survive switching and restart; returning from the emulator reopens the launched game's library |
+| Carousel | the centred cover is 15–20% larger than its neighbours and sits in the middle; switching views keeps the selection |
+| Versions | add, remove and choose the main file; Play Version… launches the chosen file once; duplicates can be attached at import; Switch 2 editions are never matched to Switch 1 titles |
+| Controller | buttons fire once, directions repeat when held, stick deadzone, held buttons ignored on return; D-pad moves the carousel, LB/RB switch library, Y switches view |
 | Upgrade | a Milestone 1 library with one profile makes it the Switch 1 default; several profiles set no default |
 | UI | missing-file state, Play without a profile, details dropdown, all windows render |
 
@@ -144,6 +148,39 @@ real emulator. Set `SWITCHYARD_SCREENSHOTS` to a folder to also save PNGs of eac
 > `%APPDATA%\eden`) unless a build runs in portable mode. Separating them is part of the
 > later Emulator Manager milestone.
 
+### Milestone 3: grid, carousel and libraries
+
+- **Libraries:** *Main Library* and *Arcade Archives* are separate tabs (Ctrl+Tab), each
+  with its own search (Ctrl+F), generation filter, view and last selection. Arcade Archives
+  also filters by series.
+- **Arcade Archives** and **Arcade Archives 2** titles are placed by their title prefix.
+  **ACA NEOGEO** titles stay in Main Library unless you tick *Include ACA NEOGEO*.
+  The **Library** dropdown in the details panel pins any game to a library; *Automatic*
+  goes back to placement by title. Pins are stored apart from game records
+  (`edition_library_overrides`).
+- **Grid or carousel** (Ctrl+G, or the button at the top right): the carousel shows one
+  row with the selected cover in the centre, 18% larger than its neighbours. Both views
+  share one selection.
+- **Versions:** a game can have several files (updates, revisions, alternate dumps).
+  Attach one with **Add Version File…**, or tick *Add as a version of …* on a duplicate in
+  the import preview. **Play Version…** launches another file once, makes it the main
+  file, or removes it from the game. Files on disk are never touched.
+- **Switch 2 editions** stay separate: duplicate detection only matches titles within the
+  same generation.
+- **Controller** (Xbox-compatible, through Windows XInput):
+
+  | Button | Action |
+  |---|---|
+  | D-pad / left stick | move between covers (held: repeats) |
+  | A | Play the selected cover; press the focused button in dialogs |
+  | B | back / cancel (closes dialogs) |
+  | LB / RB | previous / next library |
+  | Y | grid / carousel |
+  | X | Launch With… |
+  | Start | Play |
+
+  Input is ignored while another app, such as the emulator, is in front.
+
 ## Windows smoke test (real Eden)
 
 Run by hand with your Eden install and game folder. Record results below.
@@ -164,6 +201,13 @@ Run by hand with your Eden install and game folder. Record results below.
    confirm Play uses it.
 6. Use **Launch With…** on a game, pick a different profile, play, and exit. Confirm the
    game's Emulator dropdown hasn't changed.
+7. Import a folder with an Arcade Archives title. Confirm it appears under *Arcade
+   Archives*, switch libraries, and check each keeps its own search, view and selection
+   after a restart.
+8. In the carousel, browse with the arrow keys, then with a controller (D-pad, A to play,
+   LB/RB, Y). Launch from the carousel and exit the emulator; the same cover comes back
+   centred. Pressing buttons while the emulator is in front must not affect Switch Yard.
+9. Add a second file to a game (Add Version File…), then use Play Version… to launch it.
 
 ### Results
 
@@ -179,3 +223,6 @@ Run by hand with your Eden install and game folder. Record results below.
 | | C# | | 4 Moved game / missing exe | | |
 | | C# | | 5 Two profiles, defaults, per-game choice | | |
 | | C# | | 6 Launch With… | | |
+| | C# | | 7 Libraries and per-library state | | |
+| | C# | | 8 Carousel, keyboard and controller | | |
+| | C# | | 9 Versions and Play Version… | | |

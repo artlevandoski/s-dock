@@ -58,6 +58,18 @@ public sealed class ScanEntry
     public string? ExistingEditionId { get; set; }
     public bool Include { get; set; } = true;
 
+    /// <summary>For a possible duplicate: the library edition it matches (if already imported)…</summary>
+    public string? DuplicateOfEditionId { get; set; }
+    /// <summary>…or the earlier file in this scan it matches.</summary>
+    public string? DuplicateOfPath { get; set; }
+    /// <summary>Title of the matched game, for "Add as a version of …".</summary>
+    public string? DuplicateOfTitle { get; set; }
+
+    /// <summary>Attach this file to the matched game as an alternate version instead of importing it separately.</summary>
+    public bool AddAsVersion { get; set; }
+
+    public bool CanAddAsVersion => Flags.Contains(ScanFlags.Duplicate) && (DuplicateOfEditionId ?? DuplicateOfPath) is not null;
+
     public bool InLibrary => ExistingEditionId is not null;
     public string Notes => ScanFlags.Describe(Flags);
 }
@@ -67,7 +79,7 @@ public sealed record ScanResult(string Folder, List<ScanEntry> Entries, List<str
     public IEnumerable<ScanEntry> NewEntries => Entries.Where(e => !e.InLibrary);
 }
 
-public sealed record ImportSummary(List<string> Added, int AlreadyPresent, int Skipped);
+public sealed record ImportSummary(List<string> Added, int AlreadyPresent, int Skipped, int AddedVersions = 0);
 
 /// <summary>
 /// Folder scanning and import preview. Only reads directory listings and file sizes;
@@ -240,6 +252,8 @@ public static partial class LibraryScanner
                 yield return f;
     }
 
+    private static string TitleKey(string title, string generation) => $"title:{generation}:{NormalizedTitle(title)}";
+
     public static ScanResult ScanFolder(string folder, string folderGeneration = Generations.Unclassified,
         LibraryStore? library = null, bool recursive = true)
     {
@@ -264,14 +278,16 @@ public static partial class LibraryScanner
         ApplyFolderGeneration(entries, folderGeneration);
 
         // Duplicate detection: against existing library editions, then within the scan.
-        var seen = new HashSet<string>();
+        // Title matches only count within one generation, so a Switch 2 edition of a game is never
+        // treated as a duplicate of the Switch 1 one (they stay separate by default).
+        var seen = new Dictionary<string, (string? EditionId, string? Path, string Title)>();
         if (library is not null)
         {
             foreach (var ed in library.ListEditions().Where(e => e.ContentKind == ContentKinds.Base))
             {
                 if (ed.ConsoleTitleId is { } tid)
-                    seen.Add("tid:" + tid.ToUpperInvariant());
-                seen.Add("title:" + NormalizedTitle(ed.Title));
+                    seen.TryAdd("tid:" + tid.ToUpperInvariant(), (ed.Id, null, ed.Title));
+                seen.TryAdd(TitleKey(ed.Title, ed.Generation), (ed.Id, null, ed.Title));
             }
         }
 
@@ -289,10 +305,15 @@ public static partial class LibraryScanner
             {
                 var keys = new List<string>();
                 if (e.TitleId is not null) keys.Add("tid:" + e.TitleId);
-                if (!e.AmbiguousName) keys.Add("title:" + NormalizedTitle(e.Title));
-                if (keys.Any(seen.Contains))
+                if (!e.AmbiguousName) keys.Add(TitleKey(e.Title, e.Generation));
+                if (keys.Select(k => seen.TryGetValue(k, out var m) ? m : default).FirstOrDefault(m => m.Title is not null) is { Title: not null } match)
+                {
                     e.Flags.Add(ScanFlags.Duplicate);
-                foreach (var k in keys) seen.Add(k);
+                    e.DuplicateOfEditionId = match.EditionId;
+                    e.DuplicateOfPath = match.Path;
+                    e.DuplicateOfTitle = match.Title;
+                }
+                foreach (var k in keys) seen.TryAdd(k, (null, e.Path, e.Title));
             }
             e.Include = !e.Flags.Overlaps(ScanFlags.Review);
         }
@@ -307,16 +328,29 @@ public static partial class LibraryScanner
         var folderId = library.UpsertFolder(folder, folderGeneration);
         var added = new List<string>();
         var present = new List<string>();
+        var versions = new List<ScanEntry>();
         var skipped = 0;
-        foreach (var e in entries)
+        var list = entries.ToList();
+        foreach (var e in list)
         {
             // Re-check at import time so repeat imports can never create duplicates.
             var existing = e.ExistingEditionId ?? library.FindEditionByPath(e.Path);
             if (existing is not null) { present.Add(e.Path); continue; }
+            if (e.AddAsVersion && e.CanAddAsVersion) { versions.Add(e); continue; }
             if (!e.Include) { skipped++; continue; }
             added.Add(library.AddEdition(e.Title, e.Generation, e.Path, e.Kind, e.TitleId, folderId, e.SizeBytes));
         }
+
+        // Versions attach after the games they belong to exist (the match may be earlier in this scan).
+        var addedVersions = 0;
+        foreach (var e in versions)
+        {
+            var target = e.DuplicateOfEditionId ?? (e.DuplicateOfPath is { } p ? library.FindEditionByPath(p) : null);
+            if (target is null) { skipped++; continue; } // its game wasn't imported
+            library.AddFile(target, e.Path, e.SizeBytes);
+            addedVersions++;
+        }
         library.MarkSeen(present);
-        return new ImportSummary(added, present.Count, skipped);
+        return new ImportSummary(added, present.Count, skipped, addedVersions);
     }
 }

@@ -14,6 +14,9 @@ public interface IUiServices
     Task<bool> ShowImportPreviewAsync(ImportPreviewViewModel vm);
     Task<bool> ShowEmulatorSettingsAsync(EmulatorProfilesViewModel vm);
     Task<bool> ShowProfilePickerAsync(ProfilePickerViewModel vm);
+
+    /// <summary>Play Version…: returns the file to launch, or null if closed without playing.</summary>
+    Task<string?> ShowVersionsAsync(VersionsViewModel vm);
     void OpenFolder(string path);
 
     /// <summary>Bring Switch Yard back to the front with focus on the selected cover (or the open dialog).</summary>

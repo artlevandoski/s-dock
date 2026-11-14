@@ -23,7 +23,8 @@ public partial class App : Application
                 try { copiedFrom = AppPaths.CopyLegacyLibrary(AppPaths.DataDir, AppPaths.UserProfileDir); }
                 catch (IOException ex) { LogError(ex); }
             }
-            var library = new LibraryStore(AppPaths.DatabasePath, AppPaths.IsPortable ? AppPaths.PortableRoot : null);
+            // Relative emulator paths always mean "inside Switch Yard's folder", even with --data-dir.
+            var library = new LibraryStore(AppPaths.DatabasePath, AppPaths.PortableRoot);
             if (AppPaths.IsPortable)
             {
                 _ = AppPaths.EmulatorsDir; // create emulators\ so it's obvious where builds go
@@ -41,6 +42,11 @@ public partial class App : Application
                 vm.StatusText = $"Switch Yard's folder is read-only, so data is kept in {AppPaths.DataDir}.";
             window.DataContext = vm;
             desktop.MainWindow = window;
+            window.Opened += (_, _) => window.FocusSelectedCover();
+
+            var gamepad = new Input.GamepadService(desktop);
+            gamepad.Start();
+            desktop.Exit += (_, _) => gamepad.Stop();
 
             // Safety net: log unexpected errors and keep the app running instead of closing it.
             Dispatcher.UIThread.UnhandledException += (_, e) =>

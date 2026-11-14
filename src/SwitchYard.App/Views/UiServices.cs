@@ -75,6 +75,9 @@ public sealed class UiServices(MainWindow main) : IUiServices
     public async Task<bool> ShowProfilePickerAsync(ProfilePickerViewModel vm) =>
         await ShowDialog<bool>(new ProfilePickerWindow(vm));
 
+    public Task<string?> ShowVersionsAsync(VersionsViewModel vm) =>
+        ShowDialog<string>(new VersionsWindow(vm));
+
     public void OpenFolder(string path) =>
         Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
 

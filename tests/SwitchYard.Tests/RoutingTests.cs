@@ -129,7 +129,7 @@ public sealed class RoutingTests : IDisposable
         DowngradeToV1();
 
         using var upgraded = _env.OpenLibrary();
-        Assert.Equal(2, upgraded.StoredSchemaVersion);
+        Assert.Equal(LibraryStore.SchemaVersion, upgraded.StoredSchemaVersion);
         Assert.Equal(eden.Id, upgraded.GetGenerationDefault(Generations.Switch1));
         Assert.Null(upgraded.GetGenerationDefault(Generations.Switch2)); // Eden profile is Switch 1 only
     }
@@ -144,7 +144,7 @@ public sealed class RoutingTests : IDisposable
         }
         DowngradeToV1();
         using var upgraded = _env.OpenLibrary();
-        Assert.Equal(2, upgraded.StoredSchemaVersion);
+        Assert.Equal(LibraryStore.SchemaVersion, upgraded.StoredSchemaVersion);
         Assert.Null(upgraded.GetGenerationDefault(Generations.Switch1));
     }
 

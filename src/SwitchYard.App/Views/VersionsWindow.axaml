@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:SwitchYard.App.ViewModels"
+        x:Class="SwitchYard.App.Views.VersionsWindow"
+        x:DataType="vm:VersionsViewModel"
+        Title="Play Version"
+        Width="680" Height="440" MinWidth="520" MinHeight="320"
+        WindowStartupLocation="CenterOwner">
+  <DockPanel Margin="18">
+    <StackPanel DockPanel.Dock="Top" Spacing="6" Margin="0,0,0,12">
+      <TextBlock Text="{Binding Heading}" FontSize="17" FontWeight="Bold" TextWrapping="Wrap" />
+      <TextBlock Text="{Binding Explanation}" Classes="muted" TextWrapping="Wrap" />
+    </StackPanel>
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="Auto,Auto,*,Auto,Auto" Margin="0,12,0,0">
+      <Button Grid.Column="0" Content="Make Main File" Command="{Binding MakeMainCommand}" Margin="0,0,8,0"
+              ToolTip.Tip="Play will launch this file from now on" />
+      <Button Grid.Column="1" Content="Remove from Library" Command="{Binding RemoveCommand}"
+              ToolTip.Tip="Forget this version. The file itself is not deleted." />
+      <Button Grid.Column="3" Content="Play" Classes="accent" MinWidth="90" HorizontalContentAlignment="Center"
+              Command="{Binding PlayCommand}" IsDefault="True" Margin="0,0,8,0" />
+      <Button Grid.Column="4" Content="Close" MinWidth="90" HorizontalContentAlignment="Center"
+              Command="{Binding CloseCommand}" IsCancel="True" />
+    </Grid>
+    <ListBox x:Name="VersionList" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}">
+      <ListBox.ItemTemplate>
+        <DataTemplate x:DataType="vm:VersionRow">
+          <Grid ColumnDefinitions="*,Auto" Margin="0,3">
+            <StackPanel Spacing="2">
+              <TextBlock Text="{Binding FileName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <TextBlock Grid.Column="1" Text="{Binding Badge}" VerticalAlignment="Center" Margin="12,0,0,0"
+                       Classes.warning="{Binding !Exists}" />
+          </Grid>
+        </DataTemplate>
+      </ListBox.ItemTemplate>
+    </ListBox>
+  </DockPanel>
+</Window>

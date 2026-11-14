@@ -31,6 +31,32 @@ public sealed partial class ImportRow : ObservableObject
         {
             if (Entry.InLibrary || Entry.Include == value) return;
             Entry.Include = value;
+            if (value && Entry.AddAsVersion)
+            {
+                Entry.AddAsVersion = false; // importing separately and attaching are exclusive
+                OnPropertyChanged(nameof(AddAsVersion));
+            }
+            OnPropertyChanged();
+            _owner.UpdateSummary();
+        }
+    }
+
+    public bool CanAddAsVersion => Entry.CanAddAsVersion;
+    public string AddAsVersionLabel => $"Add as a version of “{Entry.DuplicateOfTitle}”";
+
+    /// <summary>For a possible duplicate: attach it to the matching game (Play Version…) instead of a separate cover.</summary>
+    public bool AddAsVersion
+    {
+        get => Entry.AddAsVersion;
+        set
+        {
+            if (!Entry.CanAddAsVersion || Entry.AddAsVersion == value) return;
+            Entry.AddAsVersion = value;
+            if (value && Entry.Include)
+            {
+                Entry.Include = false;
+                OnPropertyChanged(nameof(Include));
+            }
             OnPropertyChanged();
             _owner.UpdateSummary();
         }
@@ -110,7 +136,7 @@ public sealed partial class ImportPreviewViewModel : ObservableObject
     [NotifyCanExecuteChangedFor(nameof(ImportCommand))]
     public partial string Summary { get; set; } = "";
 
-    public bool CanImport => Result.Entries.Any(e => e.InLibrary || e.Include);
+    public bool CanImport => Result.Entries.Any(e => e.InLibrary || e.Include || e.AddAsVersion);
 
     public bool HasWarnings => Result.MissingKnown.Count > 0 || Result.Errors.Count > 0;
 
@@ -142,7 +168,9 @@ public sealed partial class ImportPreviewViewModel : ObservableObject
         var present = entries.Count(e => e.InLibrary);
         var flagged = entries.Count(e => !e.InLibrary && e.Flags.Any(f => f != ScanFlags.InLibrary));
         var unclassified = entries.Count(e => e.Include && !e.InLibrary && e.Generation == Generations.Unclassified);
+        var versions = entries.Count(e => e.AddAsVersion && e.CanAddAsVersion && !e.InLibrary);
         var text = $"{toImport} to import · {present} already in library · {flagged} flagged for review";
+        if (versions > 0) text += $" · {versions} to add as versions";
         if (unclassified > 0) text += $" · {unclassified} will be imported as Unclassified";
         Summary = text;
     }
