@@ -224,4 +224,32 @@ public sealed class ControllerMenuTests : IDisposable
         Assert.Equal([PadAction.PreviousLetter], mapper.Update(new PadState(PadButtons.None, LeftTrigger: 140), TimeSpan.FromSeconds(3)));
         Assert.Equal([PadAction.Menu], mapper.Update(new PadState(PadButtons.Back, LeftTrigger: 140), TimeSpan.FromSeconds(4)));
     }
+
+    [AvaloniaFact]
+    public void Carousel_is_clean_and_the_grid_keeps_its_tools()
+    {
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
+        var (vm, window, _) = Open(lib, carousel: true);
+        bool Shown(Control c) => c.IsEffectivelyVisible;
+        var search = window.FindControl<TextBox>("SearchBox")!;
+        var filters = window.FindControl<Grid>("FilterBar")!;
+        var addFolder = window.GetVisualDescendants().OfType<Button>().First(b => b.Command == vm.AddFolderCommand);
+        Assert.False(Shown(search));
+        Assert.False(Shown(filters));          // filter pills, More filters, Clear and the Grid/Carousel buttons
+        Assert.False(Shown(addFolder));
+        Assert.True(Shown(window.FindControl<Button>("SettingsButton")!));
+        Assert.Null(window.FindControl<Button>("GameActionsButton")); // X opens Game Actions in the carousel
+        var play = window.FindControl<Button>("CarouselPlayButton")!;
+        var route = window.FindControl<TextBlock>("CarouselRouteText")!;
+        Assert.True(route.Bounds.Top >= play.Bounds.Bottom); // the emulator line sits under Play
+
+        GamepadService.Dispatch(window, PadAction.ToggleView); // Y: the grid brings them back
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(vm.IsGrid);
+        Assert.True(Shown(search));
+        Assert.True(Shown(filters));
+        Assert.True(Shown(addFolder));
+        window.Close();
+    }
 }

@@ -188,8 +188,13 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
         {
-            SearchBox.Focus();
-            SearchBox.SelectAll();
+            // Search lives in the grid: from the carousel, switch first, then focus the box once it's shown.
+            if (Vm is { IsCarousel: true } vm) vm.IsCarousel = false;
+            Dispatcher.UIThread.Post(() =>
+            {
+                SearchBox.Focus();
+                SearchBox.SelectAll();
+            }, DispatcherPriority.Loaded);
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && Vm is { IsMenuOpen: true } menuVm)

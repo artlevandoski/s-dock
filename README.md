@@ -49,7 +49,9 @@ The **Library** dropdown in the details panel moves any game by hand.
 **Grid or carousel.** The grid shows a details panel beside the covers. The carousel fills
 the screen with one row of covers above the game's name and the first sentence of its
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
-screen. Both views share the same selection.
+screen. Both views share the same selection. The carousel is kept clean: search, Add Folder,
+the filter bar and the view buttons appear only in the grid (Y or Ctrl+G switches views, Ctrl+F
+jumps to the grid's search, and filters are under **Settings → Filter** in either view).
 
 **Jump by letter.** Up/Down in the carousel, LT/RT on a controller, or Page Up/Page Down jump
 to the next or previous letter (by sort title). The letter shows briefly in the middle.

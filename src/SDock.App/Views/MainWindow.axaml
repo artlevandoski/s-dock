@@ -173,13 +173,13 @@
             </TabStrip.ItemTemplate>
           </TabStrip>
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Panel Width="230">
+            <Panel Width="230" IsVisible="{Binding IsGrid}">
               <TextBox x:Name="SearchBox" Classes="search" Text="{Binding SearchText}" PlaceholderText="Search (Ctrl+F)" />
               <PathIcon Data="{StaticResource IconSearch}" Width="15" Height="15" Margin="13,0,0,0"
                         HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource SyMuted}"
                         IsHitTestVisible="False" />
             </Panel>
-            <Button Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center"
+            <Button Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center" IsVisible="{Binding IsGrid}"
                     Command="{Binding AddFolderCommand}" ToolTip.Tip="Add a folder of games (Ctrl+O)">
               <PathIcon Data="{StaticResource IconFolderPlus}" Width="20" Height="20" />
             </Button>
@@ -191,8 +191,8 @@
         </Grid>
       </Border>
 
-      <!-- ============================== Filters and view ============================== -->
-      <Grid DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="28,14,24,4">
+      <!-- ============================== Filters and view (grid only; the carousel stays clean) ============================== -->
+      <Grid x:Name="FilterBar" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="28,14,24,4" IsVisible="{Binding IsGrid}">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
           <ListBox Classes="pills" ItemsSource="{Binding PrimaryFilters}" SelectedItem="{Binding PillFilter}">
             <ListBox.ItemsPanel>
@@ -438,19 +438,16 @@
                   </StackPanel>
                   <TextBlock Text="{Binding CarouselSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2" Height="46"
                              TextWrapping="Wrap" TextTrimming="WordEllipsis" MaxWidth="900" HorizontalAlignment="Left" />
-                  <StackPanel Orientation="Horizontal" Spacing="12" Margin="0,6,0,0">
-                    <Button Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
+                  <StackPanel Spacing="6" Margin="0,6,0,0" HorizontalAlignment="Left">
+                    <Button x:Name="CarouselPlayButton" Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
                             Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
                       <StackPanel Orientation="Horizontal" Spacing="10">
                         <PathIcon Data="{StaticResource IconPlay}" Width="22" Height="22" />
                         <TextBlock Text="{Binding PlayLabel}" />
                       </StackPanel>
                     </Button>
-                    <Button x:Name="GameActionsButton" Classes="subtle" MinHeight="58" Padding="18,0" CornerRadius="12"
-                            Command="{Binding OpenGameMenuCommand}" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)">
-                      <TextBlock Text="Game Actions…" FontSize="15" />
-                    </Button>
-                    <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" VerticalAlignment="Center" Margin="6,0,0,0" />
+                    <TextBlock x:Name="CarouselRouteText" Text="{Binding RouteText}" Classes="muted" FontSize="12" MaxWidth="560"
+                               TextTrimming="CharacterEllipsis" Margin="4,0,0,0" />
                   </StackPanel>
                 </StackPanel>
                 <Image Grid.Column="1" Source="{Binding SelectedLogo}" MaxHeight="140" MaxWidth="440" Width="440"
