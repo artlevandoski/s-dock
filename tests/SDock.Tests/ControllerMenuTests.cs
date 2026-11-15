@@ -1,5 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Media;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
@@ -250,6 +251,36 @@ public sealed class ControllerMenuTests : IDisposable
         Assert.True(Shown(search));
         Assert.True(Shown(filters));
         Assert.True(Shown(addFolder));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Carousel_shows_the_whole_title()
+    {
+        using var lib = _env.OpenLibrary();
+        var longName = "Tales of the Shire A The Lord of The Rings Game Deluxe Edition with Every Expansion Pack";
+        var id = lib.AddEdition(longName, Generations.Switch1, _env.Game("Long.nsp"));
+        lib.AddEdition("Short", Generations.Switch1, _env.Game("Short.nsp"));
+        var (vm, window, _) = Open(lib, carousel: true);
+        var fit = window.FindControl<Viewbox>("CarouselTitleFit")!;
+        var title = window.FindControl<TextBlock>("CarouselTitle")!;
+        var band = window.FindControl<Border>("CarouselInfoBand")!;
+
+        vm.Select(id);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Assert.Equal(longName, title.Text);
+        Assert.Equal(TextTrimming.None, title.TextTrimming);
+        Assert.True(fit.Bounds.Width <= band.Bounds.Width, "the whole name fits across the band");
+        Assert.True(fit.Bounds.Width < title.DesiredSize.Width, "a long name is shrunk to fit");
+        var bandWithLong = band.Bounds;
+        MainWindowTests.Capture(window, "carousel-long-title.png");
+
+        vm.Select(lib.ListEditions().Single(e => e.Title == "Short").Id);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
+        Assert.Equal(title.DesiredSize.Width, fit.Bounds.Width, 1); // a short name keeps its full size
+        Assert.Equal(bandWithLong, band.Bounds);                   // and the band doesn't move
         window.Close();
     }
 }

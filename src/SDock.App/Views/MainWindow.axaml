@@ -405,7 +405,7 @@
           <DockPanel IsVisible="{Binding IsCarousel}">
             <!-- Info band: title, tags, description and Play on the left; the clear logo on the right.
                  A fixed height, so the covers above never move as you browse (logo or not, short or long description). -->
-            <Border x:Name="CarouselInfoBand" DockPanel.Dock="Bottom" Height="250" Padding="40,20,40,22"
+            <Border x:Name="CarouselInfoBand" DockPanel.Dock="Bottom" Height="286" Padding="40,20,40,22"
                     BorderBrush="#33FFFFFF" BorderThickness="0,1,0,0">
               <Border.Background>
                 <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
@@ -415,9 +415,12 @@
               </Border.Background>
               <Grid ColumnDefinitions="*,Auto">
                 <StackPanel Spacing="10" VerticalAlignment="Top">
-                  <StackPanel Orientation="Horizontal" Spacing="14" Height="46">
-                    <TextBlock Text="{Binding SelectedTitle}" FontSize="34" FontWeight="Bold" VerticalAlignment="Center"
-                               TextTrimming="CharacterEllipsis" MaxWidth="560" />
+                  <!-- The whole name, always: a long one shrinks to fit the line instead of ending in "…". -->
+                  <Viewbox x:Name="CarouselTitleFit" Height="46" Stretch="Uniform" StretchDirection="DownOnly"
+                           HorizontalAlignment="Left">
+                    <TextBlock x:Name="CarouselTitle" Text="{Binding SelectedTitle}" FontSize="34" FontWeight="Bold" />
+                  </Viewbox>
+                  <StackPanel Orientation="Horizontal" Spacing="10" Height="30">
                     <Border Classes="tag accent" VerticalAlignment="Center" IsVisible="{Binding HasSelection}">
                       <TextBlock Text="{Binding SelectedGenerationLabel}" FontSize="15" />
                     </Border>
