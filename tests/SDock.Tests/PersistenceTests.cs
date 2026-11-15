@@ -77,7 +77,7 @@ public sealed class PersistenceTests : IDisposable
         Assert.NotNull(root);
         Assert.True(File.Exists(Path.Combine(root, "emulators", "README.md")));
         Assert.Contains("/emulators/*", File.ReadAllText(Path.Combine(root, ".gitignore")));
-        Assert.Null(AppPaths.FindSourceRoot(_env.Root)); // an installed copy falls back to LOCALAPPDATA
+        Assert.Null(AppPaths.FindSourceRoot(_env.Root)); // outside the repo, the S-Dock folder itself is the root
     }
 
     [Fact]

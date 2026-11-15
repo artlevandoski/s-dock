@@ -37,12 +37,12 @@ the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each
 
 Run by hand with your own emulator and game folder, and record results below.
 
-**Installer (each beta)**
+**Release zip (each beta)**
 
-0. Run `SDock-win-Setup.exe` on a PC (or Windows account) without S-Dock: it installs without
-   asking for administrator rights, starts, and adds Start menu and desktop shortcuts. Copy a
-   `data` and `emulators` folder into `%LOCALAPPDATA%\SDock` and check the library appears.
-   Uninstall from Windows Settings → Apps.
+0. Unzip `S-Dock-<version>-win-x64.zip` somewhere new and run `S-Dock\S-Dock.exe`: `data` appears
+   inside the S-Dock folder and nothing new appears in `%LOCALAPPDATA%`. Copy a `data` and
+   `emulators` folder in and check the library appears. Unzipped under `C:\Program Files`, S-Dock
+   asks to be moved.
 
 **Library and launching**
 

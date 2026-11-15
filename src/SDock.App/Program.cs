@@ -12,7 +12,7 @@ internal static class Program
         // runs and returns straight away for a normal start. It must come first.
         Velopack.VelopackApp.Build().Run();
 
-        // --data-dir <folder>: use a separate library instead of %LOCALAPPDATA%\S-Dock.
+        // --data-dir <folder>: use a separate library instead of the one in S-Dock's data folder (for testing).
         int i = Array.IndexOf(args, "--data-dir");
         if (i >= 0 && i + 1 < args.Length)
             Environment.SetEnvironmentVariable(AppPaths.DataDirEnv, Path.GetFullPath(args[i + 1]));

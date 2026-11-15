@@ -46,21 +46,20 @@ public sealed class PortableTests : IDisposable
     }
 
     [Fact]
-    public void First_portable_start_copies_the_old_library_once()
+    public void Everything_stays_in_the_S_Dock_folder()
     {
-        var legacy = Path.Combine(_env.Root, "LocalAppData", "SDock");
-        var data = Path.Combine(_env.Root, "Portable", "data");
-        using (var lib = new LibraryStore(Path.Combine(legacy, "library.sqlite3")))
-            lib.AddEdition("Kept Game", Generations.Switch1, _env.Game());
-
-        Assert.Equal(Path.Combine(legacy, "library.sqlite3"), AppPaths.CopyLegacyLibrary(data, legacy));
-        Assert.True(File.Exists(Path.Combine(legacy, "library.sqlite3"))); // original kept as backup
-        using (var lib = new LibraryStore(Path.Combine(data, "library.sqlite3")))
-            Assert.Equal("Kept Game", Assert.Single(lib.ListEditions()).Title);
-
-        Assert.Null(AppPaths.CopyLegacyLibrary(data, legacy));    // never overwrites a portable library
-        Assert.Null(AppPaths.CopyLegacyLibrary(legacy, legacy));  // same folder: nothing to do
-        Assert.Null(AppPaths.CopyLegacyLibrary(Path.Combine(_env.Root, "fresh"), Path.Combine(_env.Root, "none")));
+        // The Velopack build: <S-Dock>\current\S-Dock.exe with Update.exe beside "current".
+        var root = Path.Combine(_env.Root, "S-Dock");
+        Directory.CreateDirectory(Path.Combine(root, "current"));
+        File.WriteAllText(Path.Combine(root, "Update.exe"), "");
+        Assert.Equal(root, AppPaths.FindPortableRoot(Path.Combine(root, "current")));
+        // A plain unzipped folder: the folder itself.
+        var plain = Path.Combine(_env.Root, "Plain S-Dock");
+        Directory.CreateDirectory(plain);
+        Assert.Equal(plain, AppPaths.FindPortableRoot(plain));
+        // No user-profile fallback exists any more: the code never asks Windows for AppData.
+        var source = File.ReadAllText(Path.Combine(AppPaths.FindSourceRoot(AppContext.BaseDirectory)!, "src", "SDock.Core", "AppPaths.cs"));
+        Assert.DoesNotContain("SpecialFolder", source);
     }
 
     [Fact]

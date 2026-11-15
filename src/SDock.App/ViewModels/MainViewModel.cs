@@ -344,7 +344,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void OpenDataFolder() => _ui.OpenFolder(AppPaths.DataDir);
 
     public string DataFolderTip =>
-        $"Your library database and logs ({(AppPaths.IsPortable ? "portable" : "user profile")}):\n{AppPaths.DataDir}";
+        $"Your library, artwork and logs:\n{AppPaths.DataDir}";
 
     [RelayCommand]
     private void OpenEmulatorsFolder() => _ui.OpenFolder(AppPaths.EmulatorsDir);

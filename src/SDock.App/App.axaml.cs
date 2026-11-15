@@ -16,33 +16,23 @@ public partial class App : Application
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
-            // Portable: data\ beside the app. On first portable start, bring the earlier library across.
-            string? copiedFrom = null;
-            if (AppPaths.IsPortable)
+            // Everything lives in the S-Dock folder. If Windows won't let S-Dock write there (e.g. it was put in
+            // Program Files), say so and stop, rather than scattering files elsewhere.
+            if (AppPaths.IsPortable && !AppPaths.RootWritable)
             {
-                try
-                {
-                    // A library from an earlier build in the user profile, under the new name or the old one.
-                    copiedFrom = AppPaths.CopyLegacyLibrary(AppPaths.DataDir, AppPaths.UserProfileDir)
-                                 ?? AppPaths.CopyLegacyLibrary(AppPaths.DataDir, AppPaths.OldUserProfileDir);
-                }
-                catch (IOException ex) { LogError(ex); }
-            }
-            else if (AppPaths.Env(AppPaths.DataDirEnv) is null)
-            {
-                // Data in the user profile: bring across the library kept under the old name.
-                try { copiedFrom = AppPaths.CopyLegacyLibrary(AppPaths.DataDir, AppPaths.OldUserProfileDir); }
-                catch (IOException ex) { LogError(ex); }
+                var notice = new Views.MessageWindow("S-Dock", "S-Dock can't save in its folder",
+                    $"S-Dock keeps everything (your library, artwork and settings) inside its own folder:\n\n{AppPaths.PortableRoot}\n\n" +
+                    "Windows doesn't allow changes there. Move the whole S-Dock folder somewhere you can save files, such as " +
+                    "your Documents folder or another drive, and start it again.", ["Close"]);
+                notice.Closed += (_, _) => desktop.Shutdown();
+                desktop.MainWindow = notice;
+                base.OnFrameworkInitializationCompleted();
+                return;
             }
             // Relative emulator paths always mean "inside S-Dock's folder", even with --data-dir.
             var library = new LibraryStore(AppPaths.DatabasePath, AppPaths.PortableRoot);
             if (AppPaths.IsPortable)
-            {
                 _ = AppPaths.EmulatorsDir; // create emulators\ so it's obvious where builds go
-                if (copiedFrom is not null)
-                    foreach (var p in library.ListProfiles())
-                        library.SaveProfile(p); // emulators inside the folder are now stored relative to it
-            }
             var window = new MainWindow();
             // Decode covers at the size they're drawn: the carousel's enlarged square cover (~354 px) times the display scaling.
             var scaling = window.Screens.Primary?.Scaling ?? 1.0;
@@ -50,10 +40,6 @@ public partial class App : Application
             var ui = new UiServices(window);
             var launcher = new EmulatorLauncher(Path.Combine(AppPaths.LogDir, "last_launch.log"));
             var vm = new MainViewModel(library, launcher, ui);
-            if (copiedFrom is not null)
-                vm.StatusText = $"Your library was copied into {AppPaths.DataDir}. The original is still at {copiedFrom}.";
-            else if (!AppPaths.IsPortable && string.IsNullOrEmpty(AppPaths.Env(AppPaths.DataDirEnv)))
-                vm.StatusText = $"S-Dock's folder is read-only, so data is kept in {AppPaths.DataDir}.";
             window.DataContext = vm;
             desktop.MainWindow = window;
             window.Opened += (_, _) =>

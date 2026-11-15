@@ -1,10 +1,14 @@
 <#
-  Builds S-Dock for release:
-    publish\S-Dock\        the standalone app (S-Dock.exe and everything it needs; no .NET install required)
-    releases\              the installer and update packages made by Velopack:
-      SDock-win-Setup.exe       the installer to share
-      SDock-win-Portable.zip    the same app as a zip, for running from any folder
-      *.nupkg, releases.*.json  update packages (for a future auto-update feed)
+  Builds S-Dock for release as one self-contained folder (nothing is installed or written outside it):
+
+    releases\S-Dock-<version>-win-x64.zip   the download: unzip it and you get an S-Dock folder with
+                                            S-Dock.exe, the app (current\), Update.exe and emulators\.
+                                            data\ appears beside them on first start.
+    releases\*.nupkg, releases.*.json       update packages (for a future in-place update feed)
+    publish\S-Dock\                         the plain published app (for testing)
+
+  Velopack's Setup.exe is not part of the release: it would install into %LOCALAPPDATA%, and S-Dock is
+  meant to live entirely in its own folder.
 
   Usage (from the repository folder):
     powershell -ExecutionPolicy Bypass -File build\package.ps1
@@ -25,6 +29,10 @@ Write-Host "Packaging S-Dock $Version" -ForegroundColor Cyan
 
 dotnet tool restore | Out-Null
 
+# releases\ holds only build output: start it fresh (Velopack won't repackage a version already there).
+New-Item -ItemType Directory -Force releases | Out-Null
+Get-ChildItem releases -Force | Remove-Item -Recurse -Force
+
 $publish = Join-Path $root 'publish\S-Dock'
 if (Test-Path $publish) { Remove-Item $publish -Recurse -Force }
 dotnet publish src\SDock.App -c Release -r win-x64 --self-contained -p:Version=$Version -o $publish
@@ -42,7 +50,23 @@ dotnet vpk pack `
     --outputDir releases
 if ($LASTEXITCODE) { throw "vpk pack failed" }
 
+# The release: a ready S-Dock folder (Velopack's portable layout plus an emulators folder), zipped.
+$stage = Join-Path $root 'publish\release'
+if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
+$folder = Join-Path $stage 'S-Dock'
+Expand-Archive (Join-Path 'releases' 'SDock-win-Portable.zip') -DestinationPath $folder
+New-Item -ItemType Directory (Join-Path $folder 'emulators') | Out-Null
+Copy-Item emulators\README.md (Join-Path $folder 'emulators\README.md')
+$zip = Join-Path 'releases' "S-Dock-$Version-win-x64.zip"
+if (Test-Path $zip) { Remove-Item $zip }
+Compress-Archive -Path $folder -DestinationPath $zip -CompressionLevel Optimal
+# Not part of the release: the installer (it installs into AppData) and Velopack's own zip (replaced above).
+Remove-Item (Join-Path 'releases' 'SDock-win-Setup.exe'), (Join-Path 'releases' 'SDock-win-Portable.zip') -ErrorAction SilentlyContinue
+
 Write-Host ""
 Write-Host "Done:" -ForegroundColor Green
-Get-ChildItem releases | Where-Object { $_.Name -like "*$Version*" -or $_.Name -like '*Setup*' -or $_.Name -like '*Portable*' } |
-    ForEach-Object { "  {0,-45} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+Get-ChildItem releases | ForEach-Object { "  {0,-45} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB) }
+$hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+Write-Host ""
+Write-Host "SHA-256 (for the release notes):" -ForegroundColor Green
+Write-Host "  $hash  $(Split-Path $zip -Leaf)"

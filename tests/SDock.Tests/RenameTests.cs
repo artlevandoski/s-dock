@@ -17,8 +17,6 @@ public sealed class RenameTests
             Assert.Equal("C:/Old Name Emulators", AppPaths.Env(AppPaths.EmulatorsDirEnv));
             Environment.SetEnvironmentVariable(AppPaths.EmulatorsDirEnv, "C:/New Name Emulators");
             Assert.Equal("C:/New Name Emulators", AppPaths.Env(AppPaths.EmulatorsDirEnv)); // the new name wins
-            Assert.EndsWith("SwitchYard", AppPaths.OldUserProfileDir);
-            Assert.EndsWith("S-Dock", AppPaths.UserProfileDir);
         }
         finally
         {

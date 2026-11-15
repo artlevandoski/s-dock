@@ -21,23 +21,22 @@ Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: beta 
 
 ## Install
 
-S-Dock runs on 64-bit Windows 10 or 11. Nothing else needs installing.
+S-Dock runs on 64-bit Windows 10 or 11, and there's nothing to install: it's one folder.
 
-- **Installer:** run `SDock-win-Setup.exe`. It installs for your Windows account only (no
-  administrator rights), into `%LOCALAPPDATA%\SDock`, and adds Start menu and desktop shortcuts.
-  Your library, artwork and settings are kept in `%LOCALAPPDATA%\SDock\data`, and your emulators
-  can go in `%LOCALAPPDATA%\SDock\emulators`. Uninstall from Windows Settings → Apps.
-- **Portable:** unzip `SDock-win-Portable.zip` anywhere (a USB drive works) and run `S-Dock.exe`.
-  Everything stays in that folder; see [Portable folder](#portable-folder).
+1. Download `S-Dock-<version>-win-x64.zip` and unzip it wherever you like: Documents, another
+   drive, a USB stick. You get an **S-Dock** folder.
+2. Run `S-Dock.exe` inside it. Put your emulators in its `emulators` folder.
+
+Everything S-Dock saves (your library, artwork, TitleDB and settings) goes into the `data` folder
+beside it, and nowhere else on your PC. To move S-Dock, move the folder; to remove it, delete the
+folder. Don't put it under `C:\Program Files`: Windows doesn't let programs save there, and S-Dock
+will ask you to move it.
 
 The beta isn't code-signed yet, so Windows SmartScreen may say it "protected your PC": choose
 **More info → Run anyway**.
 
 **Bringing an existing library across:** close S-Dock, then copy the `data` and `emulators`
-folders from your old S-Dock folder into the new one (`%LOCALAPPDATA%\SDock` for the installer).
-
-> Uninstalling removes the install folder, including `data`. Copy `data` somewhere safe first if
-> you want to keep your library.
+folders from your old S-Dock folder into the new one.
 
 ## Getting started
 
@@ -203,10 +202,9 @@ S-Dock\
 
 - Emulators inside the folder are remembered relative to it, so they keep working after a
   move. Game folders elsewhere are remembered by their full path.
-- If the folder can't be written to (for example under `C:\Program Files`), data goes to
-  `%LOCALAPPDATA%\S-Dock` instead.
-- S-Dock was called Switch Yard before. A library left in `%LOCALAPPDATA%\SwitchYard` is
-  copied across on first start, and the old `SWITCHYARD_…` environment variables still work.
+- Nothing is written outside the folder. If the folder can't be written to (for example under
+  `C:\Program Files`), S-Dock asks you to move it instead of saving somewhere else.
+- S-Dock was called Switch Yard before; the old `SWITCHYARD_…` environment variables still work.
 
 ## For developers
 
@@ -216,10 +214,11 @@ dotnet test                            # run the automated tests
 powershell -ExecutionPolicy Bypass -File build\package.ps1   # standalone app + installer
 ```
 
-`build\package.ps1` publishes the standalone app to `publish\S-Dock\` (about 210 MB; runs on PCs
-without .NET) and uses [Velopack](https://velopack.io/) (`vpk`, a local tool in
-`dotnet-tools.json`) to make `releases\SDock-win-Setup.exe`, `SDock-win-Portable.zip` and the
-update packages. The version comes from `Directory.Build.props`, or pass `-Version 0.1.0-beta.2`.
+`build\package.ps1` publishes the app (self-contained: no .NET needed on the PC) and uses
+[Velopack](https://velopack.io/) (`vpk`, a local tool in `dotnet-tools.json`) to lay it out as a
+portable folder, then zips that as `releases\S-Dock-<version>-win-x64.zip` with an `emulators`
+folder, plus the update packages. Velopack's installer isn't shipped, because it would install
+into `%LOCALAPPDATA%`. The version comes from `Directory.Build.props`, or pass `-Version 0.1.0-beta.2`.
 Both output folders are git-ignored. Pass `--data-dir <folder>` to S-Dock to use a separate,
 throwaway library.
 

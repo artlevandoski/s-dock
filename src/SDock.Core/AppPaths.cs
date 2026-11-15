@@ -3,12 +3,13 @@ namespace SDock.Core;
 /// <summary>
 /// Where S-Dock keeps its own files (never game files).
 ///
-/// Portable by default: everything lives in the "portable root", the repository when run from
-/// source, otherwise the folder holding S-Dock.exe (or, for an installed copy, the folder above
-/// the installer's replaceable "current" folder). Inside it:
-///   data\       library database and logs
+/// Everything lives in the S-Dock folder (the "portable root"): the repository when run from source,
+/// otherwise the folder holding S-Dock.exe (for the Velopack build, the folder above its replaceable
+/// "current" folder, next to Update.exe). Inside it:
+///   data\       library database, artwork, TitleDB and logs
 ///   emulators\  emulator builds the user places there
-/// If that folder can't be written to (e.g. under Program Files), %LOCALAPPDATA%\S-Dock is used instead.
+/// Nothing is written anywhere else. If the folder can't be written to (e.g. under Program Files),
+/// S-Dock says so and asks for it to be moved (see <see cref="RootWritable"/>).
 /// </summary>
 public static class AppPaths
 {
@@ -23,24 +24,17 @@ public static class AppPaths
         Environment.GetEnvironmentVariable(name) is { Length: > 0 } value ? value
             : Environment.GetEnvironmentVariable(name.Replace("SDOCK_", OldName.ToUpperInvariant() + "_"));
 
-    /// <summary>Where the app kept its data under its old name (%LOCALAPPDATA%\SwitchYard).</summary>
-    public static string OldUserProfileDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), OldName);
-    public const string AppDirName = "S-Dock";
-
-    /// <summary>Where earlier builds kept their data, and the fallback when the portable root is read-only.</summary>
-    public static string UserProfileDir =>
-        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), AppDirName);
-
     private static readonly Lazy<string> _portableRoot = new(() => FindPortableRoot(AppContext.BaseDirectory));
     private static readonly Lazy<bool> _rootWritable = new(() => IsWritable(PortableRoot));
 
     /// <summary>The folder that holds data\ and emulators\ when running portably.</summary>
     public static string PortableRoot => _portableRoot.Value;
 
-    /// <summary>True when data is kept in the portable root rather than the user profile.</summary>
-    public static bool IsPortable =>
-        string.IsNullOrWhiteSpace(Env(DataDirEnv)) && _rootWritable.Value;
+    /// <summary>True unless --data-dir / SDOCK_DATA_DIR points the library somewhere else (testing).</summary>
+    public static bool IsPortable => string.IsNullOrWhiteSpace(Env(DataDirEnv));
+
+    /// <summary>Can S-Dock write in its own folder? If not, it asks to be moved rather than writing elsewhere.</summary>
+    public static bool RootWritable => _rootWritable.Value;
 
     public static string FindPortableRoot(string baseDirectory)
     {
@@ -88,9 +82,7 @@ public static class AppPaths
         get
         {
             var overrideDir = Env(DataDirEnv);
-            var dir = !string.IsNullOrWhiteSpace(overrideDir) ? overrideDir
-                : _rootWritable.Value ? Path.Combine(PortableRoot, "data")
-                : UserProfileDir;
+            var dir = !string.IsNullOrWhiteSpace(overrideDir) ? overrideDir : Path.Combine(PortableRoot, "data");
             Directory.CreateDirectory(dir);
             return dir;
         }
@@ -125,27 +117,10 @@ public static class AppPaths
         get
         {
             var overrideDir = Env(EmulatorsDirEnv);
-            var dir = !string.IsNullOrWhiteSpace(overrideDir) ? overrideDir
-                : _rootWritable.Value ? Path.Combine(PortableRoot, "emulators")
-                : Path.Combine(UserProfileDir, "Emulators");
+            var dir = !string.IsNullOrWhiteSpace(overrideDir) ? overrideDir : Path.Combine(PortableRoot, "emulators");
             Directory.CreateDirectory(dir);
             return dir;
         }
-    }
-
-    /// <summary>
-    /// First portable start: copy the library an earlier build kept in %LOCALAPPDATA%\S-Dock into
-    /// <paramref name="dataDir"/>. The original is left in place as a backup. Returns the source copied, or null.
-    /// </summary>
-    public static string? CopyLegacyLibrary(string dataDir, string legacyDir)
-    {
-        var target = Path.Combine(dataDir, "library.sqlite3");
-        var source = Path.Combine(legacyDir, "library.sqlite3");
-        if (File.Exists(target) || !File.Exists(source) || PathKey(dataDir) == PathKey(legacyDir))
-            return null;
-        Directory.CreateDirectory(dataDir);
-        File.Copy(source, target);
-        return source;
     }
 
     /// <summary>
