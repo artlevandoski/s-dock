@@ -187,22 +187,34 @@ public sealed partial class MainViewModel : ObservableObject
     {
         _rebuildingEmulatorChoices = true;
         EmulatorChoices.Clear();
-        if (SelectedItem?.Edition is { } e)
+        if (SelectedItem?.Edition is { IsProgram: true })
+        {
+            // A PC version is its own program: there's nothing to choose.
+            EmulatorChoices.Add(new ProfileChoice(LaunchRouter.NoEmulatorId, "Runs on its own (PC version)"));
+            SelectedEmulatorChoice = EmulatorChoices[0];
+            RouteText = "Runs on its own (PC version, no emulator)";
+        }
+        else if (SelectedItem?.Edition is { } e)
         {
             var fallback = LaunchRouter.DefaultFor(_library, e.Generation);
-            EmulatorChoices.Add(new ProfileChoice(null, fallback is null ? "Use default (ask each time)" : $"Use default ({fallback.Name})"));
+            EmulatorChoices.Add(new ProfileChoice(null,
+                LaunchRouter.DefaultIsNoEmulator(_library, e.Generation) ? "Use default (no emulator)"
+                : fallback is null ? "Use default (ask each time)" : $"Use default ({fallback.Name})"));
             foreach (var p in _library.ListProfiles())
             {
                 var compatible = e.Generation == Generations.Unclassified || p.Supports(e.Generation);
                 EmulatorChoices.Add(new ProfileChoice(p.Id, compatible ? p.Name : $"{p.Name} (set up for {Generations.Label(p.Generation)})"));
             }
+            EmulatorChoices.Add(new ProfileChoice(LaunchRouter.NoEmulatorId, "No emulator (run the game's .exe)"));
             var chosen = _library.GetLaunchOverride(e.Id);
             SelectedEmulatorChoice = EmulatorChoices.FirstOrDefault(c => c.Id == chosen) ?? EmulatorChoices[0];
             var route = LaunchRouter.Resolve(_library, e);
-            RouteText = route.Source switch
+            RouteText = route switch
             {
-                RouteSource.GameChoice => $"Plays with {route.Profile!.Name} (this game's choice)",
-                RouteSource.GenerationDefault => $"Plays with {route.Profile!.Name} ({Generations.Label(e.Generation)} default)",
+                { Direct: true, Source: RouteSource.GameChoice } => "Runs directly, no emulator (this game's choice)",
+                { Direct: true } => $"Runs directly, no emulator ({Generations.Label(e.Generation)} default)",
+                { Source: RouteSource.GameChoice } => $"Plays with {route.Profile!.Name} (this game's choice)",
+                { Source: RouteSource.GenerationDefault } => $"Plays with {route.Profile!.Name} ({Generations.Label(e.Generation)} default)",
                 _ => _library.ListProfiles().Count == 0 ? "No emulator set up yet" : "Play will ask which emulator to use",
             };
         }
@@ -217,6 +229,7 @@ public sealed partial class MainViewModel : ObservableObject
     partial void OnSelectedEmulatorChoiceChanged(ProfileChoice? value)
     {
         if (_rebuildingEmulatorChoices || SelectedItem is not { } item) return;
+        if (item.Edition.IsProgram) return; // a PC version always runs on its own
         if (value is null)
         {
             // The dropdown briefly clears while items change; fall back to "Use default".
@@ -311,7 +324,9 @@ public sealed partial class MainViewModel : ObservableObject
         var start = Path.GetDirectoryName(file.Path);
         while (!string.IsNullOrEmpty(start) && !Directory.Exists(start))
             start = Path.GetDirectoryName(start);
-        var path = await _ui.PickFileAsync($"Locate {edition.Title}", start, GameFileFilter.Name, GameFileFilter.Patterns);
+        var path = edition.IsProgram
+            ? await _ui.PickFileAsync($"Locate {edition.Title}", start, "Programs", "*.exe")
+            : await _ui.PickFileAsync($"Locate {edition.Title}", start, GameFileFilter.Name, GameFileFilter.Patterns);
         if (path is null) return;
         try
         {
@@ -382,9 +397,11 @@ public sealed partial class MainViewModel : ObservableObject
     public async Task<bool> PlaySelectedAsync(string? filePath = null)
     {
         if (SelectedItem?.Edition is not { } e) return false;
-        if (await EmulatorBusyAsync() || await NoProfilesAsync()) return false;
-
+        if (await EmulatorBusyAsync()) return false;
         var route = LaunchRouter.Resolve(_library, e);
+        if (route.Direct)
+            return await LaunchAsync(e, LaunchRouter.DirectProfile(filePath ?? e.PrimaryFile?.Path ?? ""), filePath);
+        if (await NoProfilesAsync()) return false;
         var profile = route.Profile;
         if (profile is null)
         {
@@ -471,7 +488,8 @@ public sealed partial class MainViewModel : ObservableObject
         var problems = LaunchArgs.Validate(profile, game);
         if (problems.Count > 0)
         {
-            await ShowLaunchProblemAsync(e, $"Profile: {profile.Name}\n\n" + string.Join("\n\n", problems));
+            await ShowLaunchProblemAsync(e, (profile.Emulator == LaunchRouter.NoEmulatorId ? "" : $"Profile: {profile.Name}\n\n") +
+                                            string.Join("\n\n", problems));
             return false;
         }
         IsRunning = true;

@@ -56,7 +56,13 @@ public static class LaunchArgs
             problems.Add("This library entry has no game file.");
         else if (!File.Exists(gamePath))
             problems.Add($"Game file not found:\n{gamePath}");
-        if (!profile.Args.Any(a => a.Contains(GamePlaceholder, StringComparison.Ordinal)))
+        if (profile.Emulator == LaunchRouter.NoEmulatorId)
+        {
+            // No emulator: the game file is the program itself.
+            if (!string.IsNullOrEmpty(gamePath) && !gamePath.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+                problems.Add("“No emulator” runs a game's own program (.exe), but this game's file isn't one. Choose an emulator for it.");
+        }
+        else if (!profile.Args.Any(a => a.Contains(GamePlaceholder, StringComparison.Ordinal)))
             problems.Add($"The argument list doesn't contain {GamePlaceholder}, so the game path would not be passed.");
         return problems;
     }

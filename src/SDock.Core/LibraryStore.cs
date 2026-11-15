@@ -560,15 +560,21 @@ public sealed class LibraryStore : IDisposable
     // ------------------------------------------------------------ launch routing
     public string? GetGenerationDefault(string generation)
     {
+        if (GetSetting(NoEmulatorKey("generation", generation)) == "1") return LaunchRouter.NoEmulatorId;
         using var cmd = Cmd("SELECT profile_id FROM generation_defaults WHERE generation = $g", ("$g", generation));
         return cmd.ExecuteScalar() as string;
     }
+
+    /// <summary>"No emulator" isn't a profile, so it is remembered as a setting rather than in the profile tables.</summary>
+    private static string NoEmulatorKey(string scope, string id) => $"no_emulator:{scope}:{id}";
 
     /// <summary>Sets (or with null clears) the default profile for Switch 1 or Switch 2.</summary>
     public void SetGenerationDefault(string generation, string? profileId)
     {
         if (generation is not (Generations.Switch1 or Generations.Switch2))
             throw new ArgumentException($"Defaults exist only for Switch 1 and Switch 2, not {generation}");
+        SetSetting(NoEmulatorKey("generation", generation), profileId == LaunchRouter.NoEmulatorId ? "1" : null);
+        if (profileId == LaunchRouter.NoEmulatorId) profileId = null;
         if (profileId is null)
             Exec("DELETE FROM generation_defaults WHERE generation = $g", ("$g", generation));
         else
@@ -579,6 +585,7 @@ public sealed class LibraryStore : IDisposable
 
     public string? GetLaunchOverride(string editionId)
     {
+        if (GetSetting(NoEmulatorKey("edition", editionId)) == "1") return LaunchRouter.NoEmulatorId;
         using var cmd = Cmd("SELECT profile_id FROM edition_launch_overrides WHERE edition_id = $e", ("$e", editionId));
         return cmd.ExecuteScalar() as string;
     }
@@ -611,6 +618,11 @@ public sealed class LibraryStore : IDisposable
     public bool HasSteamGridDbKey => SteamGridDbKey.Length > 0;
 
     public bool HasIgdbCredentials => IgdbCredentials is { ClientId.Length: > 0, ClientSecret.Length: > 0 };
+
+    /// <summary>Sets a game's title ID by hand (e.g. a PC version of a console game), so TitleDB can find it.</summary>
+    public void SetConsoleTitleId(string editionId, string? titleId) =>
+        Exec("UPDATE editions SET console_title_id = $t, updated_at = $u WHERE id = $id",
+            ("$t", string.IsNullOrWhiteSpace(titleId) ? null : titleId.Trim().ToUpperInvariant()), ("$u", UtcNow()), ("$id", editionId));
 
     public void SetIgdbId(string editionId, long? igdbId) =>
         Exec("UPDATE editions SET igdb_id = $i, updated_at = $t WHERE id = $id", ("$i", igdbId), ("$t", UtcNow()), ("$id", editionId));
@@ -828,6 +840,8 @@ public sealed class LibraryStore : IDisposable
 
     public void SetLaunchOverride(string editionId, string? profileId)
     {
+        SetSetting(NoEmulatorKey("edition", editionId), profileId == LaunchRouter.NoEmulatorId ? "1" : null);
+        if (profileId == LaunchRouter.NoEmulatorId) profileId = null;
         if (profileId is null)
             Exec("DELETE FROM edition_launch_overrides WHERE edition_id = $e", ("$e", editionId));
         else

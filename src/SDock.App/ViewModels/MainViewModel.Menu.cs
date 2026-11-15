@@ -116,8 +116,12 @@ public sealed partial class MainViewModel
     {
         var list = new List<MenuEntry>();
         if (IsGrid) list.Add(Do("Play", PlayCommand, CanPlay)); // the carousel has Play on screen
-        list.Add(Do("Launch With…", LaunchWithCommand, CanPlay));
-        list.Add(Do("Play Version…", PlayVersionCommand, CanPlay));
+        var program = SelectedItem?.Edition.IsProgram ?? false; // a PC version always runs on its own
+        if (!program)
+        {
+            list.Add(Do("Launch With…", LaunchWithCommand, CanPlay));
+            list.Add(Do("Play Version…", PlayVersionCommand, CanPlay));
+        }
         list.Add(Do("Choose Cover…", ChooseCoverCommand));
         list.Add(Do("Choose Background…", ChooseBackgroundCommand));
         list.Add(Do("Choose Logo…", ChooseLogoCommand));
@@ -128,13 +132,14 @@ public sealed partial class MainViewModel
         list.Add(Page("Game Info and Matching", () =>
         [
             Do("Refresh from TitleDB", RefreshFromTitleDbCommand),
+            Do("Set Title ID…", SetTitleIdCommand),
             Do(MatchMenuLabel, MatchOnIgdbCommand),
             Do("Refresh from IGDB", RefreshMetadataCommand, IsMatched),
             Do("Remove IGDB Match", RemoveMatchCommand, IsMatched),
             Do("Use Default Artwork", ResetArtworkCommand),
             Do("Clear Match and Artwork…", ClearMatchAndArtworkCommand),
         ]));
-        if (IsGrid) list.Add(Do("Add Version File…", AddVersionFileCommand));
+        if (IsGrid && !program) list.Add(Do("Add Version File…", AddVersionFileCommand));
         else list.Add(Do("Game Settings (Grid View)", ShowGridCommand));
         return list;
     }
@@ -146,6 +151,7 @@ public sealed partial class MainViewModel
             Page("Filter", () => FilterOption.Generation.Select(f => Tick(f.Label, () => GenerationFilter == f, () => GenerationFilter = f)).ToList()),
             Do(IsCarousel ? "Grid View" : "Carousel View", ToggleViewCommand),
             Do("Add Folder…", AddFolderCommand),
+            Do("Add Game (.exe)…", AddProgramCommand),
             Do("Emulator Settings…", EmulatorSettingsCommand),
             Page("Background", () =>
             [

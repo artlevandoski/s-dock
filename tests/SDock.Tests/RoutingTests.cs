@@ -246,7 +246,7 @@ public sealed class RoutingTests : IDisposable
         var (vm, _, launcher) = Window(lib, game.Id);
         using var ___ = launcher;
 
-        Assert.Equal(["Use default (Eden 0.2.1)", "Eden 0.2.1", "Eden nightly"], vm.EmulatorChoices.Select(c => c.Label));
+        Assert.Equal(["Use default (Eden 0.2.1)", "Eden 0.2.1", "Eden nightly", "No emulator (run the game's .exe)"], vm.EmulatorChoices.Select(c => c.Label));
         vm.SelectedEmulatorChoice = vm.EmulatorChoices.Single(c => c.Id == nightly.Id);
         Assert.Equal(nightly.Id, lib.GetLaunchOverride(game.Id));
         vm.SelectedEmulatorChoice = vm.EmulatorChoices[0];

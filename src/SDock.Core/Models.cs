@@ -28,12 +28,15 @@ public static class ContentKinds
     public const string Base = "base";
     public const string Update = "update";
     public const string Dlc = "dlc";
+    /// <summary>A PC build or recompilation: the game is its own .exe and runs without an emulator.</summary>
+    public const string Pc = "pc";
 
     public static string Label(string kind) => kind switch
     {
         Base => "Base game",
         Update => "Update / patch",
         Dlc => "DLC / add-on",
+        Pc => "PC version (runs without an emulator)",
         _ => kind,
     };
 }
@@ -67,6 +70,10 @@ public sealed class Edition
     public bool HasVersions => Files.Count > 1;
 
     public bool IsMissing => PrimaryFile is not { Exists: true };
+
+    /// <summary>The game's file is a program (.exe), so it runs on its own.</summary>
+    public bool IsProgram => ContentKind == ContentKinds.Pc ||
+                             (PrimaryFile?.Path.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ?? false);
 }
 
 public sealed record EmulatorProfile

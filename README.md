@@ -38,6 +38,11 @@ Then, from the **Settings** menu (the gear, or Select on a controller):
    DLC and duplicates are left out by default.
 3. When asked, let S-Dock download **TitleDB** to fill in names, descriptions and pictures.
 
+**PC versions** (recompilations and ports that are their own `.exe`): use **Settings → Add Game
+(.exe)…**. They run on their own, without an emulator, and are filed as Switch 2 (change it in
+the details panel). A title ID in brackets in the file or folder name, like `[0100…]`, lets
+TitleDB fill them in; otherwise use **Game Info and Matching → Set Title ID…**.
+
 ## Using S-Dock
 
 **Libraries.** *Main Library* and *Arcade Archives* are separate tabs, each with its own
@@ -62,7 +67,11 @@ controller, use **Settings → Filter**.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
 its generation's default, and otherwise asks you. **Launch With…** picks an emulator just
-once. When the emulator closes, S-Dock comes back with the same game selected.
+once. When the game closes, S-Dock comes back with the same game selected.
+
+- **No emulator** is a choice in each game's **Emulator** dropdown, and for the Switch 2
+  default in **Emulator Settings**. It runs the game's own `.exe`. PC versions always run this
+  way.
 
 - **Esc** (while the game is in front) or **Start + Select** closes the game and returns to
   S-Dock. By default you press twice: the first press shows a note, and a second press within
@@ -85,7 +94,7 @@ straight away.
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
 | Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
-| Game Info and Matching › | Refresh from TitleDB, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
+| Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
 In the carousel, Play and Add Version File… are left out of the menu (Play is on screen).
 

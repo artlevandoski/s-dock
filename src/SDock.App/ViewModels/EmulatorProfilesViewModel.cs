@@ -10,6 +10,7 @@ namespace SDock.App.ViewModels;
 public sealed partial class EmulatorProfilesViewModel : ObservableObject
 {
     public const string AskEachTime = "Ask each time";
+    public const string NoEmulatorLabel = "No emulator (run each game's .exe)";
 
     private readonly EmulatorLauncher _launcher;
     private readonly IUiServices _ui;
@@ -122,6 +123,8 @@ public sealed partial class EmulatorProfilesViewModel : ObservableObject
         {
             list.Clear();
             list.Add(new ProfileChoice(null, AskEachTime));
+            if (generation == Generations.Switch2) // most Switch 2 games on PC are recompilations that run on their own
+                list.Add(new ProfileChoice(LaunchRouter.NoEmulatorId, NoEmulatorLabel));
             foreach (var p in Profiles.Where(p => p.ToProfile().Supports(generation)))
                 list.Add(new ProfileChoice(p.Id, p.DisplayName));
         }
