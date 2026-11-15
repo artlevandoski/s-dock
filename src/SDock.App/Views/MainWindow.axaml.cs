@@ -273,6 +273,12 @@ public partial class MainWindow : Window
             return frames;
         }
 
+        if (vm.Items.Count == 0)
+        {
+            // An empty library (e.g. a smoke test of a fresh build): nothing to scroll; the window started fine.
+            report.AppendLine("No games in this library: frame timings skipped.");
+            return report.ToString();
+        }
         vm.IsCarousel = false;
         for (var i = 0; i < 10; i++) await NextFrameAsync();
         var scroller = CoverList.FindDescendantOfType<ScrollViewer>()!;

@@ -14,6 +14,7 @@ __pycache__/
 # Portable data (library database, logs) and published builds
 /data/
 /publish/
+/releases/
 
 # Emulator builds placed locally (keep only the README)
 /emulators/*

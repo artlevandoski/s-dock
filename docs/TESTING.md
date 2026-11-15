@@ -37,6 +37,13 @@ the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each
 
 Run by hand with your own emulator and game folder, and record results below.
 
+**Installer (each beta)**
+
+0. Run `SDock-win-Setup.exe` on a PC (or Windows account) without S-Dock: it installs without
+   asking for administrator rights, starts, and adds Start menu and desktop shortcuts. Copy a
+   `data` and `emulators` folder into `%LOCALAPPDATA%\SDock` and check the library appears.
+   Uninstall from Windows Settings → Apps.
+
 **Library and launching**
 
 1. Import a small folder that includes a path with spaces and an Arcade Archives title.

@@ -184,7 +184,20 @@ public sealed partial class MainViewModel
         list.Add(Do("Open Data Folder", OpenDataFolderCommand));
         list.Add(Do("Open Emulators Folder", OpenEmulatorsFolderCommand));
         list.Add(Item("Quit S-Dock", () => QuitRequested?.Invoke()));
+        list.Add(new MenuEntry { Label = $"S-Dock {AppVersion}", Enabled = false });
         return list;
+    }
+
+    /// <summary>The version being run, e.g. "0.1.0-beta.1" (from the build; without the source commit suffix).</summary>
+    public static string AppVersion
+    {
+        get
+        {
+            var v = typeof(MainViewModel).Assembly
+                .GetCustomAttributes(typeof(System.Reflection.AssemblyInformationalVersionAttribute), false)
+                .OfType<System.Reflection.AssemblyInformationalVersionAttribute>().FirstOrDefault()?.InformationalVersion ?? "";
+            return v.Split('+')[0];
+        }
     }
 
     /// <summary>The view closes the window (with the usual "emulator still running" check).</summary>

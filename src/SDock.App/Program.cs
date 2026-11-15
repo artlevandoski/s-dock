@@ -8,6 +8,10 @@ internal static class Program
     [STAThread]
     public static int Main(string[] args)
     {
+        // The installer (Velopack) runs the app briefly during install, update and uninstall; this handles those
+        // runs and returns straight away for a normal start. It must come first.
+        Velopack.VelopackApp.Build().Run();
+
         // --data-dir <folder>: use a separate library instead of %LOCALAPPDATA%\S-Dock.
         int i = Array.IndexOf(args, "--data-dir");
         if (i >= 0 && i + 1 < args.Length)

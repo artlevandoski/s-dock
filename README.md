@@ -7,11 +7,11 @@ with covers, backgrounds, logos and descriptions.
 You bring your own game files and emulator. S-Dock does not include or download games,
 firmware, keys or system files, and it never changes your game files.
 
-Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). A packaged installer is
-planned.
+Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: beta (0.1.0-beta.1).**
 
 ## Contents
 
+- [Install](#install)
 - [Getting started](#getting-started)
 - [Using S-Dock](#using-s-dock)
 - [Game info and artwork](#game-info-and-artwork)
@@ -19,10 +19,29 @@ planned.
 - [Portable folder](#portable-folder)
 - [For developers](#for-developers)
 
+## Install
+
+S-Dock runs on 64-bit Windows 10 or 11. Nothing else needs installing.
+
+- **Installer:** run `SDock-win-Setup.exe`. It installs for your Windows account only (no
+  administrator rights), into `%LOCALAPPDATA%\SDock`, and adds Start menu and desktop shortcuts.
+  Your library, artwork and settings are kept in `%LOCALAPPDATA%\SDock\data`, and your emulators
+  can go in `%LOCALAPPDATA%\SDock\emulators`. Uninstall from Windows Settings → Apps.
+- **Portable:** unzip `SDock-win-Portable.zip` anywhere (a USB drive works) and run `S-Dock.exe`.
+  Everything stays in that folder; see [Portable folder](#portable-folder).
+
+The beta isn't code-signed yet, so Windows SmartScreen may say it "protected your PC": choose
+**More info → Run anyway**.
+
+**Bringing an existing library across:** close S-Dock, then copy the `data` and `emulators`
+folders from your old S-Dock folder into the new one (`%LOCALAPPDATA%\SDock` for the installer).
+
+> Uninstalling removes the install folder, including `data`. Copy `data` somewhere safe first if
+> you want to keep your library.
+
 ## Getting started
 
-**Requirements:** Windows 10 or 11, and the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0)
-to build it.
+To run from source instead, you need the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0):
 
 ```powershell
 dotnet run --project src\SDock.App
@@ -194,11 +213,15 @@ S-Dock\
 ```powershell
 dotnet build -c Release                # build
 dotnet test                            # run the automated tests
-dotnet publish src\SDock.App -c Release -r win-x64 --self-contained -o publish\S-Dock
+powershell -ExecutionPolicy Bypass -File build\package.ps1   # standalone app + installer
 ```
 
-The published folder (about 210 MB) runs on PCs without .NET installed. Pass
-`--data-dir <folder>` to use a separate, throwaway library.
+`build\package.ps1` publishes the standalone app to `publish\S-Dock\` (about 210 MB; runs on PCs
+without .NET) and uses [Velopack](https://velopack.io/) (`vpk`, a local tool in
+`dotnet-tools.json`) to make `releases\SDock-win-Setup.exe`, `SDock-win-Portable.zip` and the
+update packages. The version comes from `Directory.Build.props`, or pass `-Version 0.1.0-beta.2`.
+Both output folders are git-ignored. Pass `--data-dir <folder>` to S-Dock to use a separate,
+throwaway library.
 
 | Path | What it is |
 |---|---|

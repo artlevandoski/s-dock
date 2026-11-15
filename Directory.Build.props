@@ -5,7 +5,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <Version>0.1.0</Version>
+    <!-- The version shown in the app and on the installer. Pre-releases look like 0.1.0-beta.1. -->
+    <Version>0.1.0-beta.1</Version>
     <Product>S-Dock</Product>
   </PropertyGroup>
 </Project>
