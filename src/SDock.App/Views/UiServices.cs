@@ -16,6 +16,7 @@ public sealed class UiServices(MainWindow main) : IUiServices
     private async Task<T?> ShowDialog<T>(Window dialog)
     {
         var owner = Owner;
+        Input.DialogNavigation.Attach(dialog); // the controller works in every dialog from the start
         _dialogs.Push(dialog);
         try
         {

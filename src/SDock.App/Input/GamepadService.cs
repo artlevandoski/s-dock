@@ -161,6 +161,12 @@ public sealed class GamepadService
             }
             menuWindow.FocusMenu();
         }
+        else if (active is not MainWindow)
+        {
+            // A dialog (message, chooser, picker, text editor, settings): see DialogNavigation.
+            DialogNavigation.Handle(active, action);
+            return;
+        }
         else if (active is MainWindow { DataContext: MainViewModel vm } main)
         {
             switch (action)

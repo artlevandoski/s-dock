@@ -162,6 +162,10 @@ Xbox-compatible controllers work through Windows XInput, with no extra drivers.
 | | Ctrl+F | Search |
 | | Ctrl+O / Ctrl+E | Add Folder / Emulator Settings |
 
+In dialogs (questions, choosers, pickers, text editors, settings windows) the D-pad moves through
+lists and then between buttons, A presses or chooses (it ticks check boxes and opens dropdowns),
+and B cancels. Typing and Windows' own file and folder pickers still need a keyboard and mouse.
+
 Controller input is ignored while another app is in front, except Start + Select during a
 game. In full screen, S-Dock brings itself to the front when you return from a game.
 

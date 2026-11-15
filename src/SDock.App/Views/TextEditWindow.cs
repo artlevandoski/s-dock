@@ -20,7 +20,7 @@ public sealed class TextEditWindow : Window
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
 
         var box = new TextBox { Text = initial, AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
-        var save = new Button { Content = "Save", MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+        var save = new Button { Content = "Save", MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center, IsDefault = true };
         save.Classes.Add("accent");
         save.Click += (_, _) => Close(box.Text ?? "");
         var cancel = new Button { Content = "Cancel", MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center, IsCancel = true };

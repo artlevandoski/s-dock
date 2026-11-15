@@ -28,7 +28,7 @@ public sealed class MessageWindow : Window
         {
             var label = buttons[i];
             var b = new Button { Content = label, MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
-            if (i == 0) b.Classes.Add("accent");
+            if (i == 0) { b.Classes.Add("accent"); b.IsDefault = true; }
             b.Click += (_, _) => Close(label);
             row.Children.Add(b);
         }
