@@ -97,19 +97,31 @@ public sealed class ControllerMenuTests : IDisposable
         var (vm, window, ui) = Open(lib, carousel: true);
         vm.Select(zed);
 
+        // Game Actions are off in the carousel for now: X and right-click do nothing, and the hint is hidden.
+        Press(window, PadAction.GameActions);
+        Assert.False(vm.IsMenuOpen);
+        var carouselCover = window.FindControl<ListBox>("CarouselList")!.GetVisualDescendants().OfType<ListBoxItem>().First();
+        carouselCover.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = carouselCover });
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(vm.IsMenuOpen);
+        Assert.False(window.FindControl<TextBlock>("GameActionsHint")!.IsEffectivelyVisible);
+
+        // In the grid they work.
+        Press(window, PadAction.ToggleView);
+        Assert.True(vm.IsGrid);
+        Assert.True(window.FindControl<TextBlock>("GameActionsHint")!.IsEffectivelyVisible);
         Press(window, PadAction.GameActions); // X
         Assert.True(vm.IsMenuOpen);
         Assert.Equal("Zed", vm.MenuTitle);
         var labels = vm.MenuItems.Select(m => m.Label).ToList();
-        Assert.DoesNotContain("Play", labels);              // on screen in the carousel
-        Assert.DoesNotContain("Add Version File…", labels);
+        Assert.Contains("Play", labels);
         Assert.Contains("Launch With…", labels);
         Assert.Contains("Edit Carousel Text…", labels);
         Press(window, PadAction.GameActions);                // X again closes it
         Assert.False(vm.IsMenuOpen);
 
         // Right-click a cover: the same menu, for that cover.
-        var list = window.FindControl<ListBox>("CarouselList")!;
+        var list = window.FindControl<ListBox>("CoverList")!;
         var bravo = list.GetVisualDescendants().OfType<ListBoxItem>().First(i => (i.DataContext as EditionItem)?.Title == "Bravo");
         bravo.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = bravo });
         Dispatcher.UIThread.RunJobs();
@@ -281,6 +293,19 @@ public sealed class ControllerMenuTests : IDisposable
         window.UpdateLayout();
         Assert.Equal(title.DesiredSize.Width, fit.Bounds.Width, 1); // a short name keeps its full size
         Assert.Equal(bandWithLong, band.Bounds);                   // and the band doesn't move
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public void Status_line_shows_only_while_an_update_runs()
+    {
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
+        var (vm, window, _) = Open(lib);
+        var status = window.FindControl<TextBlock>("StatusLine")!;
+        vm.StatusText = "1 game(s) in library";
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(status.IsEffectivelyVisible);
         window.Close();
     }
 }

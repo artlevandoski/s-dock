@@ -96,7 +96,8 @@ straight away.
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
 | Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
-In the carousel, Play and Add Version File… are left out of the menu (Play is on screen).
+For now, Game Actions are available in the grid only; the carousel is kept to browsing and
+playing.
 
 **Updates and DLC.** S-Dock reads the update and DLC files beside each game (for example in
 `Updates` and `DLC` subfolders) from their file names. The details show whether you have

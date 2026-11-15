@@ -43,7 +43,8 @@ public sealed partial class MainViewModel
     [RelayCommand]
     public void OpenGameMenu()
     {
-        if (SelectedItem is not { } item) return;
+        // Game Actions are off in the carousel for now (it's kept to browsing and playing); use the grid.
+        if (IsCarousel || SelectedItem is not { } item) return;
         _menuStack.Clear();
         ShowPage(item.Title, BuildGameMenu);
     }

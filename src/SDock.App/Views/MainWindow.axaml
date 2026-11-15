@@ -238,8 +238,8 @@
             <TextBlock Text="Browse" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key round"><TextBlock Text="A" /></Border>
             <TextBlock Text="Play" VerticalAlignment="Center" Margin="2,0,22,0" />
-            <Border Classes="key round"><TextBlock Text="X" /></Border>
-            <TextBlock Text="Game Actions" VerticalAlignment="Center" Margin="2,0,22,0" />
+            <Border Classes="key round" IsVisible="{Binding IsGrid}"><TextBlock Text="X" /></Border>
+            <TextBlock x:Name="GameActionsHint" Text="Game Actions" VerticalAlignment="Center" Margin="2,0,22,0" IsVisible="{Binding IsGrid}" />
             <Border Classes="key round"><TextBlock Text="Y" /></Border>
             <TextBlock Text="Grid / Carousel" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key"><TextBlock Text="LB" FontSize="11" /></Border>
@@ -251,7 +251,9 @@
             <Border Classes="key"><TextBlock Text="SELECT" FontSize="10" /></Border>
             <TextBlock Text="Settings" VerticalAlignment="Center" Margin="2,0,0,0" />
           </StackPanel>
+          <!-- Status messages are hidden; only the progress of a running update (TitleDB, IGDB, logos) shows here. -->
           <TextBlock x:Name="StatusLine" Grid.Column="1" Text="{Binding StatusText}" Classes="muted" FontSize="12"
+                     IsVisible="{Binding IsMatchingAll}"
                      HorizontalAlignment="Right" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="20,0,0,0" />
         </Grid>
       </Border>

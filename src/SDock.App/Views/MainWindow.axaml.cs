@@ -130,6 +130,8 @@ public partial class MainWindow : Window
     private void Cover_ContextRequested(object? sender, ContextRequestedEventArgs e)
     {
         if (Vm is not { } vm) return;
+        e.Handled = true;
+        if (vm.IsCarousel) return; // Game Actions are off in the carousel for now
         if ((e.Source as Control)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is EditionItem item)
             vm.SelectedItem = item;
         vm.OpenGameMenu();

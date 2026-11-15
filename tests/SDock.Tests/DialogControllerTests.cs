@@ -158,7 +158,7 @@ public sealed class DialogControllerTests : IDisposable
         var id = lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
         lib.SaveMetadata(EditionMetadata.Empty(id) with { TdbSummary = "First sentence. Second." });
         var window = new MainWindow { Width = 1280, Height = 800 };
-        var vm = new MainViewModel(lib, new EmulatorLauncher(), new UiServices(window)) { IsCarousel = true };
+        var vm = new MainViewModel(lib, new EmulatorLauncher(), new UiServices(window));
         window.DataContext = vm;
         window.Show();
         Dispatcher.UIThread.RunJobs();
