@@ -10,13 +10,17 @@
   Velopack's Setup.exe is not part of the release: it would install into %LOCALAPPDATA%, and S-Dock is
   meant to live entirely in its own folder.
 
+  It also fills in the release notes (docseleases<version>.md, created from TEMPLATE.md if new) with
+  the zip's checksum and the commit, and saves releases\RELEASE-NOTES.md ready to paste into GitHub.
+  To start a new version, run build
+ew-release.ps1 -Version <version> first.
+
   Usage (from the repository folder):
     powershell -ExecutionPolicy Bypass -File build\package.ps1
-    powershell -ExecutionPolicy Bypass -File build\package.ps1 -Version 0.1.0-beta.2
 
-  The version defaults to the one in Directory.Build.props.
+  The version comes from Directory.Build.props.
 #>
-param([string]$Version)
+param([string]$Version) # normally left out: the version comes from Directory.Build.props
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -67,6 +71,13 @@ Write-Host ""
 Write-Host "Done:" -ForegroundColor Green
 Get-ChildItem releases | ForEach-Object { "  {0,-45} {1,8:N1} MB" -f $_.Name, ($_.Length / 1MB) }
 $hash = (Get-FileHash $zip -Algorithm SHA256).Hash.ToLower()
+
+# Release notes: create them from the template if needed, fill in the checksum and commit, and save a
+# copy ready to paste into the GitHub release.
+. (Join-Path $PSScriptRoot 'release-notes.ps1')
+$r = Update-ReleaseNotes -Root $root -Version $Version -Hash $hash
 Write-Host ""
-Write-Host "SHA-256 (for the release notes):" -ForegroundColor Green
-Write-Host "  $hash  $(Split-Path $zip -Leaf)"
+Write-Host "Release notes:" -ForegroundColor Green
+Write-Host "  $($r.Notes)   (checksum and commit filled in)"
+Write-Host "  $($r.Paste)   (paste this into the GitHub release; title: $($r.Title))"
+if ($r.Dirty) { Write-Host "  Note: built with uncommitted changes. Commit, then run this again for the real release." -ForegroundColor Yellow }

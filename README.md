@@ -1,6 +1,6 @@
 # S-Dock
 
-A controller-friendly Windows frontend for certain game libraries. Point it at your game
+A controller-friendly Windows frontend for switch game libraries. Point it at your game
 folders and your own emulator, and browse everything in a grid or a full-screen carousel
 with covers, backgrounds, logos and descriptions.
 
@@ -218,7 +218,17 @@ powershell -ExecutionPolicy Bypass -File build\package.ps1   # standalone app + 
 [Velopack](https://velopack.io/) (`vpk`, a local tool in `dotnet-tools.json`) to lay it out as a
 portable folder, then zips that as `releases\S-Dock-<version>-win-x64.zip` with an `emulators`
 folder, plus the update packages. Velopack's installer isn't shipped, because it would install
-into `%LOCALAPPDATA%`. The version comes from `Directory.Build.props`, or pass `-Version 0.1.0-beta.2`.
+into `%LOCALAPPDATA%`. The version comes from `Directory.Build.props`.
+
+**Making a release:**
+
+1. `powershell -ExecutionPolicy Bypass -File build
+ew-release.ps1 -Version 0.1.0-beta.2` sets the
+   version and creates `docseleases0.1.0-beta.2.md` from `docseleases\TEMPLATE.md`.
+2. Fill in **What's new** in that file, then commit.
+3. `build\package.ps1` builds the zip, writes its checksum and the commit into the notes, and saves
+   `releases\RELEASE-NOTES.md`, ready to paste into the GitHub release (attach the zip and the
+   other files in `releases\`; tick *Set as a pre-release* for betas).
 Both output folders are git-ignored. Pass `--data-dir <folder>` to S-Dock to use a separate,
 throwaway library.
 
