@@ -69,6 +69,10 @@ automatically; turn on **Settings → Library → Include ACA NEOGEO / Include S
 series too.
 The **Library** dropdown in the details panel moves any game by hand.
 
+**Favorites.** The *Favorites* tab gathers the games you've marked, from every library. Mark or
+unmark a game with **X** in the carousel, the **☆** button beside Play (grid and carousel),
+**Game Actions → Add to Favorites**, or Ctrl+D. Favorite covers show a gold star.
+
 **Grid or carousel.** The grid shows a details panel beside the covers and opens maximized. The carousel fills
 the screen with one row of covers above the game's name and the first sentence of its
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
@@ -112,6 +116,7 @@ go back with B or Esc.
 | Edit Description… / Edit Carousel Text… | Write your own description, or the one line shown in the carousel |
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
 | Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it (used exactly as typed) |
+| Add to / Remove from Favorites | Mark the game as a favorite; it also shows in the **Favorites** tab |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
 | Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
@@ -183,10 +188,11 @@ Xbox-compatible controllers work through Windows XInput, with no extra drivers.
 | D-pad / left stick | Arrow keys | Move between covers (hold to repeat); in the carousel, Up/Down jump letters |
 | A | Enter | Play, or choose in a menu |
 | B | Esc | Back / close a menu or dialog |
-| X | Right-click | Game Actions |
+| X | Right-click | Game Actions (grid); add or remove a favorite (carousel) |
+| | Ctrl+D | Add or remove a favorite |
 | Select (Back) | | Settings |
 | Y | Ctrl+G | Grid / carousel |
-| LB / RB | Ctrl+Shift+Tab / Ctrl+Tab | Previous / next library |
+| LB / RB | Ctrl+Shift+Tab / Ctrl+Tab | Previous / next tab (Main Library, Arcade Archives, Favorites) |
 | LT / RT | Page Up / Page Down | Previous / next letter |
 | Start | | Play |
 | Start + Select | Esc (in a game) | Close the game and return to S-Dock |

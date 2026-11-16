@@ -7,7 +7,7 @@ using SDock.Core.Metadata;
 namespace SDock.App.ViewModels;
 
 public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null,
-    bool hidden = false)
+    bool hidden = false, bool favorite = false)
     : System.ComponentModel.INotifyPropertyChanged
 {
     private Avalonia.Media.Imaging.Bitmap? _cover;
@@ -58,6 +58,7 @@ public sealed class EditionItem(Edition edition, string library, bool pinnedToLi
     public string Library { get; } = library;
     public bool PinnedToLibrary { get; } = pinnedToLibrary;
     public bool IsHidden { get; } = hidden;
+    public bool IsFavorite { get; } = favorite;
     public string Series { get; } = ArcadeSeries.Detect(edition.Title);
     public int VersionCount => Edition.Files.Count;
     public string Tooltip => IsMissing ? $"{Title}\nFile missing. Select it and use Locate File…" : Title;
@@ -105,6 +106,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
         nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
+        nameof(SelectedIsFavorite), nameof(FavoriteMenuLabel), nameof(FavoriteGlyph),
         nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText), nameof(CarouselSummary))]
     public partial EditionItem? SelectedItem { get; set; }
 
@@ -250,12 +252,13 @@ public sealed partial class MainViewModel : ObservableObject
         var includeSegaAges = _library.IncludeSegaAges;
         var metadata = _library.AllMetadata();
         var hidden = _library.HiddenEditions();
+        var favorites = _library.FavoriteEditions();
         _all = _library.ListEditions()
             .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo, includeSegaAges), overrides.ContainsKey(e.Id),
-                metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id)))
+                metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id), favorites.Contains(e.Id)))
             .ToList();
         foreach (var tab in LibraryTabs)
-            tab.Count = _all.Count(i => i.Library == tab.Id && !i.IsHidden);
+            tab.Count = _all.Count(i => InTab(i, tab.Id) && !i.IsHidden);
         ApplyFilter(selectId);
         var shown = _all.Count(i => !i.IsHidden);
         var missing = _all.Count(i => i.IsMissing && !i.IsHidden);
@@ -275,7 +278,7 @@ public sealed partial class MainViewModel : ObservableObject
             return true;
         }
         if (_all.FirstOrDefault(i => i.Id == editionId) is not { } item) return false;
-        if (item.Library != CurrentLibrary)
+        if (!InTab(item, CurrentLibrary))
             SelectedLibraryTab = LibraryTabs.First(t => t.Id == item.Library);
         if (Items.All(i => i.Id != editionId))
             ClearFilters();

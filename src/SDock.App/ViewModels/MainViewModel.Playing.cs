@@ -106,3 +106,28 @@ public partial class MainViewModel
             : $"“{item.Title}” is now sorted as “{value}”.";
     }
 }
+
+// Favorites: mark games in any library; they also show in the Favorites tab.
+public partial class MainViewModel
+{
+    public bool SelectedIsFavorite => SelectedItem?.IsFavorite ?? false;
+    public string FavoriteMenuLabel => SelectedIsFavorite ? "Remove from Favorites" : "Add to Favorites";
+    public string FavoriteGlyph => SelectedIsFavorite ? "★" : "☆";
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void ToggleFavorite()
+    {
+        if (SelectedItem is not { } item) return;
+        var favorite = !item.IsFavorite;
+        var keep = item.Id;
+        if (!favorite && IsFavoritesTab)
+        {
+            // Unmarked in Favorites: it leaves the tab, so move to the neighbouring cover.
+            var index = Items.IndexOf(item);
+            keep = Items.Count > 1 ? Items[index + 1 < Items.Count ? index + 1 : index - 1].Id : null;
+        }
+        _library.SetFavorite(item.Id, favorite);
+        Refresh(keep);
+        StatusText = favorite ? $"Added “{item.Title}” to Favorites." : $"Removed “{item.Title}” from Favorites.";
+    }
+}

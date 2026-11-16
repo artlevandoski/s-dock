@@ -122,6 +122,7 @@ public sealed partial class MainViewModel
         list.Add(Do("Edit Description…", EditDescriptionCommand));
         list.Add(Do("Edit Carousel Text…", EditCarouselTextCommand));
         list.Add(Do("Sort Title…", SetSortTitleCommand));
+        list.Add(Do(FavoriteMenuLabel, ToggleFavoriteCommand));
         list.Add(Do(HideMenuLabel, ToggleHiddenCommand));
         list.Add(Page("Game Info and Matching", () =>
         [

@@ -2,15 +2,23 @@ using System.Text.RegularExpressions;
 
 namespace SDock.Core;
 
-/// <summary>Browsing scopes. Each has its own search, filters, view and last selection.</summary>
+/// <summary>Browsing scopes. Each has its own search, filters and last selection.</summary>
 public static class Libraries
 {
     public const string Main = "main";
     public const string Arcade = "arcade";
+    /// <summary>Not a place a game lives: a tab showing the favorites from every library.</summary>
+    public const string Favorites = "favorites";
 
+    /// <summary>The libraries a game can belong to (Favorites isn't one).</summary>
     public static readonly IReadOnlyList<string> All = [Main, Arcade];
 
-    public static string Label(string library) => library == Arcade ? "Arcade Archives" : "Main Library";
+    public static string Label(string library) => library switch
+    {
+        Arcade => "Arcade Archives",
+        Favorites => "Favorites",
+        _ => "Main Library",
+    };
 }
 
 /// <summary>Arcade re-release series, recognised by title prefix.</summary>

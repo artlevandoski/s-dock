@@ -84,9 +84,14 @@ public sealed partial class MainViewModel
     private bool _loadingState;
 
     /// <summary>Search text is kept per library for the session (not saved).</summary>
-    private readonly Dictionary<string, string> _searchByLibrary = new() { [Libraries.Main] = "", [Libraries.Arcade] = "" };
+    private readonly Dictionary<string, string> _searchByLibrary = new() { [Libraries.Main] = "", [Libraries.Arcade] = "", [Libraries.Favorites] = "" };
 
-    public ObservableCollection<LibraryTab> LibraryTabs { get; } = [new(Libraries.Main), new(Libraries.Arcade)];
+    public ObservableCollection<LibraryTab> LibraryTabs { get; } = [new(Libraries.Main), new(Libraries.Arcade), new(Libraries.Favorites)];
+    public bool IsFavoritesTab => CurrentLibrary == Libraries.Favorites;
+
+    /// <summary>Whether a game shows under a tab: its own library, or Favorites when it's a favorite.</summary>
+    private static bool InTab(EditionItem item, string tab) =>
+        tab == Libraries.Favorites ? item.IsFavorite : item.Library == tab;
     public IReadOnlyList<FilterOption> GenerationFilterOptions => FilterOption.Generation;
 
     public static string StateKey(string library, string name) => $"lib:{library}:{name}";
@@ -121,7 +126,7 @@ public sealed partial class MainViewModel
 
     // ----------------------------------------------------------------- library tabs
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CurrentLibrary), nameof(IsArcade))]
+    [NotifyPropertyChangedFor(nameof(CurrentLibrary), nameof(IsArcade), nameof(IsFavoritesTab))]
     public partial LibraryTab SelectedLibraryTab { get; set; }
 
     public string CurrentLibrary => SelectedLibraryTab?.Id ?? Libraries.Main;
@@ -294,7 +299,7 @@ public sealed partial class MainViewModel
 
     private bool Matches(EditionItem item)
     {
-        if (item.Library != CurrentLibrary) return false;
+        if (!InTab(item, CurrentLibrary)) return false;
         var q = SearchText.Trim();
         if (q.Length > 0 && !item.Title.Contains(q, StringComparison.OrdinalIgnoreCase)) return false;
         var g = GenerationFilter?.Value ?? FilterOption.AllValue;
@@ -336,8 +341,10 @@ public sealed partial class MainViewModel
             ? "Your library is empty.\nAdd a folder of your game files to get started,\nthen set up your emulator from the menu."
             : GenerationFilter?.Value == FilterOption.HiddenValue
                 ? "No hidden games in this library.\nUse Game Actions → Hide Game to tidy away games you don't play."
-            : _all.Any(i => i.Library == CurrentLibrary && !i.IsHidden)
+            : _all.Any(i => InTab(i, CurrentLibrary) && !i.IsHidden)
                 ? "No games match the search or filters."
+                : IsFavoritesTab
+                    ? "No favorites yet.\nMark a game with X in the carousel, the ☆ button, or Game Actions → Add to Favorites."
                 : IsArcade
                     ? "No Arcade Archives titles yet.\nTitles starting with “Arcade Archives” or “Arcade Archives 2” appear here automatically."
                     : "No games in Main Library.";

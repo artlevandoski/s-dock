@@ -11,7 +11,7 @@ namespace SDock.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 10;
+    public const int SchemaVersion = 11;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -120,6 +120,11 @@ public sealed class LibraryStore : IDisposable
         CREATE TABLE IF NOT EXISTS hidden_editions (
             edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
             hidden_at  TEXT NOT NULL
+        );
+        -- v11: favorite games (the Favorites tab).
+        CREATE TABLE IF NOT EXISTS favorite_editions (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            added_at   TEXT NOT NULL
         );
         """;
 
@@ -249,6 +254,11 @@ public sealed class LibraryStore : IDisposable
                 if (Convert.ToInt64(cmd.ExecuteScalar()) == 0)
                     Exec("ALTER TABLE edition_metadata ADD COLUMN user_short_summary TEXT");
             Exec("UPDATE meta SET value = '10' WHERE key = 'schema_version'");
+        }
+        if (version < 11)
+        {
+            // v10 -> v11: favorites table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '11' WHERE key = 'schema_version'");
         }
     }
 
@@ -782,6 +792,26 @@ public sealed class LibraryStore : IDisposable
                 ("$e", editionId), ("$t", UtcNow()));
         else
             Exec("DELETE FROM hidden_editions WHERE edition_id = $e", ("$e", editionId));
+    }
+
+    // ------------------------------------------------------------------ favorites
+    public HashSet<string> FavoriteEditions()
+    {
+        var result = new HashSet<string>();
+        using var cmd = Cmd("SELECT edition_id FROM favorite_editions");
+        using var r = cmd.ExecuteReader();
+        while (r.Read()) result.Add(r.GetString(0));
+        return result;
+    }
+
+    /// <summary>Marks a game as a favorite (it also shows in the Favorites tab) or unmarks it.</summary>
+    public void SetFavorite(string editionId, bool favorite)
+    {
+        if (favorite)
+            Exec("INSERT INTO favorite_editions(edition_id, added_at) VALUES ($e, $t) ON CONFLICT(edition_id) DO NOTHING",
+                ("$e", editionId), ("$t", UtcNow()));
+        else
+            Exec("DELETE FROM favorite_editions WHERE edition_id = $e", ("$e", editionId));
     }
 
     /// <summary>The library each edition is shown in.</summary>

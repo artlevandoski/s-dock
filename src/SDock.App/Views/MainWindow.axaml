@@ -14,9 +14,30 @@
     <KeyBinding Gesture="Ctrl+Tab" Command="{Binding NextLibraryCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+Tab" Command="{Binding PreviousLibraryCommand}" />
     <KeyBinding Gesture="Ctrl+G" Command="{Binding ToggleViewCommand}" />
+    <KeyBinding Gesture="Ctrl+D" Command="{Binding ToggleFavoriteCommand}" />
   </Window.KeyBindings>
 
   <Window.Styles>
+    <!-- The star on a favorite cover. -->
+    <Style Selector="Border.favstar">
+      <Setter Property="HorizontalAlignment" Value="Right" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Margin" Value="8" />
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="Background" Value="#CC10111E" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Border.favstar > TextBlock">
+      <Setter Property="Foreground" Value="#FFD54F" />
+      <Setter Property="FontSize" Value="18" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.fav TextBlock">
+      <Setter Property="Foreground" Value="#FFD54F" />
+    </Style>
     <!-- Grid: a lavender ring marks the selected cover; no default list highlight. -->
     <Style Selector="ListBox#CoverList ListBoxItem">
       <Setter Property="Padding" Value="0" />
@@ -238,8 +259,9 @@
             <TextBlock Text="Browse" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key round"><TextBlock Text="A" /></Border>
             <TextBlock Text="Play" VerticalAlignment="Center" Margin="2,0,22,0" />
-            <Border Classes="key round" IsVisible="{Binding IsGrid}"><TextBlock Text="X" /></Border>
+            <Border Classes="key round"><TextBlock Text="X" /></Border>
             <TextBlock x:Name="GameActionsHint" Text="Game Actions" VerticalAlignment="Center" Margin="2,0,22,0" IsVisible="{Binding IsGrid}" />
+            <TextBlock x:Name="FavoriteHint" Text="Favorite" VerticalAlignment="Center" Margin="2,0,22,0" IsVisible="{Binding IsCarousel}" />
             <Border Classes="key round"><TextBlock Text="Y" /></Border>
             <TextBlock Text="Grid / Carousel" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key"><TextBlock Text="LB" FontSize="11" /></Border>
@@ -295,12 +317,19 @@
                 </Grid>
 
                 <StackPanel Spacing="8">
-                  <Button x:Name="PlayButton" Classes="primary accent" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
-                    <StackPanel Orientation="Horizontal" Spacing="8">
-                      <PathIcon Data="{StaticResource IconPlay}" Width="18" Height="18" />
-                      <TextBlock Text="{Binding PlayLabel}" />
-                    </StackPanel>
-                  </Button>
+                  <Grid ColumnDefinitions="*,Auto">
+                    <Button x:Name="PlayButton" Classes="primary accent" Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
+                      <StackPanel Orientation="Horizontal" Spacing="8">
+                        <PathIcon Data="{StaticResource IconPlay}" Width="18" Height="18" />
+                        <TextBlock Text="{Binding PlayLabel}" />
+                      </StackPanel>
+                    </Button>
+                    <Button x:Name="FavoriteButton" Grid.Column="1" Classes="subtle fav" Margin="8,0,0,0" Width="48" Padding="0"
+                            HorizontalContentAlignment="Center" VerticalAlignment="Stretch"
+                            Command="{Binding ToggleFavoriteCommand}" ToolTip.Tip="{Binding FavoriteMenuLabel}">
+                      <TextBlock Text="{Binding FavoriteGlyph}" FontSize="22" />
+                    </Button>
+                  </Grid>
                   <Button x:Name="DetailsGameActionsButton" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Command="{Binding OpenGameMenuCommand}" Content="Game Actions…" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)" />
                   <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
@@ -393,8 +422,12 @@
               <DataTemplate x:DataType="vm:EditionItem">
                 <StackPanel Width="190" Spacing="8" ToolTip.Tip="{Binding Tooltip}">
                   <Border Classes="ring" HorizontalAlignment="Center">
-                    <c:CoverView Width="172" Height="172" Image="{Binding Cover}" ShowGenerationBand="False"
-                                 Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                    <Panel>
+                      <c:CoverView Width="172" Height="172" Image="{Binding Cover}" ShowGenerationBand="False"
+                                   Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                      <!-- Favorites wear a star in the corner. -->
+                    <Border Classes="favstar" IsVisible="{Binding IsFavorite}"><TextBlock Text="★" /></Border>
+                    </Panel>
                   </Border>
                   <TextBlock Classes="card-title" Text="{Binding Title}" TextTrimming="CharacterEllipsis"
                              HorizontalAlignment="Center" MaxWidth="178" />
@@ -444,13 +477,21 @@
                   <TextBlock Text="{Binding CarouselSummary}" FontSize="17" Foreground="#DCDAF0" MaxLines="2" Height="46"
                              TextWrapping="Wrap" TextTrimming="WordEllipsis" MaxWidth="900" HorizontalAlignment="Left" />
                   <StackPanel Spacing="6" Margin="0,6,0,0" HorizontalAlignment="Left">
-                    <Button x:Name="CarouselPlayButton" Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
-                            Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
-                      <StackPanel Orientation="Horizontal" Spacing="10">
-                        <PathIcon Data="{StaticResource IconPlay}" Width="22" Height="22" />
-                        <TextBlock Text="{Binding PlayLabel}" />
-                      </StackPanel>
-                    </Button>
+                    <StackPanel Orientation="Horizontal" Spacing="12">
+                      <Button x:Name="CarouselPlayButton" Classes="primary accent" Width="250" MinHeight="58" FontSize="21" CornerRadius="12"
+                              Command="{Binding PlayCommand}" IsEnabled="{Binding CanPlay}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                          <PathIcon Data="{StaticResource IconPlay}" Width="22" Height="22" />
+                          <TextBlock Text="{Binding PlayLabel}" />
+                        </StackPanel>
+                      </Button>
+                      <Button x:Name="CarouselFavoriteButton" Classes="subtle fav" Width="58" Height="58" Padding="0" CornerRadius="12"
+                              HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Focusable="False"
+                              Command="{Binding ToggleFavoriteCommand}" IsVisible="{Binding HasSelection}"
+                              ToolTip.Tip="{Binding FavoriteMenuLabel}">
+                        <TextBlock Text="{Binding FavoriteGlyph}" FontSize="28" />
+                      </Button>
+                    </StackPanel>
                     <TextBlock x:Name="CarouselRouteText" Text="{Binding RouteText}" Classes="muted" FontSize="12" MaxWidth="560"
                                TextTrimming="CharacterEllipsis" Margin="4,0,0,0" />
                   </StackPanel>
@@ -473,8 +514,12 @@
               <ListBox.ItemTemplate>
                 <DataTemplate x:DataType="vm:EditionItem">
                   <Border Classes="ring" Padding="0" CornerRadius="16">
-                    <c:CoverView Width="300" Height="300" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
-                                 Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                    <Panel>
+                      <c:CoverView Width="300" Height="300" ToolTip.Tip="{Binding Tooltip}" Image="{Binding Cover}" ShowGenerationBand="False"
+                                   Title="{Binding Title}" Generation="{Binding Generation}" IsMissing="{Binding IsMissing}" />
+                      <!-- Favorites wear a star in the corner. -->
+                    <Border Classes="favstar" IsVisible="{Binding IsFavorite}"><TextBlock Text="★" /></Border>
+                    </Panel>
                   </Border>
                 </DataTemplate>
               </ListBox.ItemTemplate>

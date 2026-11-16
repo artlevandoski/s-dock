@@ -179,7 +179,7 @@ public sealed class LibrariesTests : IDisposable
         using var _x = launcher;
 
         Assert.Equal(Libraries.Main, vm.CurrentLibrary);
-        Assert.Equal([3, 2], vm.LibraryTabs.Select(t => t.Count)); // NEOGEO stays in Main by default
+        Assert.Equal([3, 2, 0], vm.LibraryTabs.Select(t => t.Count)); // NEOGEO stays in Main by default
         Assert.Equal(["ACA NEOGEO METAL SLUG", "Another Test Game", "Super Placeholder Quest"], vm.Items.Select(i => i.Title));
 
         // Main: carousel view, Switch 1 filter, a selection.
@@ -251,7 +251,7 @@ public sealed class LibrariesTests : IDisposable
         vm.SelectedLibraryTab = vm.LibraryTabs[1];
         vm.IncludeAcaNeogeo = true;
         Assert.Contains(vm.Items, i => i.Title == "ACA NEOGEO METAL SLUG");
-        Assert.Equal([2, 3], vm.LibraryTabs.Select(t => t.Count));
+        Assert.Equal([2, 3, 0], vm.LibraryTabs.Select(t => t.Count));
 
         // Pin an arcade title to Main Library: the view follows it there.
         vm.Select(vm.Items.Single(i => i.Title == "Arcade Archives DONKEY KONG").Id);
