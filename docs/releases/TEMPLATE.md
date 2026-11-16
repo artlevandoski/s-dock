@@ -11,6 +11,10 @@ covers, backgrounds, logos and descriptions filled in for you.
 
 - (Write the changes in this release here, one per line.)
 
+<!-- Screenshots (optional): put JPGs in docs/releases/images/<version>/ and link them with
+     https://raw.githubusercontent.com/artlevandoski/s-dock/master/docs/releases/images/<version>/<name>.jpg
+     (commit and push them before publishing the release). -->
+
 ## Download
 
 **`{{ZIP}}`**: unzip it and you have an **S-Dock** folder with everything in it. There's nothing to
