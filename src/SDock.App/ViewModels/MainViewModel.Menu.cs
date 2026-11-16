@@ -25,7 +25,7 @@ public sealed partial class MenuEntry : ObservableObject
     public void Refresh() => OnPropertyChanged(nameof(IsChecked));
 }
 
-// The on-screen menu used for Game Actions (X, the button, or right-click) and Settings (Select/Back, or the gear).
+// The on-screen menu used for Game Actions (X, the button, or right-click in the grid). Settings is a page of its own.
 // It is a list inside the window rather than a pop-up, so the controller, keyboard and mouse all work the same way.
 public sealed partial class MainViewModel
 {
@@ -47,13 +47,6 @@ public sealed partial class MainViewModel
         if (IsCarousel || SelectedItem is not { } item) return;
         _menuStack.Clear();
         ShowPage(item.Title, BuildGameMenu);
-    }
-
-    [RelayCommand]
-    public void OpenSettingsMenu()
-    {
-        _menuStack.Clear();
-        ShowPage("Settings", BuildSettingsMenu);
     }
 
     private void ShowPage(string title, Func<IReadOnlyList<MenuEntry>> build)
@@ -142,49 +135,6 @@ public sealed partial class MainViewModel
         ]));
         if (IsGrid && !program) list.Add(Do("Add Version File…", AddVersionFileCommand));
         else list.Add(Do("Game Settings (Grid View)", ShowGridCommand));
-        return list;
-    }
-
-    private IReadOnlyList<MenuEntry> BuildSettingsMenu()
-    {
-        var list = new List<MenuEntry>
-        {
-            Page("Filter", () => FilterOption.Generation.Select(f => Tick(f.Label, () => GenerationFilter == f, () => GenerationFilter = f)).ToList()),
-            Do(IsCarousel ? "Grid View" : "Carousel View", ToggleViewCommand),
-            Do("Add Folder…", AddFolderCommand),
-            Do("Add Game (.exe)…", AddProgramCommand),
-            Do("Emulator Settings…", EmulatorSettingsCommand),
-            Page("Background", () =>
-            [
-                Tick("Game Artwork", () => BackgroundIsArt, () => BackgroundStyle = BackgroundArt),
-                Tick("Color from Game", () => BackgroundIsColor, () => BackgroundStyle = BackgroundColor),
-                Tick("Plain", () => BackgroundIsPlain, () => BackgroundStyle = BackgroundPlain),
-            ]),
-            Page("Playing", () =>
-            [
-                Tick("Start Games in Full Screen", () => StartGamesFullScreen, () => StartGamesFullScreen = !StartGamesFullScreen),
-                Tick("Exit: Press Esc or Start+Select Once", () => ExitWithOnePress, () => ExitWithTwoPresses = false),
-                Tick("Exit: Press Twice (Safer)", () => ExitWithTwoPresses, () => ExitWithTwoPresses = true),
-            ]),
-            Page("Arcade Archives", () =>
-            [
-                Tick("Include ACA NEOGEO", () => IncludeAcaNeogeo, () => IncludeAcaNeogeo = !IncludeAcaNeogeo),
-                Tick("Include SEGA AGES", () => IncludeSegaAges, () => IncludeSegaAges = !IncludeSegaAges),
-            ]),
-            Page("Game Info", () =>
-            [
-                Do("Update from TitleDB", UpdateFromTitleDbCommand, !IsMatchingAll),
-                Tick("Use nx-versions", () => UseNxVersions, () => UseNxVersions = !UseNxVersions),
-                Do("Match Unmatched Games on IGDB", MatchUnmatchedCommand, !IsMatchingAll),
-                Do("Get Missing Logos", GetMissingLogosCommand, !IsMatchingAll),
-                Do("Metadata Settings…", IgdbSettingsCommand),
-            ]),
-        };
-        if (IsMatchingAll) list.Insert(0, Do("Cancel the Running Update", CancelMatchingCommand));
-        list.Add(Do("Open Data Folder", OpenDataFolderCommand));
-        list.Add(Do("Open Emulators Folder", OpenEmulatorsFolderCommand));
-        list.Add(Item("Quit S-Dock", () => QuitRequested?.Invoke()));
-        list.Add(new MenuEntry { Label = $"S-Dock {AppVersion}", Enabled = false });
         return list;
     }
 

@@ -7,6 +7,12 @@ namespace SDock.App.ViewModels;
 
 public static class Converters
 {
+    /// <summary>An icon from the app's resources by its key (e.g. "IconGamepad").</summary>
+    public static readonly IValueConverter IconGeometry = new FuncValueConverter<string?, Avalonia.Media.Geometry?>(key =>
+        key is not null && Avalonia.Application.Current is { } app && app.TryGetResource(key, null, out var value)
+            ? value as Avalonia.Media.Geometry
+            : null);
+
     /// <summary>Profiles set up for another generation are shown dimmed.</summary>
     public static readonly IValueConverter CompatibleOpacity =
         new FuncValueConverter<bool, double>(compatible => compatible ? 1.0 : 0.55);

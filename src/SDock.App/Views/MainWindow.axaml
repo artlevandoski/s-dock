@@ -184,7 +184,7 @@
               <PathIcon Data="{StaticResource IconFolderPlus}" Width="20" Height="20" />
             </Button>
             <Button x:Name="SettingsButton" Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center"
-                    Command="{Binding OpenSettingsMenuCommand}" ToolTip.Tip="Settings (Select / Back on a controller)">
+                    Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Settings (Select / Back on a controller)">
               <PathIcon Data="{StaticResource IconSettings}" Width="22" Height="22" />
             </Button>
           </StackPanel>
@@ -491,6 +491,170 @@
             Background="#E6171829" BorderBrush="{StaticResource SyAccent}" BorderThickness="2">
       <TextBlock Text="{Binding JumpLetter}" FontSize="84" FontWeight="Black" Foreground="{StaticResource SyAccent}"
                  HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Border>
+
+
+    <!-- ============================== Settings page ==============================
+         Full screen, the same in the grid and the carousel. Sections on the left, their settings on the right.
+         Controller and keyboard: Up/Down move, A/Enter/Right go in or change, Left/Right change a choice,
+         B/Esc go back one step. Mouse: click. -->
+    <Border x:Name="SettingsPage" IsVisible="{Binding IsSettingsOpen}" Focusable="True"
+            Background="{StaticResource SyBackground}">
+      <Border.Styles>
+        <Style Selector="ListBox.settings">
+          <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBox.settings ListBoxItem">
+          <Setter Property="CornerRadius" Value="12" />
+          <Setter Property="Margin" Value="0,2" />
+          <Setter Property="FocusAdorner" Value="{x:Null}" />
+        </Style>
+        <Style Selector="ListBox.settings ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="#14FFFFFF" />
+        </Style>
+        <!-- Sections: the chosen one is lit; brighter while the D-pad is on the sections. -->
+        <Style Selector="ListBox#SettingsSectionList ListBoxItem">
+          <Setter Property="Padding" Value="16,14" />
+        </Style>
+        <Style Selector="ListBox#SettingsSectionList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{StaticResource SyChip}" />
+        </Style>
+        <Style Selector="ListBox#SettingsSectionList:not(.inrows) ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{StaticResource SyAccent}" />
+        </Style>
+        <Style Selector="ListBox#SettingsSectionList:not(.inrows) ListBoxItem:selected TextBlock">
+          <Setter Property="Foreground" Value="{StaticResource SyOnAccent}" />
+        </Style>
+        <Style Selector="ListBox#SettingsSectionList:not(.inrows) ListBoxItem:selected PathIcon">
+          <Setter Property="Foreground" Value="{StaticResource SyOnAccent}" />
+        </Style>
+        <!-- Settings: the current one is outlined while the D-pad is on them. -->
+        <Style Selector="ListBox#SettingsRowList ListBoxItem">
+          <Setter Property="Padding" Value="20,14" />
+          <Setter Property="BorderThickness" Value="2" />
+          <Setter Property="BorderBrush" Value="Transparent" />
+          <Setter Property="Background" Value="{StaticResource SySurface}" />
+        </Style>
+        <Style Selector="ListBox#SettingsRowList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{StaticResource SySurface}" />
+        </Style>
+        <Style Selector="ListBox#SettingsRowList.inrows ListBoxItem:selected">
+          <Setter Property="BorderBrush" Value="{StaticResource SyAccent}" />
+        </Style>
+        <Style Selector="ListBox#SettingsRowList.inrows ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+          <Setter Property="Background" Value="{StaticResource SySurface2}" />
+        </Style>
+        <!-- On/off switch. -->
+        <Style Selector="Border.switch">
+          <Setter Property="Width" Value="54" />
+          <Setter Property="Height" Value="30" />
+          <Setter Property="CornerRadius" Value="15" />
+          <Setter Property="Padding" Value="4" />
+          <Setter Property="Background" Value="{StaticResource SySurface2}" />
+          <Setter Property="BorderBrush" Value="{StaticResource SyBorder}" />
+          <Setter Property="BorderThickness" Value="1" />
+        </Style>
+        <Style Selector="Border.switch.on">
+          <Setter Property="Background" Value="{StaticResource SyAccent}" />
+          <Setter Property="BorderBrush" Value="{StaticResource SyAccent}" />
+        </Style>
+        <Style Selector="Border.switch > Border.knob">
+          <Setter Property="Width" Value="20" />
+          <Setter Property="Height" Value="20" />
+          <Setter Property="CornerRadius" Value="10" />
+          <Setter Property="Background" Value="{StaticResource SyMuted}" />
+          <Setter Property="HorizontalAlignment" Value="Left" />
+        </Style>
+        <Style Selector="Border.switch.on > Border.knob">
+          <Setter Property="Background" Value="{StaticResource SyOnAccent}" />
+          <Setter Property="HorizontalAlignment" Value="Right" />
+        </Style>
+        <Style Selector="Button.arrow">
+          <Setter Property="Width" Value="38" />
+          <Setter Property="Height" Value="38" />
+          <Setter Property="Padding" Value="0" />
+          <Setter Property="CornerRadius" Value="19" />
+          <Setter Property="HorizontalContentAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="FontSize" Value="20" />
+          <Setter Property="Focusable" Value="False" />
+        </Style>
+      </Border.Styles>
+      <DockPanel>
+        <Border DockPanel.Dock="Top" Padding="40,20,28,16" BorderBrush="#2AFFFFFF" BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <PathIcon Data="{StaticResource IconSettings}" Width="26" Height="26" VerticalAlignment="Center" />
+            <TextBlock Grid.Column="1" Text="Settings" FontSize="28" FontWeight="Bold" Margin="14,0" VerticalAlignment="Center" />
+            <Button x:Name="SettingsCloseButton" Grid.Column="2" Classes="subtle" Content="Close" Padding="20,8" Focusable="False"
+                    Command="{Binding CloseSettingsCommand}" ToolTip.Tip="Close Settings (B, Esc or Select)" />
+          </Grid>
+        </Border>
+        <Border DockPanel.Dock="Bottom" Padding="40,12" BorderBrush="#2AFFFFFF" BorderThickness="0,1,0,0">
+          <StackPanel Orientation="Horizontal" Spacing="8">
+            <Border Classes="key"><TextBlock Text="↑↓" /></Border>
+            <TextBlock Text="Move" VerticalAlignment="Center" Margin="2,0,20,0" />
+            <Border Classes="key round"><TextBlock Text="A" /></Border>
+            <TextBlock Text="Select" VerticalAlignment="Center" Margin="2,0,20,0" />
+            <Border Classes="key"><TextBlock Text="←→" /></Border>
+            <TextBlock Text="Change" VerticalAlignment="Center" Margin="2,0,20,0" />
+            <Border Classes="key round"><TextBlock Text="B" /></Border>
+            <TextBlock Text="{Binding SettingsBackLabel}" VerticalAlignment="Center" Margin="2,0,0,0" />
+          </StackPanel>
+        </Border>
+        <Grid ColumnDefinitions="300,*" Margin="28,22,40,16">
+          <ListBox x:Name="SettingsSectionList" Classes="settings" Classes.inrows="{Binding SettingsInRows}"
+                   ItemsSource="{Binding SettingsSections}" SelectedIndex="{Binding SettingsSectionIndex}"
+                   ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+            <ListBox.ItemTemplate>
+              <DataTemplate x:DataType="vm:SettingSection">
+                <StackPanel Orientation="Horizontal" Spacing="14">
+                  <PathIcon Data="{Binding IconKey, Converter={x:Static vm:Converters.IconGeometry}}" Width="22" Height="22" />
+                  <TextBlock Text="{Binding Title}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+                </StackPanel>
+              </DataTemplate>
+            </ListBox.ItemTemplate>
+          </ListBox>
+          <DockPanel Grid.Column="1" Margin="32,0,0,0">
+            <StackPanel DockPanel.Dock="Top" Margin="4,2,0,18" Spacing="4">
+              <TextBlock Text="{Binding SettingsSection.Title}" FontSize="24" FontWeight="Bold" />
+              <TextBlock Text="{Binding SettingsSection.Description}" Classes="muted" TextWrapping="Wrap" />
+            </StackPanel>
+            <ListBox x:Name="SettingsRowList" Classes="settings" Classes.inrows="{Binding SettingsInRows}"
+                     ItemsSource="{Binding SettingsRows}" SelectedIndex="{Binding SettingsRowIndex, Mode=OneWay}"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+              <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="vm:SettingRow">
+                  <Grid ColumnDefinitions="*,Auto" Opacity="{Binding Opacity}" Background="Transparent">
+                    <StackPanel VerticalAlignment="Center" Spacing="3" Margin="0,0,24,0">
+                      <TextBlock Text="{Binding Label}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap" />
+                      <TextBlock Text="{Binding Description}" Classes="muted" FontSize="13" TextWrapping="Wrap"
+                                 IsVisible="{Binding HasDescription}" />
+                    </StackPanel>
+                    <Panel Grid.Column="1" VerticalAlignment="Center">
+                      <Border Classes="switch" Classes.on="{Binding On}" IsVisible="{Binding IsToggle}">
+                        <Border Classes="knob" />
+                      </Border>
+                      <StackPanel Orientation="Horizontal" Spacing="10" IsVisible="{Binding IsChoice}">
+                        <Button Classes="subtle arrow" Content="‹" Click="SettingPrevious_Click" ToolTip.Tip="Previous (Left)" />
+                        <TextBlock Text="{Binding ValueText}" FontSize="16" MinWidth="190" TextAlignment="Center"
+                                   VerticalAlignment="Center" TextTrimming="CharacterEllipsis" MaxWidth="300" />
+                        <Button Classes="subtle arrow" Content="›" Click="SettingNext_Click" ToolTip.Tip="Next (Right)" />
+                      </StackPanel>
+                      <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding IsAction}">
+                        <TextBlock Text="{Binding ValueText}" Classes="muted" FontSize="13" VerticalAlignment="Center"
+                                   MaxWidth="360" TextTrimming="CharacterEllipsis" />
+                        <TextBlock Text="›" FontSize="22" VerticalAlignment="Center" />
+                      </StackPanel>
+                      <TextBlock Text="{Binding ValueText}" FontSize="15" VerticalAlignment="Center" MaxWidth="460"
+                                 TextTrimming="CharacterEllipsis" IsVisible="{Binding !Selectable}" />
+                    </Panel>
+                  </Grid>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+          </DockPanel>
+        </Grid>
+      </DockPanel>
     </Border>
 
     <!-- The on-screen menu: Game Actions (X, the button, right-click) and Settings (Select/Back, the gear).

@@ -5,6 +5,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using SDock.App.Input;
 using SDock.App.ViewModels;
 
 namespace SDock.App.Views;
@@ -28,6 +29,14 @@ public partial class MainWindow : Window
         foreach (var list in new[] { CoverList, CarouselList })
             list.ContextRequested += Cover_ContextRequested; // right-click (or the menu key) opens Game Actions
         MenuList.AddHandler(KeyDownEvent, MenuList_KeyDown, RoutingStrategies.Tunnel);
+        // The Settings page takes every key while it's open, before anything under it sees them.
+        AddHandler(KeyDownEvent, Settings_KeyDown, RoutingStrategies.Tunnel);
+        SettingsRowList.Tapped += (_, e) =>
+        {
+            if ((e.Source as Control)?.FindAncestorOfType<Button>(includeSelf: true) is not null) return; // the ‹ › arrows
+            if ((e.Source as Control)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is SettingRow row)
+                _ = Vm?.ActivateSettingAsync(row);
+        };
         MenuList.Tapped += (_, e) =>
         {
             if ((e.Source as Control)?.FindAncestorOfType<ListBoxItem>(includeSelf: true)?.DataContext is MenuEntry entry)
@@ -47,6 +56,7 @@ public partial class MainWindow : Window
             {
                 vm.PropertyChanged += Vm_PropertyChanged;
                 vm.MenuChanged += OnMenuChanged;
+                vm.SettingsChanged += OnSettingsChanged;
                 vm.QuitRequested += () => Close();
                 ApplyFullScreen(vm.IsCarousel);
             }
@@ -58,8 +68,51 @@ public partial class MainWindow : Window
     /// <summary>The cover list currently on screen (grid or carousel).</summary>
     public ListBox ActiveCoverList => Vm is { IsCarousel: true } ? CarouselList : CoverList;
 
+    // ------------------------------------------------------------------ Settings page
+    private void Settings_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { IsSettingsOpen: true } vm) return;
+        PadAction? action = e.Key switch
+        {
+            Key.Up => PadAction.Up,
+            Key.Down => PadAction.Down,
+            Key.Left => PadAction.Left,
+            Key.Right => PadAction.Right,
+            Key.Enter or Key.Space => PadAction.Accept,
+            Key.Escape or Key.Back => PadAction.Cancel,
+            _ => null,
+        };
+        if (action is not { } a) return;
+        vm.SettingsInput(a);
+        e.Handled = true;
+    }
+
+    private void OnSettingsChanged()
+    {
+        if (Vm is { IsSettingsOpen: true })
+            Dispatcher.UIThread.Post(() => SettingsPage.Focus(), DispatcherPriority.Loaded);
+        else
+            Dispatcher.UIThread.Post(FocusSelectedCover, DispatcherPriority.Loaded);
+    }
+
+    private void SettingPrevious_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is SettingRow row) Vm?.StepSetting(row, -1);
+    }
+
+    private void SettingNext_Click(object? sender, RoutedEventArgs e)
+    {
+        if ((sender as Control)?.DataContext is SettingRow row) Vm?.StepSetting(row, +1);
+    }
+
     private void Vm_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName == nameof(MainViewModel.SettingsRowIndex) && Vm is { SettingsRowIndex: >= 0 } settings)
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (settings.SettingsRowIndex >= 0 && settings.SettingsRowIndex < SettingsRowList.ItemCount)
+                    SettingsRowList.ScrollIntoView(settings.SettingsRowIndex);
+            }, DispatcherPriority.Loaded);
         if (e.PropertyName == nameof(MainViewModel.IsCarousel))
         {
             ApplyFullScreen(Vm!.IsCarousel);

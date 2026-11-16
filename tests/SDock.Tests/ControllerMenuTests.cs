@@ -50,45 +50,6 @@ public sealed class ControllerMenuTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Settings_menu_works_with_the_controller()
-    {
-        using var lib = _env.OpenLibrary();
-        lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
-        var (vm, window, _) = Open(lib);
-
-        Press(window, PadAction.Menu); // Select / Back
-        Assert.True(vm.IsMenuOpen);
-        Assert.Equal("Settings", vm.MenuTitle);
-
-        Choose(window, vm, "Background");
-        Assert.Equal("Background", vm.MenuTitle);
-        Choose(window, vm, "Color from Game");
-        Assert.Equal(MainViewModel.BackgroundColor, vm.BackgroundStyle);
-        Assert.True(vm.IsMenuOpen); // settings apply and the menu stays open
-        Assert.True(vm.MenuItems.Single(m => m.Label == "Color from Game").IsChecked);
-        Assert.False(vm.MenuItems.Single(m => m.Label == "Game Artwork").IsChecked);
-
-        Press(window, PadAction.Cancel); // B: back to Settings
-        Assert.Equal("Settings", vm.MenuTitle);
-        Choose(window, vm, "Arcade Archives");
-        Choose(window, vm, "Include SEGA AGES");
-        Assert.True(vm.IncludeSegaAges);
-        Press(window, PadAction.Cancel);
-        Choose(window, vm, "Playing");
-        Choose(window, vm, "Start Games in Full Screen");
-        Assert.False(vm.StartGamesFullScreen);
-        Press(window, PadAction.Cancel, PadAction.Cancel);
-        Assert.False(vm.IsMenuOpen);
-
-        // Filters are reachable too.
-        Press(window, PadAction.Menu);
-        Choose(window, vm, "Filter");
-        Choose(window, vm, "Missing files");
-        Assert.Equal(FilterOption.MissingValue, vm.GenerationFilter.Value);
-        window.Close();
-    }
-
-    [AvaloniaFact]
     public void Game_menu_from_x_and_right_click_runs_actions()
     {
         using var lib = _env.OpenLibrary();

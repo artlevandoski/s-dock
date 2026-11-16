@@ -150,6 +150,11 @@ public sealed class GamepadService
 
     public static void Dispatch(Window active, PadAction action)
     {
+        if (active is MainWindow { DataContext: MainViewModel { IsSettingsOpen: true } settingsVm })
+        {
+            settingsVm.SettingsInput(action); // the Settings page handles everything itself
+            return;
+        }
         if (active is MainWindow { DataContext: MainViewModel { IsMenuOpen: true } menuVm } menuWindow)
         {
             // The on-screen menu is open: X and Select close it; the D-pad, A and B work inside it (below).
@@ -176,7 +181,7 @@ public sealed class GamepadService
                 case PadAction.ToggleView: vm.ToggleViewCommand.Execute(null); return;
                 case PadAction.GameActions: main.OpenGameActions(); return;
                 case PadAction.Play: if (vm.CanPlay) vm.PlayCommand.Execute(null); return;
-                case PadAction.Menu: vm.OpenSettingsMenu(); return;
+                case PadAction.Menu: vm.OpenSettings(); return;
                 case PadAction.PreviousLetter: main.JumpLetter(-1); return;
                 case PadAction.NextLetter: main.JumpLetter(+1); return;
             }

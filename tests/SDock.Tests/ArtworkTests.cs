@@ -427,9 +427,12 @@ public sealed class ArtworkTests : IDisposable
         vm.OpenGameMenu();
         MainWindowTests.Capture(window, "menu-game.png");
         vm.CloseMenu();
-        vm.OpenSettingsMenu();
-        MainWindowTests.Capture(window, "menu-settings.png");
-        vm.CloseMenu();
+        vm.OpenSettings();
+        MainWindowTests.Capture(window, "settings-page.png");
+        vm.SettingsInput(SDock.App.Input.PadAction.Down);
+        vm.SettingsInput(SDock.App.Input.PadAction.Accept);
+        MainWindowTests.Capture(window, "settings-emulators.png");
+        vm.CloseSettings();
         window.Close();
 
         var bg = new ArtPickerViewModel(ArtKind.KeyArt, "Haunted House", true, ui,

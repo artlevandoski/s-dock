@@ -20,6 +20,7 @@ the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each
 | Playing | Eden starts in full screen (setting remembered, never added twice, other emulators untouched); one- or two-press exit within 3 seconds; closing a running emulator |
 | Libraries and browsing | Arcade Archives, ACA NEOGEO and SEGA AGES by title prefix; manual pins and options persist; per-library search, filters and selection; hide and unhide; sort titles; Update available, Not in TitleDB and Hidden filters |
 | Grid and carousel | one shared view; the centred cover is larger and stays centred; carousel is full screen and the grid restores the window; covers and the details band keep their size and place while browsing; right-click menu differs by view |
+| Settings page | opens the same in grid and carousel; Up/Down, A/Right in, Left/Right change a choice, B back one step then closed; switches, choices and actions; default emulators chosen on the page; dialogs return to the same setting; keyboard (arrows, Enter, Esc) without moving the games underneath; mouse clicks on sections, arrows and Close; Game Info shows status |
 | Menus | settings apply at once and the tick follows; actions close the menu then run; B goes back a page or closes |
 | Background | artwork, colour from the cover (toned down for readable text) or plain; remembered |
 | Versions | add, remove and choose the main file; Play Version… launches once; duplicates attached at import; Switch 2 editions never matched to Switch 1 titles |

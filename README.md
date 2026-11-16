@@ -46,9 +46,9 @@ To run from source instead, you need the [.NET 10 SDK](https://dotnet.microsoft.
 dotnet run --project src\SDock.App
 ```
 
-Then, from the **Settings** menu (the gear, or Select on a controller):
+Then open **Settings** (the gear, or Select on a controller):
 
-1. **Emulator Settings…** (Ctrl+E): add your emulator. Builds placed in the `emulators\`
+1. **Emulators → Emulator Profiles…** (Ctrl+E): add your emulator. Builds placed in the `emulators\`
    folder are found automatically; **Add as profile** sets them up. For Eden, **Use Eden
    preset** fills in the right arguments, and **Test Launch** checks it.
 2. **Add Folder…** (Ctrl+O): pick a folder of game files (`.nsp`, `.xci`, `.nsz`, `.xcz`). A
@@ -56,8 +56,8 @@ Then, from the **Settings** menu (the gear, or Select on a controller):
    DLC and duplicates are left out by default.
 3. When asked, let S-Dock download **TitleDB** to fill in names, descriptions and pictures.
 
-**PC versions** (recompilations and ports that are their own `.exe`): use **Settings → Add Game
-(.exe)…**. They run on their own, without an emulator, and are filed as Switch 2 (change it in
+**PC versions** (recompilations and ports that are their own `.exe`): use **Settings → Library → Add
+Game (.exe)…**. They run on their own, without an emulator, and are filed as Switch 2 (change it in
 the details panel). A title ID in brackets in the file or folder name, like `[0100…]`, lets
 TitleDB fill them in; otherwise use **Game Info and Matching → Set Title ID…**.
 
@@ -65,7 +65,7 @@ TitleDB fill them in; otherwise use **Game Info and Matching → Set Title ID…
 
 **Libraries.** *Main Library* and *Arcade Archives* are separate tabs, each with its own
 search, filters and last selection. Arcade Archives and Arcade Archives 2 titles go there
-automatically; turn on **Settings → Arcade Archives → Include ACA NEOGEO / Include SEGA AGES** to add those
+automatically; turn on **Settings → Library → Include ACA NEOGEO / Include SEGA AGES** to add those
 series too.
 The **Library** dropdown in the details panel moves any game by hand.
 
@@ -74,21 +74,21 @@ the screen with one row of covers above the game's name and the first sentence o
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
 screen. Both views share the same selection. The carousel is kept clean: search, Add Folder,
 the filter bar and the view buttons appear only in the grid (Y or Ctrl+G switches views, Ctrl+F
-jumps to the grid's search, and filters are under **Settings → Filter** in either view).
+jumps to the grid's search, and filters are under **Settings → Library → Filter** in either view).
 
 **Jump by letter.** Up/Down in the carousel, LT/RT on a controller, or Page Up/Page Down jump
 to the next or previous letter (by sort title). The letter shows briefly in the middle.
 
 **Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified, Missing
 files, Update available, Not in TitleDB, Needs IGDB match and Hidden games. With a
-controller, use **Settings → Filter**.
+controller, use **Settings → Library → Filter**.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
 its generation's default, and otherwise asks you. **Launch With…** picks an emulator just
 once. When the game closes, S-Dock comes back with the same game selected.
 
 - **No emulator** is a choice in each game's **Emulator** dropdown, and for the Switch 2
-  default in **Emulator Settings**. It runs the game's own `.exe`. PC versions always run this
+  default in **Settings → Emulators**. It runs the game's own `.exe`. PC versions always run this
   way.
 
 - **Esc** (while the game is in front) or **Start + Select** closes the game and returns to
@@ -97,10 +97,9 @@ once. When the game closes, S-Dock comes back with the same game selected.
 - **Start Games in Full Screen** (on by default) starts Eden in full screen. For other
   emulators, add their own full-screen switch to the profile.
 
-**Menus.** Game Actions (the X button, the Game Actions button, or right-click a cover) and
-Settings (Select, or the gear) open as a list in the middle of the screen. Move with the D-pad
-or arrow keys, choose with A or Enter, and go back with B or Esc. Settings with a tick apply
-straight away.
+**Game Actions** (the X button, the Game Actions button, or right-click a cover, in the grid) open
+as a list in the middle of the screen: move with the D-pad or arrow keys, choose with A or Enter,
+go back with B or Esc.
 
 **Game Actions:**
 
@@ -121,9 +120,20 @@ playing.
 `Updates` and `DLC` subfolders) from their file names. The details show whether you have
 the latest known update and how many DLC you have.
 
-**Settings** also has **Background** (game artwork, a gradient in the game's colour, or
-plain), **Playing**, **Game Info** (TitleDB, nx-versions, IGDB, logos), **Open Data Folder**,
-**Open Emulators Folder** and **Quit**.
+**Settings** (Select, or the gear) is a full-screen page, the same in the grid and the carousel.
+Sections are on the left (Library, Emulators, Playing, Appearance, Game Info, About) and their
+settings on the right: switches, choices shown as `‹ value ›`, and buttons that open a dialog.
+
+| Controller | Keyboard | Mouse | |
+|---|---|---|---|
+| Up / Down | Arrow keys | | Move between sections or settings |
+| A or Right | Enter or Right | Click | Go into a section; flip a switch, run an action, move a choice on |
+| Left / Right | Left / Right | Click `‹` `›` | Change a choice |
+| B | Esc | **Close** | Back one step: from the settings to the sections, then out of Settings |
+| Select | | | Close Settings |
+
+Settings apply straight away. A dialog opened from Settings (such as Emulator Profiles) returns to
+the same setting when you close it.
 
 ## Game info and artwork
 
@@ -133,11 +143,11 @@ IGDB.
 | Source | Gives | Setup |
 |---|---|---|
 | [TitleDB](https://github.com/blawar/titledb) | Name, description, publisher, release date, genres, players, square eShop icon (the cover), banner (the background), screenshots | None. Matched exactly by each file's title ID. |
-| [nx-versions](https://github.com/16BitWonder/nx-versions) | Latest known update for each game, and dates | None. On by default (**Settings → Use nx-versions**). |
+| [nx-versions](https://github.com/16BitWonder/nx-versions) | Latest known update for each game, and dates | None. On by default (**Settings → Game Info → Use nx-versions**). |
 | [IGDB](https://www.igdb.com/) | Backup for games TitleDB doesn't list, and logos | Free Twitch developer credentials (below) |
 | [SteamGridDB](https://www.steamgriddb.com/) | More logos, covers and backgrounds | Free API key (optional) |
 
-**TitleDB.** **Settings → Update from TitleDB** downloads the US English listing, then the UK,
+**TitleDB.** **Settings → Game Info → Update from TitleDB** downloads the US English listing, then the UK,
 Australian and Japanese listings for games it lacks, and merges them into one file in
 `data\titledb\` (about 360 MB to download, about 65 MB kept). Japanese entries provide only
 pictures, names and dates. The listings come from AeroFoil's more frequently updated fork
@@ -151,14 +161,14 @@ automatically.
    **Register Your Application**: any name, OAuth redirect `http://localhost`, category
    *Application Integration*, client type *Confidential*.
 2. Copy the **Client ID**, and click **New Secret** for a **Client Secret**.
-3. In S-Dock, **Settings → Metadata Settings…**: paste both, **Test IGDB**, then **Save**.
+3. In S-Dock, **Settings → Game Info → IGDB and SteamGridDB keys…**: paste both, **Test IGDB**, then **Save**.
 
 Then use **Match Unmatched Games on IGDB** for games without info, or **Match on IGDB…**
 (details panel → Metadata) for one game. You can search, paste an igdb.com link, or enter
 an IGDB ID.
 
 **SteamGridDB setup (optional):** sign in, open *Preferences → API*, generate a key, and
-paste it into **Metadata Settings…**. Then run **Get Missing Logos**.
+paste it into **IGDB and SteamGridDB keys…**. Then run **Get missing logos**.
 
 Keys are stored only in `data\library.sqlite3` on your computer.
 
@@ -179,7 +189,7 @@ Xbox-compatible controllers work through Windows XInput, with no extra drivers.
 | Start | | Play |
 | Start + Select | Esc (in a game) | Close the game and return to S-Dock |
 | | Ctrl+F | Search |
-| | Ctrl+O / Ctrl+E | Add Folder / Emulator Settings |
+| | Ctrl+O / Ctrl+E | Add Folder / Emulator Profiles |
 
 In dialogs (questions, choosers, pickers, text editors, settings windows) the D-pad moves through
 lists and then between buttons, A presses or chooses (it ticks check boxes and opens dropdowns),
@@ -224,7 +234,9 @@ into `%LOCALAPPDATA%`. The version comes from `Directory.Build.props`.
 
 1. `powershell -ExecutionPolicy Bypass -File build
 ew-release.ps1 -Version 0.1.0-beta.2` sets the
-   version and creates `docseleases0.1.0-beta.2.md` from `docseleases\TEMPLATE.md`.
+   version and creates `docs
+eleases0.1.0-beta.2.md` from `docs
+eleases\TEMPLATE.md`.
 2. Fill in **What's new** in that file, then commit.
 3. `build\package.ps1` builds the zip, writes its checksum and the commit into the notes, and saves
    `releases\RELEASE-NOTES.md`, ready to paste into the GitHub release (attach the zip and the
