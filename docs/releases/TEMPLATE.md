@@ -31,9 +31,9 @@ from your old S-Dock folder into the new one.
 2. Run `S-Dock.exe` in the S-Dock folder. S-Dock isn't code-signed yet, so Windows SmartScreen may
    say "Windows protected your PC": choose **More info → Run anyway**.
 3. Open **Settings** (the gear, or Select on a controller):
-   - **Emulator Settings…** to add your emulator (put emulator builds in the S-Dock folder's
-     `emulators` folder and they're found automatically);
-   - **Add Folder…** to add your games;
+   - **Emulators → Emulator Profiles…** to add your emulator (put emulator builds in the S-Dock
+     folder's `emulators` folder and they're found automatically);
+   - **Library → Add Folder…** to add your games;
    - let S-Dock download **TitleDB** when it asks, to fill in names, descriptions and pictures.
 
 Everything S-Dock saves (library, artwork, TitleDB, settings) stays in the `data` folder inside the
@@ -50,7 +50,7 @@ the folder.
 ## Feedback
 
 Please report problems and ideas in [Issues](https://github.com/artlevandoski/s-dock/issues). It
-helps to include the version (shown at the bottom of the Settings menu) and, after an error, the
+helps to include the version (Settings → About) and, after an error, the
 file `data\logs\errors.log`.
 
 <!-- build-info: filled in by build\package.ps1 -->

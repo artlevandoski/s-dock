@@ -10,10 +10,9 @@
   Velopack's Setup.exe is not part of the release: it would install into %LOCALAPPDATA%, and S-Dock is
   meant to live entirely in its own folder.
 
-  It also fills in the release notes (docseleases<version>.md, created from TEMPLATE.md if new) with
+  It also fills in the release notes (docs\releases\v<version>.md, created from TEMPLATE.md if new) with
   the zip's checksum and the commit, and saves releases\RELEASE-NOTES.md ready to paste into GitHub.
-  To start a new version, run build
-ew-release.ps1 -Version <version> first.
+  To start a new version, run build\new-release.ps1 -Version <version> first.
 
   Usage (from the repository folder):
     powershell -ExecutionPolicy Bypass -File build\package.ps1
