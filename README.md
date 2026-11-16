@@ -81,8 +81,8 @@ jumps to the grid's search, and filters are under **Settings → Library → Fil
 to the next or previous letter (by sort title). The letter shows briefly in the middle.
 Games are sorted without a leading "A", "An" or "The", so *The Messenger* is under M.
 
-**Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified, Missing
-files, Update available, Not in TitleDB, Needs IGDB match and Hidden games. With a
+**Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified,
+Update available, Not in TitleDB and Hidden games. With a
 controller, use **Settings → Library → Filter**.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
@@ -165,7 +165,7 @@ automatically.
 2. Copy the **Client ID**, and click **New Secret** for a **Client Secret**.
 3. In S-Dock, **Settings → Game Info → IGDB and SteamGridDB keys…**: paste both, **Test IGDB**, then **Save**.
 
-Then use **Settings → Game Info → Match unmatched games on IGDB → Start now** for games without info, or **Match on IGDB…**
+Then use **Settings → Game Info → Match unmatched games on IGDB** for games without info, or **Match on IGDB…**
 (details panel → Metadata) for one game. You can search, paste an igdb.com link, or enter
 an IGDB ID.
 

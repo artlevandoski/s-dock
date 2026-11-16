@@ -242,23 +242,6 @@ public sealed class SettingsPageTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Matching_on_IGDB_starts_only_from_Start_now()
-    {
-        using var lib = _env.OpenLibrary();
-        lib.AddEdition("Alpha", Generations.Switch1, _env.Game());
-        var (vm, window, _) = Open(lib);
-        Pad(window, PadAction.Menu);
-        GoToSection(window, vm, "Game Info");
-        var heading = vm.SettingsRows.Single(r => r.Label == "Match unmatched games on IGDB");
-        Assert.False(heading.Selectable);                          // the heading can't be chosen
-        Assert.Equal("1 game unmatched", heading.ValueText);
-        var index = vm.SettingsRows.IndexOf(heading);
-        Assert.Equal("Start now", vm.SettingsRows[index + 1].Label);
-        Assert.True(vm.SettingsRows[index + 1].IsAction);
-        window.Close();
-    }
-
-    [AvaloniaFact]
     public async Task Game_info_shows_progress_and_cancel_while_an_update_runs()
     {
         using var lib = _env.OpenLibrary();

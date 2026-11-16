@@ -286,9 +286,7 @@ public sealed partial class MainViewModel
                 () => !IsMatchingAll));
             rows.Add(Toggle("Use nx-versions", "Latest known update versions and release dates, refreshed with TitleDB.",
                 () => UseNxVersions, () => UseNxVersions = !UseNxVersions));
-            // Choosing the heading does nothing by itself; matching starts only from Start now.
-            rows.Add(Info("Match unmatched games on IGDB", UnmatchedOnIgdbText, "For games TitleDB doesn't list. Needs IGDB keys."));
-            rows.Add(Action("Start now", "Look up every unmatched game on IGDB, with its logo. Cancel keeps what's done.",
+            rows.Add(Action("Match unmatched games on IGDB", "For games TitleDB doesn't list. Needs IGDB keys.",
                 MatchUnmatchedCommand, enabled: () => !IsMatchingAll));
             rows.Add(Action("Get missing logos", "Logos from IGDB, then SteamGridDB.", GetMissingLogosCommand, enabled: () => !IsMatchingAll));
             rows.Add(Action("IGDB and SteamGridDB keys…", "Your own free keys, kept only on this PC.", IgdbSettingsCommand,
@@ -315,12 +313,6 @@ public sealed partial class MainViewModel
                 _library.SetGenerationDefault(generation, v);
                 RebuildEmulatorChoices();
             });
-    }
-
-    private string UnmatchedOnIgdbText()
-    {
-        var n = _all.Count(i => i.Edition.IgdbId is null);
-        return n switch { 0 => "All matched", 1 => "1 game unmatched", _ => $"{n} games unmatched" };
     }
 
     [RelayCommand] private void Quit() => QuitRequested?.Invoke();

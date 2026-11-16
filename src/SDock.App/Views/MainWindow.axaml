@@ -207,7 +207,7 @@
             </ListBox.ItemTemplate>
           </ListBox>
           <ComboBox Classes="chip" ItemsSource="{Binding MoreFilters}" SelectedItem="{Binding MoreFilter}"
-                    PlaceholderText="More filters" MinWidth="150" ToolTip.Tip="Unclassified, missing files, needs IGDB match" />
+                    PlaceholderText="More filters" MinWidth="150" ToolTip.Tip="Unclassified, update available, not in TitleDB, hidden games" />
           <ComboBox Classes="chip" ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
                     IsVisible="{Binding IsArcade}" />
           <Button Classes="subtle" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />

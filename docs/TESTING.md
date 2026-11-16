@@ -80,7 +80,7 @@ Run by hand with your own emulator and game folder, and record results below.
 12. Run **Update from TitleDB**: square covers, banners, descriptions, publisher and
     players appear. Run it again (it finishes quickly). Check **More filters → Not in
     TitleDB** and **Update available**.
-13. Enter IGDB credentials (Test IGDB succeeds), run **Match unmatched games on IGDB → Start now** (choosing the heading alone starts nothing), and
+13. Enter IGDB credentials (Test IGDB succeeds), run **Match unmatched games on IGDB**, and
     fix one game with **Match on IGDB…** using a pasted igdb.com link.
 14. Add a SteamGridDB key and run **Get Missing Logos**. Logos replace the names.
 15. Use **Choose Cover…** (including a file from your PC), **Choose Background…** and

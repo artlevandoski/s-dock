@@ -263,7 +263,7 @@ public sealed class MetadataTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task Match_unmatched_then_needs_match_filter_shows_the_rest()
+    public async Task Match_unmatched_leaves_the_rest_to_match_by_hand()
     {
         SeedGames();
         using var lib = _env.OpenLibrary();
@@ -280,8 +280,8 @@ public sealed class MetadataTests : IDisposable
         Assert.True(kirby.IsMatched);
         Ui.WaitUntil(() => kirby.Cover is not null); // real artwork instead of the placeholder
 
-        vm.GenerationFilter = FilterOption.Generation.Single(o => o.Value == FilterOption.NeedsMatchValue);
-        Assert.Equal("Puzzle Quest", Assert.Single(vm.Items).Title);
+        Assert.False(vm.Items.Single(i => i.Title == "Puzzle Quest").IsMatched);
+        Assert.DoesNotContain(FilterOption.Generation, o => o.Label is "Needs IGDB match" or "Missing files");
     }
 
     [AvaloniaFact]

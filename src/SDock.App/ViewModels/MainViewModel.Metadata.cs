@@ -446,7 +446,7 @@ public sealed partial class MainViewModel
             Refresh();
             var text = $"IGDB: {s.Matched} matched";
             if (logos > 0) text += $", {logos} logo(s)";
-            if (s.NeedsMatch + s.NotFound > 0) text += $", {s.NeedsMatch + s.NotFound} need a manual match (filter: Needs IGDB match)";
+            if (s.NeedsMatch + s.NotFound > 0) text += $", {s.NeedsMatch + s.NotFound} need a manual match (Match on IGDB… in Game Actions)";
             if (s.Failed > 0) text += $", {s.Failed} failed";
             if (s.Cancelled) text += " · cancelled";
             StatusText = text + ".";
