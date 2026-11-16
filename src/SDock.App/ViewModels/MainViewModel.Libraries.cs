@@ -102,14 +102,26 @@ public sealed partial class MainViewModel
         SelectedLibraryTab = LibraryTabs.FirstOrDefault(t => t.Id == saved) ?? LibraryTabs[0];
         _includeNeogeo = _library.IncludeAcaNeogeo;
         _includeSegaAges = _library.IncludeSegaAges;
-        // One view for every library. Earlier builds saved it per library; fall back to Main's.
-        IsCarousel = (_library.GetSetting(ViewKey) ?? _library.GetSetting(StateKey(Libraries.Main, "view"))) == ViewCarousel;
+        // S-Dock opens in the launch view (Settings → Library). Earlier builds saved the last view, some per library;
+        // that value is the launch view until it's changed.
+        IsCarousel = LaunchInCarousel;
         LoadLibraryState();
         _loadingState = false;
     }
 
-    /// <summary>Grid or carousel, shared by all libraries.</summary>
+    /// <summary>The view S-Dock opens in (grid or carousel), shared by all libraries.</summary>
     public const string ViewKey = "view";
+
+    /// <summary>Settings → Library → Launch view. Y (or the view buttons) only switch the view for now.</summary>
+    public bool LaunchInCarousel
+    {
+        get => (_library.GetSetting(ViewKey) ?? _library.GetSetting(StateKey(Libraries.Main, "view"))) == ViewCarousel;
+        set
+        {
+            _library.SetSetting(ViewKey, value ? ViewCarousel : ViewGrid);
+            OnPropertyChanged();
+        }
+    }
 
     // ----------------------------------------------------------------- library tabs
     [ObservableProperty]
@@ -164,12 +176,6 @@ public sealed partial class MainViewModel
     /// <summary>The selected game's art fills the window in the carousel and stays faint behind the grid.</summary>
     public double BackdropOpacity => IsCarousel ? 0.8 : 0.16;
     public string ViewToggleLabel => IsCarousel ? "Grid View" : "Carousel View";
-
-    partial void OnIsCarouselChanged(bool value)
-    {
-        if (!_loadingState)
-            _library.SetSetting(ViewKey, value ? ViewCarousel : ViewGrid);
-    }
 
     [RelayCommand]
     private void ToggleView() => IsCarousel = !IsCarousel;

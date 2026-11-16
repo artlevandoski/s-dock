@@ -7,7 +7,7 @@
         Title="S-Dock"
         Icon="avares://S-Dock/Assets/sdock.ico"
         Width="1280" Height="820" MinWidth="960" MinHeight="640"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen" WindowState="Maximized">
   <Window.KeyBindings>
     <KeyBinding Gesture="Ctrl+O" Command="{Binding AddFolderCommand}" />
     <KeyBinding Gesture="Ctrl+E" Command="{Binding EmulatorSettingsCommand}" />

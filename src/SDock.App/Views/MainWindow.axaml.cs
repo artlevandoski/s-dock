@@ -15,7 +15,8 @@ public partial class MainWindow : Window
     private const double CarouselItemWidth = 300 + 2 * 3 + 2 * 18; // cover + ring border + horizontal margins
     private bool _closeConfirmed;
     private DispatcherTimer? _scrollAnimation;
-    private WindowState _stateBeforeFullScreen = WindowState.Normal;
+    /// <summary>The grid opens maximized, including after starting in the carousel.</summary>
+    private WindowState _stateBeforeFullScreen = WindowState.Maximized;
 
     public MainWindow()
     {

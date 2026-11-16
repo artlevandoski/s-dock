@@ -18,8 +18,8 @@ the real services. Set `SDOCK_SCREENSHOTS` to a folder to also save PNGs of each
 | Emulator choice | game's choice → generation default → ask; Unclassified always asks; remember for the game or as default; Launch With… saves nothing; two builds side by side; removing a profile clears choices that used it; Emulators folder discovery |
 | PC versions and No emulator | .exe games always run on their own, even with no emulator set up; No emulator as a game's choice or the Switch 2 default (Switch 1 unaffected), remembered, and refused for a file that isn't a program; Add Game (.exe) with a suggested name, never added twice; title IDs from bracketed names; Set Title ID checks the format |
 | Playing | Eden starts in full screen (setting remembered, never added twice, other emulators untouched); one- or two-press exit within 3 seconds; closing a running emulator |
-| Libraries and browsing | Arcade Archives, ACA NEOGEO and SEGA AGES by title prefix; manual pins and options persist; per-library search, filters and selection; hide and unhide; sort titles; Update available, Not in TitleDB and Hidden filters |
-| Grid and carousel | one shared view; the centred cover is larger and stays centred; carousel is full screen and the grid restores the window; covers and the details band keep their size and place while browsing; right-click menu differs by view |
+| Libraries and browsing | Arcade Archives, ACA NEOGEO and SEGA AGES by title prefix; manual pins and options persist; per-library search, filters and selection; hide and unhide; sort titles; leading A / An / The ignored when sorting; Update available, Not in TitleDB and Hidden filters |
+| Grid and carousel | one shared view; the centred cover is larger and stays centred; carousel is full screen and the grid opens and comes back maximized; S-Dock opens in the launch view; covers and the details band keep their size and place while browsing; right-click menu differs by view |
 | Settings page | opens the same in grid and carousel; Up/Down, A/Right in, Left/Right change a choice, B back one step then closed; switches, choices and actions; default emulators chosen on the page; dialogs return to the same setting; keyboard (arrows, Enter, Esc) without moving the games underneath; mouse clicks on sections, arrows and Close; Game Info shows status |
 | Menus | settings apply at once and the tick follows; actions close the menu then run; B goes back a page or closes |
 | Background | artwork, colour from the cover (toned down for readable text) or plain; remembered |
@@ -80,7 +80,7 @@ Run by hand with your own emulator and game folder, and record results below.
 12. Run **Update from TitleDB**: square covers, banners, descriptions, publisher and
     players appear. Run it again (it finishes quickly). Check **More filters → Not in
     TitleDB** and **Update available**.
-13. Enter IGDB credentials (Test IGDB succeeds), run **Match Unmatched Games on IGDB**, and
+13. Enter IGDB credentials (Test IGDB succeeds), run **Match unmatched games on IGDB → Start now** (choosing the heading alone starts nothing), and
     fix one game with **Match on IGDB…** using a pasted igdb.com link.
 14. Add a SteamGridDB key and run **Get Missing Logos**. Logos replace the names.
 15. Use **Choose Cover…** (including a file from your PC), **Choose Background…** and

@@ -59,7 +59,20 @@ public sealed class Edition
     /// <summary>The user's own sort title (e.g. "Zelda 01" or "Legend of Zelda"), or null to sort by the title.</summary>
     public string? SortTitle { get; init; }
 
-    public string SortKey => SortTitle ?? Title;
+    /// <summary>What games are sorted (and jumped by letter) by: the sort title as typed, or else the title
+    /// without a leading "A", "An" or "The" ("The Messenger" sorts under M).</summary>
+    public string SortKey => SortTitle ?? WithoutLeadingArticle(Title);
+
+    private static readonly string[] Articles = ["The ", "An ", "A "];
+
+    public static string WithoutLeadingArticle(string title)
+    {
+        var t = title.Trim();
+        foreach (var a in Articles)
+            if (t.Length > a.Length && t.StartsWith(a, StringComparison.OrdinalIgnoreCase) && t[a.Length..].Trim().Length > 0)
+                return t[a.Length..].TrimStart();
+        return t;
+    }
     public List<EditionFile> Files { get; init; } = [];
 
     public EditionFile? PrimaryFile => Files.FirstOrDefault(f => f.Role == "primary") ?? Files.FirstOrDefault();

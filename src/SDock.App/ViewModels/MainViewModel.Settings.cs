@@ -241,8 +241,8 @@ public sealed partial class MainViewModel
     [
         new("Library", "IconLayers", "Your games, how they're shown and filtered, and adding more.", () =>
         [
-            Choice("View", "Grid shows a details panel; the carousel is full screen. Y switches too.",
-                [(false, "Grid"), (true, "Carousel")], () => IsCarousel, v => IsCarousel = v),
+            Choice("Launch view", "The view S-Dock opens in. Y switches between them any time.",
+                [(false, "Grid"), (true, "Carousel")], () => LaunchInCarousel, v => LaunchInCarousel = v),
             Choice("Filter", "Which games are shown in both views.",
                 FilterOption.Generation.Select(f => (f, f.Label)).ToList(), () => GenerationFilter, v => GenerationFilter = v),
             Toggle("Include ACA NEOGEO", "Show ACA NEOGEO titles in Arcade Archives instead of Main Library.",
@@ -286,7 +286,9 @@ public sealed partial class MainViewModel
                 () => !IsMatchingAll));
             rows.Add(Toggle("Use nx-versions", "Latest known update versions and release dates, refreshed with TitleDB.",
                 () => UseNxVersions, () => UseNxVersions = !UseNxVersions));
-            rows.Add(Action("Match unmatched games on IGDB", "For games TitleDB doesn't list. Needs IGDB keys.",
+            // Choosing the heading does nothing by itself; matching starts only from Start now.
+            rows.Add(Info("Match unmatched games on IGDB", UnmatchedOnIgdbText, "For games TitleDB doesn't list. Needs IGDB keys."));
+            rows.Add(Action("Start now", "Look up every unmatched game on IGDB, with its logo. Cancel keeps what's done.",
                 MatchUnmatchedCommand, enabled: () => !IsMatchingAll));
             rows.Add(Action("Get missing logos", "Logos from IGDB, then SteamGridDB.", GetMissingLogosCommand, enabled: () => !IsMatchingAll));
             rows.Add(Action("IGDB and SteamGridDB keys…", "Your own free keys, kept only on this PC.", IgdbSettingsCommand,
@@ -313,6 +315,12 @@ public sealed partial class MainViewModel
                 _library.SetGenerationDefault(generation, v);
                 RebuildEmulatorChoices();
             });
+    }
+
+    private string UnmatchedOnIgdbText()
+    {
+        var n = _all.Count(i => i.Edition.IgdbId is null);
+        return n switch { 0 => "All matched", 1 => "1 game unmatched", _ => $"{n} games unmatched" };
     }
 
     [RelayCommand] private void Quit() => QuitRequested?.Invoke();

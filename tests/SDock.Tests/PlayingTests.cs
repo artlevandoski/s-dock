@@ -104,7 +104,7 @@ public sealed class PlayingTests : IDisposable
         var vm = new MainViewModel(lib, launcher, new FakeUi());
         var window = new MainWindow { DataContext = vm, Width = 1180, Height = 780 };
         window.Show();
-        Assert.Equal(WindowState.Normal, window.WindowState);
+        Assert.Equal(WindowState.Maximized, window.WindowState);  // the grid opens maximized
 
         vm.IsCarousel = true;
         Dispatcher.UIThread.RunJobs();
@@ -112,7 +112,7 @@ public sealed class PlayingTests : IDisposable
 
         vm.IsCarousel = false;
         Dispatcher.UIThread.RunJobs();
-        Assert.Equal(WindowState.Normal, window.WindowState);
+        Assert.Equal(WindowState.Maximized, window.WindowState);
         window.Close();
     }
 

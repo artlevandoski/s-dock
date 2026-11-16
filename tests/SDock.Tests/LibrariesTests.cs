@@ -211,13 +211,13 @@ public sealed class LibrariesTests : IDisposable
         Assert.Equal("quest", vm.SearchText);
         Assert.Equal("Super Placeholder Quest", vm.SelectedTitle);
 
-        // Restart: view, filters and current library are remembered (search is per session).
+        // Restart: filters and current library are remembered (search is per session); the view is the launch view.
         vm.SelectedLibraryTab = vm.LibraryTabs[1];
         var again = new MainViewModel(lib, launcher, new FakeUi());
         Assert.Equal(Libraries.Arcade, again.CurrentLibrary);
         Assert.Equal(ArcadeSeries.Aca2, again.SeriesFilter.Value);
         again.SelectedLibraryTab = again.LibraryTabs[0];
-        Assert.True(again.IsCarousel);
+        Assert.False(again.IsCarousel);
         Assert.Equal("Super Placeholder Quest", again.SelectedTitle);
     }
 

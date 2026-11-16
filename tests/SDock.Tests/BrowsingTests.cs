@@ -29,16 +29,44 @@ public sealed class BrowsingTests : IDisposable
             lib.AddEdition("Animal Crossing", Generations.Switch1, _env.Game("AC.nsp"));
             botw = lib.AddEdition("The Legend of Zelda Breath of the Wild", Generations.Switch1, _env.Game("BOTW.nsp"));
             lib.AddEdition("Mario Kart 8", Generations.Switch1, _env.Game("MK8.nsp"));
-            Assert.Equal("The Legend of Zelda Breath of the Wild", lib.ListEditions()[^1].Title);
-            lib.SetSortTitle(botw, "  Legend of Zelda 1 ");
+            // A leading "The" is ignored: Zelda sorts under L.
+            Assert.Equal(["Animal Crossing", "The Legend of Zelda Breath of the Wild", "Mario Kart 8"], lib.ListEditions().Select(e => e.Title));
+            lib.SetSortTitle(botw, "  Zelda 1 ");
         }
         using (var lib = _env.OpenLibrary())
         {
-            Assert.Equal(["Animal Crossing", "The Legend of Zelda Breath of the Wild", "Mario Kart 8"], lib.ListEditions().Select(e => e.Title));
-            Assert.Equal("Legend of Zelda 1", lib.GetEdition(botw)!.SortTitle);
+            Assert.Equal(["Animal Crossing", "Mario Kart 8", "The Legend of Zelda Breath of the Wild"], lib.ListEditions().Select(e => e.Title));
+            Assert.Equal("Zelda 1", lib.GetEdition(botw)!.SortTitle);
             lib.SetSortTitle(botw, " ");
             Assert.Null(lib.GetEdition(botw)!.SortTitle);
         }
+    }
+
+    [Theory]
+    [InlineData("The Messenger", "Messenger")]
+    [InlineData("A Hat in Time", "Hat in Time")]
+    [InlineData("An Untitled Story", "Untitled Story")]
+    [InlineData("the touryst", "touryst")]
+    [InlineData("Theme Park", "Theme Park")]       // only whole words
+    [InlineData("Astral Chain", "Astral Chain")]
+    [InlineData("A", "A")]                         // nothing left: kept
+    [InlineData("The ", "The")]
+    public void Leading_articles_are_ignored_when_sorting(string title, string key) =>
+        Assert.Equal(key, Edition.WithoutLeadingArticle(title));
+
+    [Fact]
+    public void Games_sort_without_leading_articles_but_a_sort_title_is_used_as_typed()
+    {
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("The Messenger", Generations.Switch1, _env.Game("M.nsp"));
+        lib.AddEdition("A Hat in Time", Generations.Switch1, _env.Game("H.nsp"));
+        lib.AddEdition("Celeste", Generations.Switch1, _env.Game("C.nsp"));
+        var touryst = lib.AddEdition("The Touryst", Generations.Switch1, _env.Game("T.nsp"));
+        Assert.Equal(["Celeste", "A Hat in Time", "The Messenger", "The Touryst"], lib.ListEditions().Select(e => e.Title));
+        lib.SetSortTitle(touryst, "The Beginning");    // typed by you: sorted exactly so, under T
+        Assert.Equal(["Celeste", "A Hat in Time", "The Messenger", "The Touryst"], lib.ListEditions().Select(e => e.Title));
+        lib.SetSortTitle(touryst, "Aaa");
+        Assert.Equal("The Touryst", lib.ListEditions()[0].Title);
     }
 
     [AvaloniaFact]

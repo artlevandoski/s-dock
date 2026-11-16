@@ -69,15 +69,17 @@ automatically; turn on **Settings → Library → Include ACA NEOGEO / Include S
 series too.
 The **Library** dropdown in the details panel moves any game by hand.
 
-**Grid or carousel.** The grid shows a details panel beside the covers. The carousel fills
+**Grid or carousel.** The grid shows a details panel beside the covers and opens maximized. The carousel fills
 the screen with one row of covers above the game's name and the first sentence of its
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
-screen. Both views share the same selection. The carousel is kept clean: search, Add Folder,
+screen. Both views share the same selection, and S-Dock opens in the one chosen under
+**Settings → Library → Launch view**. The carousel is kept clean: search, Add Folder,
 the filter bar and the view buttons appear only in the grid (Y or Ctrl+G switches views, Ctrl+F
 jumps to the grid's search, and filters are under **Settings → Library → Filter** in either view).
 
 **Jump by letter.** Up/Down in the carousel, LT/RT on a controller, or Page Up/Page Down jump
 to the next or previous letter (by sort title). The letter shows briefly in the middle.
+Games are sorted without a leading "A", "An" or "The", so *The Messenger* is under M.
 
 **Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified, Missing
 files, Update available, Not in TitleDB, Needs IGDB match and Hidden games. With a
@@ -109,7 +111,7 @@ go back with B or Esc.
 | Choose Cover / Background / Logo… | Pick from downloaded artwork or browse your PC; *Use Default* goes back |
 | Edit Description… / Edit Carousel Text… | Write your own description, or the one line shown in the carousel |
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
-| Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it |
+| Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it (used exactly as typed) |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
 | Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
@@ -163,7 +165,7 @@ automatically.
 2. Copy the **Client ID**, and click **New Secret** for a **Client Secret**.
 3. In S-Dock, **Settings → Game Info → IGDB and SteamGridDB keys…**: paste both, **Test IGDB**, then **Save**.
 
-Then use **Match Unmatched Games on IGDB** for games without info, or **Match on IGDB…**
+Then use **Settings → Game Info → Match unmatched games on IGDB → Start now** for games without info, or **Match on IGDB…**
 (details panel → Metadata) for one game. You can search, paste an igdb.com link, or enter
 an IGDB ID.
 
