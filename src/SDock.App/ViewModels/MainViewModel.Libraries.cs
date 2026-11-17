@@ -344,7 +344,7 @@ public sealed partial class MainViewModel
             : _all.Any(i => InTab(i, CurrentLibrary) && !i.IsHidden)
                 ? "No games match the search or filters."
                 : IsFavoritesTab
-                    ? "No favorites yet.\nMark a game with X in the carousel, the ☆ button, or Game Actions → Add to Favorites."
+                    ? "No favorites yet.\nMark a game with the ☆ button beside Play, or Game Actions → Add to Favorites."
                 : IsArcade
                     ? "No Arcade Archives titles yet.\nTitles starting with “Arcade Archives” or “Arcade Archives 2” appear here automatically."
                     : "No games in Main Library.";

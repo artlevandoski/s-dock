@@ -179,11 +179,7 @@ public sealed class GamepadService
                 case PadAction.PreviousLibrary: vm.PreviousLibraryCommand.Execute(null); main.FocusSelectedCover(); return;
                 case PadAction.NextLibrary: vm.NextLibraryCommand.Execute(null); main.FocusSelectedCover(); return;
                 case PadAction.ToggleView: vm.ToggleViewCommand.Execute(null); return;
-                // X: Game Actions in the grid; in the carousel (no Game Actions there yet) it marks a favorite.
-                case PadAction.GameActions:
-                    if (vm.IsCarousel) vm.ToggleFavoriteCommand.Execute(null);
-                    else main.OpenGameActions();
-                    return;
+                case PadAction.GameActions: main.OpenGameActions(); return;
                 case PadAction.Play: if (vm.CanPlay) vm.PlayCommand.Execute(null); return;
                 case PadAction.Menu: vm.OpenSettings(); return;
                 case PadAction.PreviousLetter: main.JumpLetter(-1); return;

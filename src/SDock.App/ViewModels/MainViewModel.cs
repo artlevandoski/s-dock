@@ -212,15 +212,7 @@ public sealed partial class MainViewModel : ObservableObject
             EmulatorChoices.Add(new ProfileChoice(LaunchRouter.NoEmulatorId, "No emulator (run the game's .exe)"));
             var chosen = _library.GetLaunchOverride(e.Id);
             SelectedEmulatorChoice = EmulatorChoices.FirstOrDefault(c => c.Id == chosen) ?? EmulatorChoices[0];
-            var route = LaunchRouter.Resolve(_library, e);
-            RouteText = route switch
-            {
-                { Direct: true, Source: RouteSource.GameChoice } => "Runs directly, no emulator (this game's choice)",
-                { Direct: true } => $"Runs directly, no emulator ({Generations.Label(e.Generation)} default)",
-                { Source: RouteSource.GameChoice } => $"Plays with {route.Profile!.Name} (this game's choice)",
-                { Source: RouteSource.GenerationDefault } => $"Plays with {route.Profile!.Name} ({Generations.Label(e.Generation)} default)",
-                _ => _library.ListProfiles().Count == 0 ? "No emulator set up yet" : "Play will ask which emulator to use",
-            };
+            UpdateRouteText();
         }
         else
         {
@@ -228,20 +220,64 @@ public sealed partial class MainViewModel : ObservableObject
             RouteText = "";
         }
         _rebuildingEmulatorChoices = false;
+        // Clearing the list empties the dropdown, and the choice it should show again is an equal record (so setting it
+        // raised nothing): tell the dropdown again.
+        OnPropertyChanged(nameof(SelectedEmulatorChoice));
+        OnPropertyChanged(nameof(EmulatorChoiceLabel));
+    }
+
+    /// <summary>"Plays with Eden (Switch 1 default)" and the like, for the selected game.</summary>
+    private void UpdateRouteText()
+    {
+        if (SelectedItem?.Edition is not { IsProgram: false } e) return;
+        var route = LaunchRouter.Resolve(_library, e);
+        RouteText = route switch
+        {
+            { Direct: true, Source: RouteSource.GameChoice } => "Runs directly, no emulator (this game's choice)",
+            { Direct: true } => $"Runs directly, no emulator ({Generations.Label(e.Generation)} default)",
+            { Source: RouteSource.GameChoice } => $"Plays with {route.Profile!.Name} (this game's choice)",
+            { Source: RouteSource.GenerationDefault } => $"Plays with {route.Profile!.Name} ({Generations.Label(e.Generation)} default)",
+            _ => _library.ListProfiles().Count == 0 ? "No emulator set up yet" : "Play will ask which emulator to use",
+        };
+    }
+
+    /// <summary>Short name of the emulator the selected game plays with, for the carousel's Emulator button.</summary>
+    public string EmulatorChoiceLabel
+    {
+        get
+        {
+            if (SelectedItem?.Edition is not { } e) return "";
+            if (e.IsProgram) return "PC version";
+            var route = LaunchRouter.Resolve(_library, e);
+            return route.Direct ? "No emulator" : route.Profile?.Name ?? "Choose emulator";
+        }
     }
 
     partial void OnSelectedEmulatorChoiceChanged(ProfileChoice? value)
     {
         if (_rebuildingEmulatorChoices || SelectedItem is not { } item) return;
         if (item.Edition.IsProgram) return; // a PC version always runs on its own
-        if (value is null)
+        if (value is null) return;          // the dropdown clearing for a moment; nothing was chosen
+        // Save the choice and update the text, but leave the list alone: rebuilding it in the middle of the
+        // dropdown's own selection change is what left it empty.
+        SetEmulatorChoice(item, value.Id);
+    }
+
+    /// <summary>The game's own emulator (a profile id, "none" for no emulator, or null for the default).</summary>
+    public void SetEmulatorChoice(EditionItem item, string? profileId)
+    {
+        _library.SetLaunchOverride(item.Id, profileId);
+        if (SelectedItem?.Id != item.Id) return;
+        UpdateRouteText();
+        OnPropertyChanged(nameof(EmulatorChoiceLabel));
+        OnPropertyChanged(nameof(EmuReadyText));
+        OnPropertyChanged(nameof(SelectedTags));
+        if (SelectedEmulatorChoice?.Id != profileId)
         {
-            // The dropdown briefly clears while items change; fall back to "Use default".
-            RebuildEmulatorChoices();
-            return;
+            _rebuildingEmulatorChoices = true;
+            SelectedEmulatorChoice = EmulatorChoices.FirstOrDefault(c => c.Id == profileId) ?? EmulatorChoices.FirstOrDefault();
+            _rebuildingEmulatorChoices = false;
         }
-        _library.SetLaunchOverride(item.Id, value.Id);
-        RebuildEmulatorChoices();
     }
 
     /// <summary>Reload from the database, rebuild the grid, and keep or restore the selection.</summary>

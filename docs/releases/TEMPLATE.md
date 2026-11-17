@@ -46,7 +46,6 @@ the folder.
 
 ## Known limitations
 
-- Game Actions are available in the grid only; the carousel is kept to browsing and playing.
 - Typing (search, text boxes) and Windows' file and folder pickers still need a keyboard and mouse.
 - Automatic updates aren't switched on yet.
 - The app isn't code-signed (see the SmartScreen note above).

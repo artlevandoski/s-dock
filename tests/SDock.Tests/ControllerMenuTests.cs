@@ -58,14 +58,20 @@ public sealed class ControllerMenuTests : IDisposable
         var (vm, window, ui) = Open(lib, carousel: true);
         vm.Select(zed);
 
-        // Game Actions are off in the carousel for now: X and right-click do nothing, and the hint is hidden.
+        // The carousel's Game Actions are a short menu: emulator, favorites, hiding, and the way to the rest.
         Press(window, PadAction.GameActions);
+        Assert.True(vm.IsMenuOpen);
+        Assert.Equal(["Emulator: Choose emulator", "Add to Favorites", "Hide Game", "More Game Actions (Grid View)"],
+            vm.MenuItems.Select(m => m.Label));
+        Press(window, PadAction.Cancel);
         Assert.False(vm.IsMenuOpen);
         var carouselCover = window.FindControl<ListBox>("CarouselList")!.GetVisualDescendants().OfType<ListBoxItem>().First();
         carouselCover.RaiseEvent(new ContextRequestedEventArgs { RoutedEvent = Control.ContextRequestedEvent, Source = carouselCover });
         Dispatcher.UIThread.RunJobs();
-        Assert.False(vm.IsMenuOpen);
-        Assert.False(window.FindControl<TextBlock>("GameActionsHint")!.IsEffectivelyVisible);
+        Assert.True(vm.IsMenuOpen);                                // right-click too
+        Press(window, PadAction.Cancel);
+        vm.Select(zed);
+        Assert.True(window.FindControl<TextBlock>("GameActionsHint")!.IsEffectivelyVisible);
 
         // In the grid they work.
         Press(window, PadAction.ToggleView);

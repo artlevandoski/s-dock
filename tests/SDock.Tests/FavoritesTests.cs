@@ -45,7 +45,7 @@ public sealed class FavoritesTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void X_in_the_carousel_marks_a_favorite_and_the_tab_gathers_them_from_every_library()
+    public void Carousel_marks_a_favorite_and_the_tab_gathers_them_from_every_library()
     {
         using var lib = _env.OpenLibrary();
         lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
@@ -56,12 +56,12 @@ public sealed class FavoritesTests : IDisposable
 
         vm.Select(vm.Items.Single(i => i.Title == "Bravo").Id);
         Assert.Equal("☆", vm.FavoriteGlyph);
-        Press(window, PadAction.GameActions);                      // X
-        Assert.False(vm.IsMenuOpen);                               // Game Actions stay off in the carousel
+        Press(window, PadAction.GameActions);                      // X: Game Actions
+        vm.ActivateMenu(vm.MenuItems.Single(m => m.Label == "Add to Favorites"));
+        Dispatcher.UIThread.RunJobs();
         Assert.True(vm.SelectedItem!.IsFavorite);
         Assert.Equal("Bravo", vm.SelectedTitle);                   // still on the same game
         Assert.Equal("★", vm.FavoriteGlyph);
-        Assert.True(window.FindControl<TextBlock>("FavoriteHint")!.IsEffectivelyVisible);
         lib.SetFavorite(aca, true);
         vm.Refresh();
 
@@ -74,7 +74,8 @@ public sealed class FavoritesTests : IDisposable
 
         // Unmarked in Favorites: it leaves the tab and the selection moves to a neighbour.
         vm.Select(vm.Items.Single(i => i.Title == "Bravo").Id);
-        Press(window, PadAction.GameActions);
+        window.FindControl<Button>("CarouselFavoriteButton")!.Command!.Execute(null); // the ★ button
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal(["Arcade Archives Galaga"], vm.Items.Select(i => i.Title));
         Assert.Equal("Arcade Archives Galaga", vm.SelectedTitle);
         Assert.Equal([aca], lib.FavoriteEditions());

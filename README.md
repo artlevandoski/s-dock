@@ -70,8 +70,8 @@ series too.
 The **Library** dropdown in the details panel moves any game by hand.
 
 **Favorites.** The *Favorites* tab gathers the games you've marked, from every library. Mark or
-unmark a game with **X** in the carousel, the **☆** button beside Play (grid and carousel),
-**Game Actions → Add to Favorites**, or Ctrl+D. Favorite covers show a gold star.
+unmark a game with the **☆** button beside Play (grid and carousel), **Game Actions → Add to
+Favorites**, or Ctrl+D. Favorite covers show a gold star.
 
 **Grid or carousel.** The grid shows a details panel beside the covers and opens maximized. The carousel fills
 the screen with one row of covers above the game's name and the first sentence of its
@@ -90,10 +90,12 @@ Update available, Not in TitleDB and Hidden games. With a
 controller, use **Settings → Library → Filter**.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
-its generation's default, and otherwise asks you. **Launch With…** picks an emulator just
-once. When the game closes, S-Dock comes back with the same game selected.
+its generation's default, and otherwise asks you. Choose a game's own emulator in either view with
+**Game Actions → Emulator** (in the carousel also the emulator button beside Play), or in the grid's
+**Game settings → Emulator** dropdown. **Launch With…** picks an emulator just once. When the game
+closes, S-Dock comes back with the same game selected.
 
-- **No emulator** is a choice in each game's **Emulator** dropdown, and for the Switch 2
+- **No emulator** is a choice in each game's emulator list, and for the Switch 2
   default in **Settings → Emulators**. It runs the game's own `.exe`. PC versions always run this
   way.
 
@@ -103,9 +105,10 @@ once. When the game closes, S-Dock comes back with the same game selected.
 - **Start Games in Full Screen** (on by default) starts Eden in full screen. For other
   emulators, add their own full-screen switch to the profile.
 
-**Game Actions** (the X button, the Game Actions button, or right-click a cover, in the grid) open
-as a list in the middle of the screen: move with the D-pad or arrow keys, choose with A or Enter,
-go back with B or Esc.
+**Game Actions** (the X button, the Game Actions button, or right-click a cover) open as a list in
+the middle of the screen: move with the D-pad or arrow keys, choose with A or Enter, go back with B
+or Esc. The carousel keeps its menu short: **Emulator**, **Add to Favorites**, **Hide Game** and
+**More Game Actions (Grid View)**; the grid has everything below.
 
 **Game Actions:**
 
@@ -117,11 +120,9 @@ go back with B or Esc.
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
 | Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it (used exactly as typed) |
 | Add to / Remove from Favorites | Mark the game as a favorite; it also shows in the **Favorites** tab |
+| Emulator › | The game's own emulator: the default, any profile, or no emulator. The tick shows the current one; a choice applies at once |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
 | Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
-
-For now, Game Actions are available in the grid only; the carousel is kept to browsing and
-playing.
 
 **Updates and DLC.** S-Dock reads the update and DLC files beside each game (for example in
 `Updates` and `DLC` subfolders) from their file names. The details show whether you have
@@ -196,7 +197,7 @@ Xbox-compatible controllers work through Windows XInput, with no extra drivers.
 | D-pad / left stick | Arrow keys | Move between covers (hold to repeat); in the carousel, Up/Down jump letters |
 | A | Enter | Play, or choose in a menu |
 | B | Esc | Back / close a menu or dialog |
-| X | Right-click | Game Actions (grid); add or remove a favorite (carousel) |
+| X | Right-click | Game Actions |
 | | Ctrl+D | Add or remove a favorite |
 | Select (Back) | | Settings |
 | Y | Ctrl+G | Grid / carousel |

@@ -25,7 +25,7 @@ public sealed partial class MenuEntry : ObservableObject
     public void Refresh() => OnPropertyChanged(nameof(IsChecked));
 }
 
-// The on-screen menu used for Game Actions (X, the button, or right-click in the grid). Settings is a page of its own.
+// The on-screen menu used for Game Actions (X, the button, or right-click). Settings is a page of its own.
 // It is a list inside the window rather than a pop-up, so the controller, keyboard and mouse all work the same way.
 public sealed partial class MainViewModel
 {
@@ -43,10 +43,44 @@ public sealed partial class MainViewModel
     [RelayCommand]
     public void OpenGameMenu()
     {
-        // Game Actions are off in the carousel for now (it's kept to browsing and playing); use the grid.
-        if (IsCarousel || SelectedItem is not { } item) return;
+        if (SelectedItem is not { } item) return;
         _menuStack.Clear();
-        ShowPage(item.Title, BuildGameMenu);
+        ShowPage(item.Title, IsCarousel ? BuildCarouselMenu : BuildGameMenu);
+    }
+
+    /// <summary>Opens Game Actions straight at the Emulator page (the carousel's Emulator button).</summary>
+    [RelayCommand]
+    public void OpenEmulatorMenu()
+    {
+        if (SelectedItem is not { } item || item.Edition.IsProgram) return;
+        _menuStack.Clear();
+        ShowPage($"Emulator for {item.Title}", BuildEmulatorPage);
+    }
+
+    /// <summary>The carousel keeps its menu short: the emulator, favorites and hiding. The rest is in the grid.</summary>
+    private IReadOnlyList<MenuEntry> BuildCarouselMenu()
+    {
+        var list = new List<MenuEntry>();
+        if (SelectedItem is { Edition.IsProgram: false })
+            list.Add(Page($"Emulator: {EmulatorChoiceLabel}", BuildEmulatorPage));
+        list.Add(Do(FavoriteMenuLabel, ToggleFavoriteCommand));
+        list.Add(Do(HideMenuLabel, ToggleHiddenCommand));
+        list.Add(Do("More Game Actions (Grid View)", ShowGridCommand));
+        return list;
+    }
+
+    /// <summary>The game's emulator: the default, a profile, or no emulator. Ticked = the current choice; it applies at once.</summary>
+    private IReadOnlyList<MenuEntry> BuildEmulatorPage()
+    {
+        if (SelectedItem is not { } item) return [];
+        var current = _library.GetLaunchOverride(item.Id);
+        MenuEntry Choice(string label, string? id) =>
+            Tick(label, () => _library.GetLaunchOverride(item.Id) == id, () => SetEmulatorChoice(item, id));
+        var list = new List<MenuEntry> { Choice(EmulatorChoices.FirstOrDefault(c => c.Id is null)?.Label ?? "Use default", null) };
+        foreach (var c in EmulatorChoices.Where(c => c.Id is not null)) list.Add(Choice(c.Label, c.Id));
+        if (current is not null && list.All(e => !e.IsChecked)) list[0] = Choice(list[0].Label, null); // a removed profile
+        list.Add(Do("Emulator Profiles…", EmulatorSettingsCommand));
+        return list;
     }
 
     private void ShowPage(string title, Func<IReadOnlyList<MenuEntry>> build)
@@ -124,6 +158,7 @@ public sealed partial class MainViewModel
         list.Add(Do("Sort Title…", SetSortTitleCommand));
         list.Add(Do(FavoriteMenuLabel, ToggleFavoriteCommand));
         list.Add(Do(HideMenuLabel, ToggleHiddenCommand));
+        if (!program) list.Add(Page($"Emulator: {EmulatorChoiceLabel}", BuildEmulatorPage));
         list.Add(Page("Game Info and Matching", () =>
         [
             Do("Refresh from TitleDB", RefreshFromTitleDbCommand),
