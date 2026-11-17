@@ -334,6 +334,12 @@
                           Command="{Binding OpenGameMenuCommand}" Content="Game Actions…" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)" />
                   <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
                              HorizontalAlignment="Center" TextAlignment="Center" />
+                  <!-- EmuReady's PC rating (Settings → Game Info); click to open the game on emuready.com. -->
+                  <Button x:Name="EmuReadyButton" Classes="subtle" HorizontalAlignment="Center" Padding="10,4" FontSize="12"
+                          IsVisible="{Binding HasEmuReadyText}" IsEnabled="{Binding CanOpenEmuReady}"
+                          Command="{Binding OpenEmuReadyCommand}" ToolTip.Tip="{Binding EmuReadyDetails}">
+                    <TextBlock Text="{Binding EmuReadyText}" TextWrapping="Wrap" TextAlignment="Center" />
+                  </Button>
                 </StackPanel>
 
                 <StackPanel Spacing="6" IsVisible="{Binding ShowMissing}">

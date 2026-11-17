@@ -11,7 +11,7 @@ namespace SDock.Core;
 /// </summary>
 public sealed class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 11;
+    public const int SchemaVersion = 12;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -125,6 +125,12 @@ public sealed class LibraryStore : IDisposable
         CREATE TABLE IF NOT EXISTS favorite_editions (
             edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
             added_at   TEXT NOT NULL
+        );
+        -- v12: EmuReady's PC ratings per game (a summary as JSON), and when they were fetched.
+        CREATE TABLE IF NOT EXISTS emuready_ratings (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            summary    TEXT NOT NULL,
+            fetched_at TEXT NOT NULL
         );
         """;
 
@@ -259,6 +265,11 @@ public sealed class LibraryStore : IDisposable
         {
             // v10 -> v11: favorites table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '11' WHERE key = 'schema_version'");
+        }
+        if (version < 12)
+        {
+            // v11 -> v12: EmuReady ratings table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '12' WHERE key = 'schema_version'");
         }
     }
 
@@ -793,6 +804,23 @@ public sealed class LibraryStore : IDisposable
         else
             Exec("DELETE FROM hidden_editions WHERE edition_id = $e", ("$e", editionId));
     }
+
+    // ------------------------------------------------------------------ EmuReady ratings
+    public Dictionary<string, Metadata.EmuReadySummary> AllEmuReady()
+    {
+        var result = new Dictionary<string, Metadata.EmuReadySummary>();
+        using var cmd = Cmd("SELECT edition_id, summary FROM emuready_ratings");
+        using var r = cmd.ExecuteReader();
+        while (r.Read())
+            if (Metadata.EmuReadySummary.FromJson(r.GetString(1)) is { } s) result[r.GetString(0)] = s;
+        return result;
+    }
+
+    public void SetEmuReady(string editionId, Metadata.EmuReadySummary summary) =>
+        Exec("""
+             INSERT INTO emuready_ratings(edition_id, summary, fetched_at) VALUES ($e, $s, $t)
+             ON CONFLICT(edition_id) DO UPDATE SET summary = excluded.summary, fetched_at = excluded.fetched_at
+             """, ("$e", editionId), ("$s", summary.ToJson()), ("$t", UtcNow()));
 
     // ------------------------------------------------------------------ favorites
     public HashSet<string> FavoriteEditions()

@@ -153,6 +153,14 @@ IGDB.
 | [nx-versions](https://github.com/16BitWonder/nx-versions) | Latest known update for each game, and dates | None. On by default (**Settings → Game Info → Use nx-versions**). |
 | [IGDB](https://www.igdb.com/) | Backup for games TitleDB doesn't list, and logos | Free Twitch developer credentials (below) |
 | [SteamGridDB](https://www.steamgriddb.com/) | More logos, covers and backgrounds | Free API key (optional) |
+| [EmuReady](https://www.emuready.com/) | How well each game runs on PC emulators, from community reports | None. Off by default (**Settings → Game Info → Show EmuReady ratings**). |
+
+**EmuReady (preview).** With **Show EmuReady ratings** on, the game you stop on is looked up on
+emuready.com (at most once a week per game) and its rating shows under Play, e.g. *EmuReady: Great on
+Eden · 9 PC reports*, plus a tag in the carousel. It uses the rating for the emulator the game plays
+with, or the most-reported one, and Windows reports first. When there are no PC reports, handheld
+reports are used and labelled as such. Click the rating in the grid to open the game on EmuReady.
+Games are matched by name and console, so some aren't found; nothing is shown for those.
 
 **TitleDB.** **Settings → Game Info → Update from TitleDB** downloads the US English listing, then the UK,
 Australian and Japanese listings for games it lacks, and merges them into one file in

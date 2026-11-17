@@ -286,6 +286,9 @@ public sealed partial class MainViewModel
                 () => !IsMatchingAll));
             rows.Add(Toggle("Use nx-versions", "Latest known update versions and release dates, refreshed with TitleDB.",
                 () => UseNxVersions, () => UseNxVersions = !UseNxVersions));
+            rows.Add(Toggle("Show EmuReady ratings",
+                "How each game runs on PC emulators, from the community reports at emuready.com. Looked up as you browse.",
+                () => ShowEmuReady, () => ShowEmuReady = !ShowEmuReady));
             rows.Add(Action("Match unmatched games on IGDB", "For games TitleDB doesn't list. Needs IGDB keys.",
                 MatchUnmatchedCommand, enabled: () => !IsMatchingAll));
             rows.Add(Action("Get missing logos", "Logos from IGDB, then SteamGridDB.", GetMissingLogosCommand, enabled: () => !IsMatchingAll));

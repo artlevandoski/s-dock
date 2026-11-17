@@ -107,6 +107,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
         nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
         nameof(SelectedIsFavorite), nameof(FavoriteMenuLabel), nameof(FavoriteGlyph),
+        nameof(EmuReadyText), nameof(HasEmuReadyText), nameof(EmuReadyDetails), nameof(CanOpenEmuReady),
         nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText), nameof(CarouselSummary))]
     public partial EditionItem? SelectedItem { get; set; }
 
@@ -163,6 +164,7 @@ public sealed partial class MainViewModel : ObservableObject
         RebuildEmulatorChoices();
         PrefetchNeighbours();
         WatchSelectedCover(value);
+        ScheduleEmuReady(value);
     }
 
     partial void OnSelectedGenerationOptionChanged(GenerationOption? value)
@@ -253,6 +255,7 @@ public sealed partial class MainViewModel : ObservableObject
         var metadata = _library.AllMetadata();
         var hidden = _library.HiddenEditions();
         var favorites = _library.FavoriteEditions();
+        LoadEmuReady();
         _all = _library.ListEditions()
             .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo, includeSegaAges), overrides.ContainsKey(e.Id),
                 metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id), favorites.Contains(e.Id)))
