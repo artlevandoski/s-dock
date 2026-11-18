@@ -22,12 +22,12 @@ install.
 
 The other files (`.nupkg`, `releases.win.json`, `assets.win.json`, `RELEASES`) are what S-Dock's
 automatic updates download; you don't need them yourself. (When publishing: attach every file in
-`releases\`, or automatic updates can't find this version.)
+`releases\`, and publish it as a full release, not a pre-release, or automatic updates won't offer it.)
 
 **Requirements:** 64-bit Windows 10 or 11. Nothing else needs installing.
 
-**Updating:** from beta 3 on, S-Dock offers this update itself when it starts (or use **Settings →
-About → Check for updates**). From beta 1 or 2: unzip this one, then copy the `data` and
+**Updating:** from 1.0.0 on, S-Dock offers this update itself when it starts (or use **Settings →
+About → Check for updates**). From a 0.1.0 beta: unzip this one, then copy the `data` and
 `emulators` folders from your old S-Dock folder into the new one.
 
 ## Getting started

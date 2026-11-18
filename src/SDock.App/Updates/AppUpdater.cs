@@ -20,7 +20,8 @@ public interface IAppUpdater
 }
 
 /// <summary>
-/// Updates through Velopack from the GitHub releases (pre-releases included while S-Dock is in beta). The release
+/// Updates through Velopack from the GitHub releases: full releases only, so a test build published as a GitHub
+/// pre-release is never offered to everyone. The release
 /// zip is Velopack's portable layout, so an update replaces only the "current" folder: data\ and emulators\
 /// beside it are never touched, and nothing is written outside the S-Dock folder.
 /// SDOCK_UPDATE_SOURCE can point at a folder or URL with releases.win.json instead (for testing an update).
@@ -39,7 +40,7 @@ public sealed class VelopackUpdater : IAppUpdater
         {
             var source = Environment.GetEnvironmentVariable(SourceEnv);
             _manager = string.IsNullOrWhiteSpace(source)
-                ? new UpdateManager(new GithubSource(RepoUrl, accessToken: null, prerelease: true))
+                ? new UpdateManager(new GithubSource(RepoUrl, accessToken: null, prerelease: false))
                 : new UpdateManager(source);
         }
         catch (Exception)

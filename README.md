@@ -7,7 +7,7 @@ with covers, backgrounds, logos and descriptions.
 You bring your own game files and emulator. S-Dock does not include or download games,
 firmware, keys or system files, and it never changes your game files.
 
-Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: beta (0.1.0-beta.1).**
+Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: 1.0.0.**
 
 ## Contents
 
@@ -32,16 +32,16 @@ beside it, and nowhere else on your PC. To move S-Dock, move the folder; to remo
 folder. Don't put it under `C:\Program Files`: Windows doesn't let programs save there, and S-Dock
 will ask you to move it.
 
-The beta isn't code-signed yet, so Windows SmartScreen may say it "protected your PC": choose
+S-Dock isn't code-signed yet, so Windows SmartScreen may say it "protected your PC": choose
 **More info → Run anyway**.
 
-**Updates.** From 0.1.0 beta 3 on, S-Dock updates itself: when it starts it checks S-Dock's GitHub
-releases and, if there's a newer version, asks **Update now / Later**. Updating downloads the new
+**Updates.** From 1.0.0 on, S-Dock updates itself: when it starts it checks S-Dock's GitHub
+releases (full releases, not pre-releases) and, if there's a newer version, asks **Update now / Later**. Updating downloads the new
 version, closes S-Dock and starts it again. Only the app itself is replaced; `data` and
 `emulators` stay as they are, and everything stays inside the S-Dock folder. Check by hand, or
 switch off the check on start, in **Settings → About**. It never interrupts a game.
 
-**Bringing an existing library across** (or updating from beta 1 or 2): close S-Dock, then copy the
+**Bringing an existing library across** (or updating from a 0.1.0 beta): close S-Dock, then copy the
 `data` and `emulators` folders from your old S-Dock folder into the new one.
 
 ## Getting started
@@ -264,15 +264,15 @@ into `%LOCALAPPDATA%`. The version comes from `Directory.Build.props`.
 
 **Making a release:**
 
-1. `powershell -ExecutionPolicy Bypass -File build
-ew-release.ps1 -Version 0.1.0-beta.2` sets the
-   version and creates `docs
-eleases0.1.0-beta.2.md` from `docs
-eleases\TEMPLATE.md`.
-2. Fill in **What's new** in that file, then commit.
+1. `powershell -ExecutionPolicy Bypass -File build\new-release.ps1 -Version 1.0.1` sets the
+   version and creates `docs\releases\v1.0.1.md` from `docs\releases\TEMPLATE.md`.
+2. Fill in **What's new** in that file, then commit and push.
 3. `build\package.ps1` builds the zip, writes its checksum and the commit into the notes, and saves
-   `releases\RELEASE-NOTES.md`, ready to paste into the GitHub release (attach the zip and the
-   other files in `releases\`; tick *Set as a pre-release* for betas).
+   `releases\RELEASE-NOTES.md`, ready to paste into the GitHub release.
+4. Publish the GitHub release as a full release (not a pre-release) with **every** file in `releases\`
+   attached: the zip for downloads, the rest for automatic updates. Copies of S-Dock offer the
+   update the next time they start.
+
 Both output folders are git-ignored. Pass `--data-dir <folder>` to S-Dock to use a separate,
 throwaway library.
 
