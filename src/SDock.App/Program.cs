@@ -12,6 +12,17 @@ internal static class Program
         // runs and returns straight away for a normal start. It must come first.
         Velopack.VelopackApp.Build().Run();
 
+        // --update-now: update to the newest release (if any) without opening S-Dock, then exit.
+        if (args.Contains("--update-now"))
+        {
+            var updater = new Updates.VelopackUpdater();
+            if (!updater.CanUpdate) return 2;
+            if (updater.CheckAsync().GetAwaiter().GetResult() is null) return 0;
+            updater.DownloadAsync(_ => { }).GetAwaiter().GetResult();
+            updater.ApplyAndExit();
+            return 0;
+        }
+
         // --data-dir <folder>: use a separate library instead of the one in S-Dock's data folder (for testing).
         int i = Array.IndexOf(args, "--data-dir");
         if (i >= 0 && i + 1 < args.Length)

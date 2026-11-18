@@ -4,8 +4,8 @@ using SDock.Core.Metadata;
 
 namespace SDock.App.ViewModels;
 
-// EmuReady (emuready.com): community reports of how each game runs on PC emulators. Off by default. When on,
-// the game you stop on is looked up (once a week at most) and its rating is shown under Play.
+// EmuReady (emuready.com): community reports of how each game runs on PC emulators. On by default (Settings →
+// Game Info can switch it off): the game you stop on is looked up (once a week at most) and its rating is shown.
 public sealed partial class MainViewModel
 {
     public const string EmuReadyKey = "emuready";
@@ -14,17 +14,20 @@ public sealed partial class MainViewModel
     /// <summary>How long the selection must rest on a game before it's looked up (browsing past doesn't ask).</summary>
     public static TimeSpan EmuReadyDelay { get; set; } = TimeSpan.FromMilliseconds(600);
 
+    /// <summary>Makes the EmuReady client; the tests swap in one that never goes online.</summary>
+    public static Func<EmuReadyClient> EmuReadyFactory { get; set; } = () => new EmuReadyClient();
+
     /// <summary>The EmuReady client (tests replace it with one that doesn't go online).</summary>
-    public EmuReadyClient EmuReady { get; set; } = new();
+    public EmuReadyClient EmuReady { get; set; } = EmuReadyFactory();
 
     private Dictionary<string, EmuReadySummary> _emuReady = [];
     private readonly HashSet<string> _emuReadyBusy = [];
     private int _emuReadyRequest;
 
-    /// <summary>Settings → Game Info → Show EmuReady ratings.</summary>
+    /// <summary>Settings → Game Info → Show EmuReady ratings (on unless switched off).</summary>
     public bool ShowEmuReady
     {
-        get => _library.GetSetting(EmuReadyKey) == "1";
+        get => _library.GetSetting(EmuReadyKey) != "0";
         set
         {
             if (value == ShowEmuReady) return;

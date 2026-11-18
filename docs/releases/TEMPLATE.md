@@ -20,13 +20,15 @@ covers, backgrounds, logos and descriptions filled in for you.
 **`{{ZIP}}`**: unzip it and you have an **S-Dock** folder with everything in it. There's nothing to
 install.
 
-The other files (`.nupkg`, `releases.win.json`, `assets.win.json`, `RELEASES`) are for future
-in-place updates; you don't need to download them.
+The other files (`.nupkg`, `releases.win.json`, `assets.win.json`, `RELEASES`) are what S-Dock's
+automatic updates download; you don't need them yourself. (When publishing: attach every file in
+`releases\`, or automatic updates can't find this version.)
 
 **Requirements:** 64-bit Windows 10 or 11. Nothing else needs installing.
 
-**Updating from an earlier version:** unzip this one, then copy the `data` and `emulators` folders
-from your old S-Dock folder into the new one.
+**Updating:** from beta 3 on, S-Dock offers this update itself when it starts (or use **Settings →
+About → Check for updates**). From beta 1 or 2: unzip this one, then copy the `data` and
+`emulators` folders from your old S-Dock folder into the new one.
 
 ## Getting started
 
@@ -47,7 +49,6 @@ the folder.
 ## Known limitations
 
 - Typing (search, text boxes) and Windows' file and folder pickers still need a keyboard and mouse.
-- Automatic updates aren't switched on yet.
 - The app isn't code-signed (see the SmartScreen note above).
 
 ## Feedback

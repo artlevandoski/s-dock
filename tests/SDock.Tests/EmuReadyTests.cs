@@ -122,7 +122,7 @@ public sealed class EmuReadyTests : IDisposable
     }
 
     [AvaloniaFact]
-    public async Task Off_by_default_then_shown_under_play_and_kept()
+    public async Task On_by_default_shown_under_play_and_kept()
     {
         var fake = new FakeEmuReady();
         fake.Games.Add(("g1", "Alpha Quest", EmuReadyClient.Switch1Key));
@@ -138,13 +138,9 @@ public sealed class EmuReadyTests : IDisposable
         window.Show();
         Dispatcher.UIThread.RunJobs();
 
-        Assert.False(vm.ShowEmuReady);                             // off until you turn it on
-        Assert.Equal("", vm.EmuReadyText);
-        Assert.Empty(fake.Requests);
-
-        MainViewModel.EmuReadyDelay = TimeSpan.Zero;
-        vm.ShowEmuReady = true;                                    // Settings → Game Info
-        Ui.WaitUntil(() => vm.EmuReadyText.Contains("Perfect"));
+        Assert.True(vm.ShowEmuReady);                              // on unless switched off
+        await vm.RefreshEmuReadyAsync(vm.SelectedItem!);           // (what resting on the game does)
+        Dispatcher.UIThread.RunJobs();
         Assert.Equal("EmuReady: Perfect on Eden · 1 PC report", vm.EmuReadyText);
         Assert.Contains("EmuReady: Perfect", vm.SelectedTags);    // the carousel's tag
         window.UpdateLayout();
@@ -173,5 +169,18 @@ public sealed class EmuReadyTests : IDisposable
         await vm.RefreshEmuReadyAsync(vm.SelectedItem!);
         Assert.Equal("", vm.EmuReadyText);
         Assert.Null(vm.EmuReadyFor(vm.SelectedItem!));             // nothing kept, so it's asked again next time
+    }
+
+    [AvaloniaFact]
+    public void Switched_off_shows_and_asks_nothing()
+    {
+        var fake = new FakeEmuReady();
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Alpha Quest", Generations.Switch1, _env.Game("A.nsp"));
+        var vm = new MainViewModel(lib, new EmulatorLauncher(), new FakeUi()) { EmuReady = new EmuReadyClient(fake) };
+        vm.ShowEmuReady = false;                                   // Settings → Game Info
+        Assert.Equal("", vm.EmuReadyText);
+        Assert.False(new MainViewModel(lib, new EmulatorLauncher(), new FakeUi()).ShowEmuReady); // remembered
+        Assert.Empty(fake.Requests);
     }
 }

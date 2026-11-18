@@ -4,7 +4,8 @@
     releases\S-Dock-<version>-win-x64.zip   the download: unzip it and you get an S-Dock folder with
                                             S-Dock.exe, the app (current\), Update.exe and emulators\.
                                             data\ appears beside them on first start.
-    releases\*.nupkg, releases.*.json       update packages (for a future in-place update feed)
+    releases\*.nupkg, releases.*.json       update packages: S-Dock's automatic updates read these from the
+                                            GitHub release, so attach every file in releases\
     publish\S-Dock\                         the plain published app (for testing)
 
   Velopack's Setup.exe is not part of the release: it would install into %LOCALAPPDATA%, and S-Dock is

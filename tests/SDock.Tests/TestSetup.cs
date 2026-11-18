@@ -14,5 +14,7 @@ internal static class TestSetup
     {
         var dir = Path.Combine(Path.GetTempPath(), "S-Dock Tests", "app-data-" + Environment.ProcessId);
         Environment.SetEnvironmentVariable(AppPaths.DataDirEnv, dir);
+        // EmuReady is on by default: tests must never reach the real site.
+        SDock.App.ViewModels.MainViewModel.EmuReadyFactory = () => new SDock.Core.Metadata.EmuReadyClient(new FakeEmuReady { Offline = true });
     }
 }

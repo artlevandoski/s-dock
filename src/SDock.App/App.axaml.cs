@@ -47,6 +47,12 @@ public partial class App : Application
                 if (window.WindowState == Avalonia.Controls.WindowState.FullScreen) WindowFocus.Bring(window);
                 window.FocusSelectedCover();
             };
+            if (!Program.Benchmark)
+                window.Opened += async (_, _) =>
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(4)); // let S-Dock settle (and any first-start questions) first
+                    await vm.CheckForUpdatesOnStartAsync();
+                };
             if (Program.Benchmark)
             {
                 // --benchmark: measure real frame times on this machine, write logs\benchmark.txt, then exit.

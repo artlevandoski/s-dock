@@ -266,6 +266,8 @@ public sealed partial class MainViewModel
                 () => StartGamesFullScreen, () => StartGamesFullScreen = !StartGamesFullScreen),
             Choice("Leave a game with Esc or Start + Select", "Twice is safer: the first press shows a note over the game.",
                 [(false, "Press once"), (true, "Press twice")], () => ExitWithTwoPresses, v => ExitWithTwoPresses = v),
+            Info("Controllers", () => ControllersText(),
+                "Xbox, PlayStation, Switch Pro and most others. A (or ✕) chooses, B (or ○) goes back."),
         ]),
         new("Appearance", "IconImage", "How S-Dock looks.", () =>
         [
@@ -296,9 +298,13 @@ public sealed partial class MainViewModel
                 () => _library.HasIgdbCredentials ? (_library.HasSteamGridDbKey ? "IGDB and SteamGridDB set" : "IGDB set") : "Not set"));
             return rows;
         }),
-        new("About", "IconMenu", "Version, files and quitting.", () =>
+        new("About", "IconMenu", "Version, updates, files and quitting.", () =>
         [
             Info("Version", () => $"S-Dock {AppVersion}"),
+            Action("Check for updates", "New versions come from S-Dock's GitHub releases. Your library and emulators are kept.",
+                CheckForUpdatesCommand, () => UpdateStatusLine),
+            Toggle("Check for updates when S-Dock starts", "Asks before updating; never during a game.",
+                () => CheckForUpdatesOnStart, () => CheckForUpdatesOnStart = !CheckForUpdatesOnStart),
             Action("Open Data Folder", "Your library, artwork and settings, all inside the S-Dock folder.", OpenDataFolderCommand,
                 () => AppPaths.DataDir),
             Action("Quit S-Dock", "Close S-Dock.", QuitCommand),
@@ -317,6 +323,11 @@ public sealed partial class MainViewModel
                 RebuildEmulatorChoices();
             });
     }
+
+    /// <summary>The controllers S-Dock sees right now (tests replace it).</summary>
+    public Func<IReadOnlyList<string>> ConnectedControllers { get; set; } = () => GamepadService.ControllerNames;
+
+    private string ControllersText() => ConnectedControllers() is { Count: > 0 } names ? string.Join(", ", names) : "None connected";
 
     [RelayCommand] private void Quit() => QuitRequested?.Invoke();
 

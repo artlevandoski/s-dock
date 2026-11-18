@@ -10,7 +10,7 @@ using SDock.App.Views;
 
 namespace SDock.App.Input;
 
-/// <summary>Reads Xbox-compatible controllers through Windows XInput (no extra drivers or packages).</summary>
+/// <summary>Reads Xbox-compatible controllers through Windows XInput: the fallback when SDL (SdlPads) can't start.</summary>
 internal static class XInput
 {
     [StructLayout(LayoutKind.Sequential)]
@@ -95,8 +95,14 @@ public sealed class GamepadService
     public void Start() => _timer.Start();
     public void Stop() => _timer.Stop();
 
+    /// <summary>The connected controllers' names (SDL), or "Xbox controller" through XInput, for Settings.</summary>
+    public static IReadOnlyList<string> ControllerNames =>
+        SdlPads.Available ? SdlPads.Names : XInput.Available && XInput.Read(0) is not null ? ["Xbox controller"] : [];
+
     private PadState? ReadController()
     {
+        // SDL reads every kind of controller; XInput (Xbox-style only) is the fallback if SDL can't start.
+        if (SdlPads.Start()) return SdlPads.Read();
         var now = _clock.Elapsed;
         if (_connectedIndex is { } i && XInput.Read(i) is { } state)
             return state;

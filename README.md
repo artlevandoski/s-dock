@@ -35,8 +35,14 @@ will ask you to move it.
 The beta isn't code-signed yet, so Windows SmartScreen may say it "protected your PC": choose
 **More info → Run anyway**.
 
-**Bringing an existing library across:** close S-Dock, then copy the `data` and `emulators`
-folders from your old S-Dock folder into the new one.
+**Updates.** From 0.1.0 beta 3 on, S-Dock updates itself: when it starts it checks S-Dock's GitHub
+releases and, if there's a newer version, asks **Update now / Later**. Updating downloads the new
+version, closes S-Dock and starts it again. Only the app itself is replaced; `data` and
+`emulators` stay as they are, and everything stays inside the S-Dock folder. Check by hand, or
+switch off the check on start, in **Settings → About**. It never interrupts a game.
+
+**Bringing an existing library across** (or updating from beta 1 or 2): close S-Dock, then copy the
+`data` and `emulators` folders from your old S-Dock folder into the new one.
 
 ## Getting started
 
@@ -154,9 +160,9 @@ IGDB.
 | [nx-versions](https://github.com/16BitWonder/nx-versions) | Latest known update for each game, and dates | None. On by default (**Settings → Game Info → Use nx-versions**). |
 | [IGDB](https://www.igdb.com/) | Backup for games TitleDB doesn't list, and logos | Free Twitch developer credentials (below) |
 | [SteamGridDB](https://www.steamgriddb.com/) | More logos, covers and backgrounds | Free API key (optional) |
-| [EmuReady](https://www.emuready.com/) | How well each game runs on PC emulators, from community reports | None. Off by default (**Settings → Game Info → Show EmuReady ratings**). |
+| [EmuReady](https://www.emuready.com/) | How well each game runs on PC emulators, from community reports | None. On by default (**Settings → Game Info → Show EmuReady ratings**). |
 
-**EmuReady (preview).** With **Show EmuReady ratings** on, the game you stop on is looked up on
+**EmuReady.** With **Show EmuReady ratings** on (the default), the game you stop on is looked up on
 emuready.com (at most once a week per game) and its rating shows under Play, e.g. *EmuReady: Great on
 Eden · 9 PC reports*, plus a tag in the carousel. It uses the rating for the emulator the game plays
 with, or the most-reported one, and Windows reports first. When there are no PC reports, handheld
@@ -190,7 +196,13 @@ Keys are stored only in `data\library.sqlite3` on your computer.
 
 ## Controller and keyboard
 
-Xbox-compatible controllers work through Windows XInput, with no extra drivers.
+Xbox, PlayStation (DualShock 4, DualSense), Switch Pro, Joy-Con pairs and most other controllers
+work, with no extra drivers, through [SDL](https://www.libsdl.org/) (the same library many emulators
+use). Buttons go by their label: the button marked **A** (or **✕**) chooses and **B** (or **○**) goes
+back, so on a Switch Pro controller A is the right-hand button. The table uses Xbox names: **Select**
+is Share / Create on PlayStation and **−** on Switch; **Start** is Options or **+**. Several
+controllers can be connected at once. **Settings → Playing → Controllers** shows which ones S-Dock
+sees.
 
 | Controller | Keyboard | Action |
 |---|---|---|
@@ -222,9 +234,12 @@ drive:
 
 ```
 S-Dock\
-  S-Dock.exe
+  S-Dock.exe   starts S-Dock
+  current\     the app itself (replaced by updates)
+  Update.exe   applies updates
   data\        library database, artwork, TitleDB and logs
   emulators\   emulator builds you place here
+  packages\    downloaded updates (appears after the first update)
 ```
 
 - Emulators inside the folder are remembered relative to it, so they keep working after a
