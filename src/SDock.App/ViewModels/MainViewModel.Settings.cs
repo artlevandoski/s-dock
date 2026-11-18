@@ -251,6 +251,8 @@ public sealed partial class MainViewModel
                 () => IncludeSegaAges, () => IncludeSegaAges = !IncludeSegaAges),
             Action("Add Folder…", "Add a folder of game files (.nsp, .xci, .nsz, .xcz).", AddFolderCommand),
             Action("Add Game (.exe)…", "Add a PC version (a recompilation or port) that runs without an emulator.", AddProgramCommand),
+            Action("Move Game Folder…", "Games are somewhere else now (another PC or drive)? Point their folder at the new place; every game keeps its settings.",
+                MoveGameFolderCommand, () => MissingGamesText),
         ]),
         new("Emulators", "IconGamepad", "Emulator profiles and which one each kind of game uses.", () =>
         [

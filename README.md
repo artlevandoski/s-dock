@@ -244,6 +244,12 @@ S-Dock\
 
 - Emulators inside the folder are remembered relative to it, so they keep working after a
   move. Game folders elsewhere are remembered by their full path.
+- **Games somewhere else now** (another PC, another drive, a tidied-up folder)? Use **Settings →
+  Library → Move Game Folder…** (also offered on a missing game). Choose the folder as S-Dock knew
+  it, then where it is now. Each game is found at the same place inside the new folder, or else by
+  its file name anywhere under it, and keeps its favorites, artwork, sort title and emulator choice.
+  If you already used Add Folder on the new place, those extra entries are merged back into the
+  originals. S-Dock shows what will change before doing it.
 - Nothing is written outside the folder. If the folder can't be written to (for example under
   `C:\Program Files`), S-Dock asks you to move it instead of saving somewhere else.
 - S-Dock was called Switch Yard before; the old `SWITCHYARD_…` environment variables still work.

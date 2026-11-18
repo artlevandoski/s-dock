@@ -9,7 +9,7 @@ namespace SDock.Core;
 /// SQLite persistence for the library and emulator profiles.
 /// The schema is identical to the Milestone 1 Python build, so existing libraries open unchanged.
 /// </summary>
-public sealed class LibraryStore : IDisposable
+public sealed partial class LibraryStore : IDisposable
 {
     public const int SchemaVersion = 12;
 

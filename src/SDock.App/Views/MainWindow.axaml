@@ -344,7 +344,11 @@
                 <StackPanel Spacing="6" IsVisible="{Binding ShowMissing}">
                   <TextBlock Classes="warning" FontWeight="SemiBold" TextWrapping="Wrap"
                              Text="This game file can't be found. It may have been moved, renamed, or be on a drive that isn't connected." />
-                  <Button Classes="subtle" Content="Locate File…" Command="{Binding LocateFileCommand}" />
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <Button Classes="subtle" Content="Locate File…" Command="{Binding LocateFileCommand}" />
+                    <Button Classes="subtle" Content="Move Game Folder…" Command="{Binding MoveGameFolderCommand}"
+                            ToolTip.Tip="All the games from a folder are somewhere else now: point the folder at its new place" />
+                  </StackPanel>
                 </StackPanel>
 
                 <StackPanel Spacing="6" IsVisible="{Binding HasSummary}">

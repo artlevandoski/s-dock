@@ -27,7 +27,14 @@ public sealed class FakeUi : IUiServices
     public int FocusRestores { get; private set; }
     public bool AcceptImport { get; set; } = true;
 
-    public Task<string?> PickFolderAsync(string title, string? startDir = null) => Task.FromResult<string?>(null);
+    /// <summary>The folder the next PickFolderAsync returns (then cleared); null = cancelled.</summary>
+    public string? NextPickedFolder { get; set; }
+    public Task<string?> PickFolderAsync(string title, string? startDir = null)
+    {
+        var f = NextPickedFolder;
+        NextPickedFolder = null;
+        return Task.FromResult(f);
+    }
     public Task<string?> PickFileAsync(string title, string? startDir, string filterName, params string[] patterns)
     {
         var f = NextPickedFile;

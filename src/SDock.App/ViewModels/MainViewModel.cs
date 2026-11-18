@@ -545,11 +545,12 @@ public sealed partial class MainViewModel : ObservableObject
 
     private async Task ShowLaunchProblemAsync(Edition? e, string message)
     {
-        const string settings = "Emulator Settings…", locate = "Locate File…", close = "Close";
-        var buttons = e is { IsMissing: true } ? new[] { settings, locate, close } : new[] { settings, close };
+        const string settings = "Emulator Settings…", locate = "Locate File…", move = "Move Game Folder…", close = "Close";
+        var buttons = e is { IsMissing: true } ? new[] { locate, move, settings, close } : new[] { settings, close };
         var choice = await _ui.ChooseAsync("Can't launch", $"{e?.Title ?? "Game"} couldn't be launched.", message, buttons);
         if (choice == settings) await EmulatorSettingsAsync();
         else if (choice == locate) await LocateFileAsync();
+        else if (choice == move) await MoveGameFolderAsync();
     }
 
     // ------------------------------------------------------- launcher events
