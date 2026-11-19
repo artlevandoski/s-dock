@@ -303,6 +303,7 @@ public sealed partial class MainViewModel
             if (item.VersionCount > 1) tags.Add($"{item.VersionCount} versions");
             if (HasUpdateAvailable(item)) tags.Add("Update available");
             if (EmuReadyTag(item) is { } emuReady) tags.Add(emuReady);
+            if (item.Play is { } play) tags.Add($"Played {PlayStats.DescribeTime(play.Total)} · {PlayStats.DescribeDay(play.LastPlayedUtc.ToLocalTime(), DateTime.Now)}");
             return tags;
         }
     }

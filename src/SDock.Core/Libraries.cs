@@ -9,6 +9,8 @@ public static class Libraries
     public const string Arcade = "arcade";
     /// <summary>Not a place a game lives: a tab showing the favorites from every library.</summary>
     public const string Favorites = "favorites";
+    /// <summary>Not a place a game lives: a tab of the games played, most recent first.</summary>
+    public const string Recent = "recent";
 
     /// <summary>The libraries a game can belong to (Favorites isn't one).</summary>
     public static readonly IReadOnlyList<string> All = [Main, Arcade];
@@ -17,6 +19,7 @@ public static class Libraries
     {
         Arcade => "Arcade Archives",
         Favorites => "Favorites",
+        Recent => "Recently Played",
         _ => "Main Library",
     };
 }

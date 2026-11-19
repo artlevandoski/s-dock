@@ -7,7 +7,7 @@ using SDock.Core.Metadata;
 namespace SDock.App.ViewModels;
 
 public sealed class EditionItem(Edition edition, string library, bool pinnedToLibrary, EditionMetadata? metadata = null,
-    bool hidden = false, bool favorite = false)
+    bool hidden = false, bool favorite = false, PlayStats? play = null)
     : System.ComponentModel.INotifyPropertyChanged
 {
     private Avalonia.Media.Imaging.Bitmap? _cover;
@@ -59,6 +59,8 @@ public sealed class EditionItem(Edition edition, string library, bool pinnedToLi
     public bool PinnedToLibrary { get; } = pinnedToLibrary;
     public bool IsHidden { get; } = hidden;
     public bool IsFavorite { get; } = favorite;
+    /// <summary>Play history, or null if never played (for more than a moment).</summary>
+    public PlayStats? Play { get; } = play;
     public string Series { get; } = ArcadeSeries.Detect(edition.Title);
     public int VersionCount => Edition.Files.Count;
     public string Tooltip => IsMissing ? $"{Title}\nFile missing. Select it and use Locate File…" : Title;
@@ -96,6 +98,7 @@ public sealed partial class MainViewModel : ObservableObject
         Launcher.Failed += OnFailed;
         InitLibraries();
         Refresh();
+        StartOnLastPlayed();
         ScanInstalledContent();
     }
 
@@ -106,7 +109,7 @@ public sealed partial class MainViewModel : ObservableObject
         nameof(SelectedCover), nameof(SelectedKeyArt), nameof(SelectedLogo), nameof(HasLogo), nameof(SelectedSummary),
         nameof(HasSummary), nameof(SelectedFactsLine), nameof(MatchStatusText), nameof(MatchMenuLabel), nameof(IsMatched),
         nameof(DetailsFactsLine), nameof(SelectedTags), nameof(SelectedGenerationLabel), nameof(HideMenuLabel),
-        nameof(SelectedIsFavorite), nameof(FavoriteMenuLabel), nameof(FavoriteGlyph),
+        nameof(SelectedIsFavorite), nameof(FavoriteMenuLabel), nameof(FavoriteGlyph), nameof(PlayHistoryText), nameof(HasPlayHistory),
         nameof(EmuReadyText), nameof(HasEmuReadyText), nameof(EmuReadyDetails), nameof(CanOpenEmuReady),
         nameof(SelectedColor), nameof(BackdropBrush), nameof(UpdateStatusText), nameof(CarouselSummary))]
     public partial EditionItem? SelectedItem { get; set; }
@@ -291,10 +294,11 @@ public sealed partial class MainViewModel : ObservableObject
         var metadata = _library.AllMetadata();
         var hidden = _library.HiddenEditions();
         var favorites = _library.FavoriteEditions();
+        var play = _library.AllPlayStats();
         LoadEmuReady();
         _all = _library.ListEditions()
             .Select(e => new EditionItem(e, _library.LibraryOf(e, overrides, includeNeogeo, includeSegaAges), overrides.ContainsKey(e.Id),
-                metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id), favorites.Contains(e.Id)))
+                metadata.GetValueOrDefault(e.Id), hidden.Contains(e.Id), favorites.Contains(e.Id), play.GetValueOrDefault(e.Id)))
             .ToList();
         foreach (var tab in LibraryTabs)
             tab.Count = _all.Count(i => InTab(i, tab.Id) && !i.IsHidden);
@@ -556,6 +560,7 @@ public sealed partial class MainViewModel : ObservableObject
     // ------------------------------------------------------- launcher events
     private void OnLaunched(string tag, int pid)
     {
+        _sessionStarted = System.Diagnostics.Stopwatch.StartNew();
         var title = Items.FirstOrDefault(i => i.Id == tag)?.Title ?? "test game";
         StatusText = $"Emulator running (PID {pid}): {title}";
         LastLaunchedTag = tag;
@@ -565,6 +570,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void OnFinished(string tag, int code, bool crashed)
     {
         StatusText = crashed ? $"Emulator crashed (code {code})." : $"Emulator exited (code {code}).";
+        RecordSession(tag);
         AfterEmulator(tag);
     }
 

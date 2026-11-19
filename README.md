@@ -79,6 +79,13 @@ The **Library** dropdown in the details panel moves any game by hand.
 unmark a game with the **☆** button beside Play (grid and carousel), **Game Actions → Add to
 Favorites**, or Ctrl+D. Favorite covers show a gold star.
 
+**Recently Played and play time.** S-Dock notes when each game is played and for how long. The
+*Recently Played* tab lists the games you've played, most recent first; each game shows a line like
+*Played 12 h · last played Tuesday* (in the details panel, and as a tag in the carousel). Sessions
+under 30 seconds don't count, so a game that fails to start isn't "played". S-Dock opens on the last
+game you played; **Settings → Library → Start on** can make it the last game selected instead, and
+**Clear Play History…** forgets it all.
+
 **Grid or carousel.** The grid shows a details panel beside the covers and opens maximized. The carousel fills
 the screen with one row of covers above the game's name and the first sentence of its
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
@@ -214,7 +221,7 @@ sees.
 | | Ctrl+D | Add or remove a favorite |
 | Select (Back) | | Settings |
 | Y | Ctrl+G | Grid / carousel |
-| LB / RB | Ctrl+Shift+Tab / Ctrl+Tab | Previous / next tab (Main Library, Arcade Archives, Favorites) |
+| LB / RB | Ctrl+Shift+Tab / Ctrl+Tab | Previous / next tab (Main Library, Arcade Archives, Favorites, Recently Played) |
 | LT / RT | Page Up / Page Down | Previous / next letter |
 | Start | | Play |
 | Start + Select | Esc (in a game) | Close the game and return to S-Dock |

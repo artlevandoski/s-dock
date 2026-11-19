@@ -11,7 +11,7 @@ namespace SDock.Core;
 /// </summary>
 public sealed partial class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 12;
+    public const int SchemaVersion = 13;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -131,6 +131,13 @@ public sealed partial class LibraryStore : IDisposable
             edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
             summary    TEXT NOT NULL,
             fetched_at TEXT NOT NULL
+        );
+        -- v13: play history (Recently Played, play time).
+        CREATE TABLE IF NOT EXISTS play_history (
+            edition_id    TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            last_played   TEXT NOT NULL,
+            total_seconds INTEGER NOT NULL DEFAULT 0,
+            sessions      INTEGER NOT NULL DEFAULT 0
         );
         """;
 
@@ -270,6 +277,11 @@ public sealed partial class LibraryStore : IDisposable
         {
             // v11 -> v12: EmuReady ratings table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '12' WHERE key = 'schema_version'");
+        }
+        if (version < 13)
+        {
+            // v12 -> v13: play history table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '13' WHERE key = 'schema_version'");
         }
     }
 

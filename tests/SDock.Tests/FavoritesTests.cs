@@ -52,7 +52,7 @@ public sealed class FavoritesTests : IDisposable
         var aca = lib.AddEdition("Arcade Archives Galaga", Generations.Switch1, _env.Game("G.nsp"));
         lib.AddEdition("Bravo", Generations.Switch1, _env.Game("B.nsp"));
         var (vm, window) = Open(lib, carousel: true);
-        Assert.Equal(["Main Library", "Arcade Archives", "Favorites"], vm.LibraryTabs.Select(t => t.Label));
+        Assert.Equal(["Main Library", "Arcade Archives", "Favorites", "Recently Played"], vm.LibraryTabs.Select(t => t.Label));
 
         vm.Select(vm.Items.Single(i => i.Title == "Bravo").Id);
         Assert.Equal("☆", vm.FavoriteGlyph);

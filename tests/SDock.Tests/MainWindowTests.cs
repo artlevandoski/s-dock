@@ -126,7 +126,7 @@ public sealed class MainWindowTests : IDisposable
             Assert.False(vm.HasItems);
             await vm.ImportFolderAsync(folder);
             Assert.Equal(4, vm.Items.Count); // Main Library; the Arcade Archives title is in its own tab
-            Assert.Equal([4, 1, 0], vm.LibraryTabs.Select(t => t.Count));
+            Assert.Equal([4, 1, 0, 0], vm.LibraryTabs.Select(t => t.Count));
             var profile = _env.FakeProfile(sleep: 0.3);
             lib.SaveProfile(profile);
             lib.SetGenerationDefault(Generations.Switch1, profile.Id);

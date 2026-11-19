@@ -84,14 +84,20 @@ public sealed partial class MainViewModel
     private bool _loadingState;
 
     /// <summary>Search text is kept per library for the session (not saved).</summary>
-    private readonly Dictionary<string, string> _searchByLibrary = new() { [Libraries.Main] = "", [Libraries.Arcade] = "", [Libraries.Favorites] = "" };
+    private readonly Dictionary<string, string> _searchByLibrary = new() { [Libraries.Main] = "", [Libraries.Arcade] = "", [Libraries.Favorites] = "", [Libraries.Recent] = "" };
 
-    public ObservableCollection<LibraryTab> LibraryTabs { get; } = [new(Libraries.Main), new(Libraries.Arcade), new(Libraries.Favorites)];
+    public ObservableCollection<LibraryTab> LibraryTabs { get; } =
+        [new(Libraries.Main), new(Libraries.Arcade), new(Libraries.Favorites), new(Libraries.Recent)];
     public bool IsFavoritesTab => CurrentLibrary == Libraries.Favorites;
+    public bool IsRecentTab => CurrentLibrary == Libraries.Recent;
 
-    /// <summary>Whether a game shows under a tab: its own library, or Favorites when it's a favorite.</summary>
-    private static bool InTab(EditionItem item, string tab) =>
-        tab == Libraries.Favorites ? item.IsFavorite : item.Library == tab;
+    /// <summary>Whether a game shows under a tab: its own library, Favorites when it's a favorite, Recently Played once played.</summary>
+    private static bool InTab(EditionItem item, string tab) => tab switch
+    {
+        Libraries.Favorites => item.IsFavorite,
+        Libraries.Recent => item.Play is not null,
+        _ => item.Library == tab,
+    };
     public IReadOnlyList<FilterOption> GenerationFilterOptions => FilterOption.Generation;
 
     public static string StateKey(string library, string name) => $"lib:{library}:{name}";
@@ -126,7 +132,7 @@ public sealed partial class MainViewModel
 
     // ----------------------------------------------------------------- library tabs
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(CurrentLibrary), nameof(IsArcade), nameof(IsFavoritesTab))]
+    [NotifyPropertyChangedFor(nameof(CurrentLibrary), nameof(IsArcade), nameof(IsFavoritesTab), nameof(IsRecentTab))]
     public partial LibraryTab SelectedLibraryTab { get; set; }
 
     public string CurrentLibrary => SelectedLibraryTab?.Id ?? Libraries.Main;
@@ -323,7 +329,9 @@ public sealed partial class MainViewModel
         selectId ??= SelectedItem?.Id ?? _library.GetSetting(StateKey(CurrentLibrary, "selected"))
                      ?? (CurrentLibrary == Libraries.Main ? _library.GetSetting(LastSelectedKey) : null);
         _applyingFilter = true;
-        Items = new ObservableCollection<EditionItem>(_all.Where(Matches)); // one update instead of one per game
+        var shown = _all.Where(Matches);
+        if (IsRecentTab) shown = shown.OrderByDescending(i => i.Play!.LastPlayedUtc); // most recently played first
+        Items = new ObservableCollection<EditionItem>(shown); // one update instead of one per game
         _applyingFilter = false;
         SelectedItem = Items.FirstOrDefault(i => i.Id == selectId) ?? Items.FirstOrDefault();
         WarmCovers();
@@ -343,6 +351,8 @@ public sealed partial class MainViewModel
                 ? "No hidden games in this library.\nUse Game Actions → Hide Game to tidy away games you don't play."
             : _all.Any(i => InTab(i, CurrentLibrary) && !i.IsHidden)
                 ? "No games match the search or filters."
+                : IsRecentTab
+                    ? "Nothing played yet.\nGames you play show up here, most recent first."
                 : IsFavoritesTab
                     ? "No favorites yet.\nMark a game with the ☆ button beside Play, or Game Actions → Add to Favorites."
                 : IsArcade

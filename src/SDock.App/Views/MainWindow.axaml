@@ -312,6 +312,8 @@
                     <TextBlock Text="{Binding SelectedTitle}" FontSize="19" FontWeight="Bold" TextWrapping="Wrap"
                                IsVisible="{Binding !HasLogo}" />
                     <TextBlock Text="{Binding DetailsFactsLine}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                    <TextBlock x:Name="PlayHistoryLine" Text="{Binding PlayHistoryText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
+                               IsVisible="{Binding HasPlayHistory}" />
                   </StackPanel>
                 </Grid>
 

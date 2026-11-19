@@ -216,7 +216,7 @@ public sealed partial class MainViewModel
     /// </summary>
     public string? JumpToLetter(int direction)
     {
-        if (Items.Count == 0) return null;
+        if (Items.Count == 0 || IsRecentTab) return null; // Recently Played is in date order, not by letter
         var index = SelectedItem is { } s ? Math.Max(0, Items.IndexOf(s)) : 0;
         var current = LetterOf(Items[index]);
         int? target = null;

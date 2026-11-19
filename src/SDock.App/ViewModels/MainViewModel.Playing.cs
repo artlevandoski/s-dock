@@ -164,3 +164,71 @@ public partial class MainViewModel
         StatusText = $"Removed “{item.Title}” from the library.";
     }
 }
+
+// Play history: when each game was last played and for how long in total (Recently Played, "Played 12 h").
+public partial class MainViewModel
+{
+    public const string StartOnKey = "start_on";
+    private System.Diagnostics.Stopwatch? _sessionStarted;
+
+    /// <summary>"Played 12 h · last played Tuesday", or "" if never played.</summary>
+    public string PlayHistoryText => SelectedItem?.Play is { } p ? p.Describe(DateTime.Now) : "";
+    public bool HasPlayHistory => PlayHistoryText.Length > 0;
+
+    /// <summary>Settings → Library → Start on: the last game played (default) or the last one selected.</summary>
+    public bool StartOnLastPlayedGame
+    {
+        get => _library.GetSetting(StartOnKey) != "selected";
+        set
+        {
+            _library.SetSetting(StartOnKey, value ? "played" : "selected");
+            OnPropertyChanged();
+        }
+    }
+
+    public string PlayedCountText
+    {
+        get
+        {
+            var n = _all.Count(i => i.Play is not null);
+            return n switch { 0 => "Nothing played yet", 1 => "1 game played", _ => $"{n} games played" };
+        }
+    }
+
+    /// <summary>When S-Dock opens: select the game played last (in its own library), if that's the setting.</summary>
+    private void StartOnLastPlayed()
+    {
+        if (!StartOnLastPlayedGame) return;
+        var last = _all.Where(i => i.Play is not null && !i.IsHidden).MaxBy(i => i.Play!.LastPlayedUtc);
+        if (last is null) return;
+        if (!IsRecentTab && !(IsFavoritesTab && last.IsFavorite) && last.Library != CurrentLibrary)
+            SelectedLibraryTab = LibraryTabs.First(t => t.Id == last.Library);
+        Select(last.Id);
+    }
+
+    /// <summary>A game closed: add the session to its play history (sessions under 30 seconds don't count).</summary>
+    private void RecordSession(string tag)
+    {
+        var length = _sessionStarted?.Elapsed ?? TimeSpan.Zero;
+        _sessionStarted = null;
+        RecordSession(tag, length);
+    }
+
+    /// <summary>Adds a session of this length to a game's history (also used by the tests).</summary>
+    public void RecordSession(string editionId, TimeSpan length)
+    {
+        if (editionId == TestLaunchTag || _all.All(i => i.Id != editionId)) return;
+        if (_library.RecordPlay(editionId, length, DateTime.UtcNow))
+            Refresh(SelectedItem?.Id ?? editionId);
+    }
+
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task ClearPlayHistoryAsync()
+    {
+        if (_all.All(i => i.Play is null)) return;
+        if (!await _ui.ConfirmAsync("Clear Play History", "Forget when every game was played and for how long? Recently Played will be empty."))
+            return;
+        _library.ClearPlayHistory();
+        Refresh(SelectedItem?.Id);
+    }
+}
