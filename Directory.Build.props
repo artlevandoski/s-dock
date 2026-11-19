@@ -6,7 +6,7 @@
     <LangVersion>latest</LangVersion>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <!-- The version shown in the app and on the installer. Pre-releases look like 0.1.0-beta.1. -->
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <Product>S-Dock</Product>
   </PropertyGroup>
 </Project>
