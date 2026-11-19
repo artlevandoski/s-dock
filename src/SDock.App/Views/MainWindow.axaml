@@ -215,7 +215,7 @@
       <!-- ============================== Filters and view (grid only; the carousel stays clean) ============================== -->
       <Grid x:Name="FilterBar" DockPanel.Dock="Top" ColumnDefinitions="*,Auto" Margin="28,14,24,4" IsVisible="{Binding IsGrid}">
         <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-          <ListBox Classes="pills" ItemsSource="{Binding PrimaryFilters}" SelectedItem="{Binding PillFilter}">
+          <ListBox x:Name="FilterPills" Classes="pills" ItemsSource="{Binding PrimaryFilters}" SelectedItem="{Binding PillFilter}">
             <ListBox.ItemsPanel>
               <ItemsPanelTemplate>
                 <StackPanel Orientation="Horizontal" />
@@ -227,11 +227,11 @@
               </DataTemplate>
             </ListBox.ItemTemplate>
           </ListBox>
-          <ComboBox Classes="chip" ItemsSource="{Binding MoreFilters}" SelectedItem="{Binding MoreFilter}"
+          <ComboBox x:Name="MoreFilterCombo" Classes="chip" ItemsSource="{Binding MoreFilters}" SelectedItem="{Binding MoreFilter}"
                     PlaceholderText="More filters" MinWidth="150" ToolTip.Tip="Unclassified, update available, not in TitleDB, hidden games" />
-          <ComboBox Classes="chip" ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
+          <ComboBox x:Name="SeriesFilterCombo" Classes="chip" ItemsSource="{Binding SeriesFilterOptions}" SelectedItem="{Binding SeriesFilter}" MinWidth="160"
                     IsVisible="{Binding IsArcade}" />
-          <Button Classes="subtle" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
+          <Button x:Name="ClearFiltersButton" Classes="subtle" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}" />
         </StackPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10">
           <ToggleButton Classes="seg" IsChecked="{Binding IsGrid, Mode=OneWay}" Command="{Binding ShowGridCommand}" ToolTip.Tip="Grid (Ctrl+G, or Y)">

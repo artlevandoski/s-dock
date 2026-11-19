@@ -63,6 +63,7 @@ public sealed class GameExitService : IDisposable
     /// <summary>An exit press from the keyboard or controller.</summary>
     public void Press()
     {
+        EventLog.Write($"Exit press (game running: {_vm.Launcher.IsRunning}, two presses: {_vm.ExitWithTwoPresses}, armed: {_gate.IsArmed(_clock.Elapsed)})");
         if (!_vm.Launcher.IsRunning) return;
         if (_gate.Press(_clock.Elapsed, _vm.ExitWithTwoPresses))
         {

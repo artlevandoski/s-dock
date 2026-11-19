@@ -73,6 +73,19 @@ public partial class App : Application
                 gameExit.Dispose();
             };
 
+            EventLog.Write($"S-Dock {MainViewModel.AppVersion} started (data: {AppPaths.DataDir})");
+            desktop.Exit += (_, e) => EventLog.Write($"S-Dock exiting (code {e.ApplicationExitCode})");
+            // Errors outside the window's own thread would close S-Dock without a word: at least leave a record.
+            AppDomain.CurrentDomain.UnhandledException += (_, e) =>
+            {
+                if (e.ExceptionObject is Exception ex) LogError(ex);
+                EventLog.Write($"FATAL unhandled error, S-Dock is closing: {e.ExceptionObject}");
+            };
+            TaskScheduler.UnobservedTaskException += (_, e) =>
+            {
+                EventLog.Write($"Background error (ignored): {e.Exception.GetBaseException().Message}");
+                e.SetObserved();
+            };
             // Safety net: log unexpected errors and keep the app running instead of closing it.
             Dispatcher.UIThread.UnhandledException += (_, e) =>
             {

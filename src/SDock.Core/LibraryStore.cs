@@ -428,6 +428,16 @@ public sealed partial class LibraryStore : IDisposable
             .ThenBy(e => e.Id, StringComparer.Ordinal).ToList();
     }
 
+    /// <summary>Renames a game: the name shown, sorted by, and used to look it up online.</summary>
+    public void SetTitle(string editionId, string title)
+    {
+        if (string.IsNullOrWhiteSpace(title)) throw new ArgumentException("A game needs a name.", nameof(title));
+        Exec("UPDATE editions SET title = $n, updated_at = $t WHERE id = $id", ("$n", title.Trim()), ("$t", UtcNow()), ("$id", editionId));
+    }
+
+    /// <summary>Forgets a game's EmuReady result, so it's looked up again (e.g. after a rename).</summary>
+    public void ForgetEmuReady(string editionId) => Exec("DELETE FROM emuready_ratings WHERE edition_id = $e", ("$e", editionId));
+
     /// <summary>Sets the title a game is sorted by; null or blank goes back to sorting by its title.</summary>
     public void SetSortTitle(string editionId, string? sortTitle) =>
         Exec("UPDATE editions SET sort_title = $s, updated_at = $t WHERE id = $id",

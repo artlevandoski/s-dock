@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         foreach (var list in new[] { CoverList, CarouselList })
             list.ContextRequested += Cover_ContextRequested; // right-click (or the menu key) opens Game Actions
         MenuList.AddHandler(KeyDownEvent, MenuList_KeyDown, RoutingStrategies.Tunnel);
+        FilterBar.AddHandler(KeyDownEvent, FilterBar_KeyDown, RoutingStrategies.Tunnel);
         // The Settings page takes every key while it's open, before anything under it sees them.
         AddHandler(KeyDownEvent, Settings_KeyDown, RoutingStrategies.Tunnel);
         SettingsRowList.Tapped += (_, e) =>
@@ -162,6 +163,122 @@ public partial class MainWindow : Window
             JumpLetter(e.Key is Key.Up or Key.PageUp ? -1 : +1);
             e.Handled = true;
         }
+        // The grid: Up/Down go straight up or down a row from wherever you are in it.
+        else if (sender == CoverList && e.Key is Key.Up or Key.Down && e.KeyModifiers == KeyModifiers.None)
+        {
+            GridUpDown(e.Key == Key.Down ? +1 : -1);
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>How many covers fit in a grid row right now.</summary>
+    public int GridColumns
+    {
+        get
+        {
+            if (CoverList.ContainerFromIndex(0) is not { } first) return 1;
+            var y = first.Bounds.Y;
+            var n = 0;
+            for (var i = 0; i < CoverList.ItemCount && CoverList.ContainerFromIndex(i) is { } c && Math.Abs(c.Bounds.Y - y) < 1; i++) n++;
+            return Math.Max(1, n);
+        }
+    }
+
+    /// <summary>
+    /// One row down (to the last cover when the row below is shorter) or up. Up from the top row goes to the filters.
+    /// </summary>
+    private void GridUpDown(int direction)
+    {
+        var count = CoverList.ItemCount;
+        if (count == 0) return;
+        var cols = GridColumns;
+        var index = Math.Max(0, CoverList.SelectedIndex);
+        int target;
+        if (direction > 0)
+        {
+            var lastRow = (count - 1) / cols;
+            if (index / cols >= lastRow) return;                    // already on the bottom row
+            target = Math.Min(index + cols, count - 1);
+        }
+        else
+        {
+            if (index < cols) { FocusFilters(); return; }           // top row: up into the filters
+            target = index - cols;
+        }
+        CoverList.SelectedIndex = target;
+        CoverList.ScrollIntoView(target);
+        if (CoverList.ContainerFromIndex(target) is { } container) container.Focus(NavigationMethod.Directional);
+    }
+
+    // ------------------------------------------------------------------ filters (grid), by controller or keyboard
+    /// <summary>The filter bar's stops, left to right: each filter pill, More filters, the series (Arcade), Clear.</summary>
+    private List<Control> FilterStops()
+    {
+        var stops = new List<Control>();
+        for (var i = 0; i < FilterPills.ItemCount; i++)
+            if (FilterPills.ContainerFromIndex(i) is { } pill) stops.Add(pill);
+        stops.Add(MoreFilterCombo);
+        if (SeriesFilterCombo.IsEffectivelyVisible) stops.Add(SeriesFilterCombo);
+        if (ClearFiltersButton.IsEffectivelyVisible) stops.Add(ClearFiltersButton);
+        return stops;
+    }
+
+    /// <summary>Puts focus on the filter in use (or All Games).</summary>
+    public void FocusFilters()
+    {
+        if (Vm is not { IsGrid: true }) return;
+        var stops = FilterStops();
+        var target = FilterPills.SelectedIndex >= 0 && FilterPills.ContainerFromIndex(FilterPills.SelectedIndex) is { } pill ? pill
+            : MoreFilterCombo.SelectedItem is not null ? MoreFilterCombo
+            : stops.FirstOrDefault();
+        target?.Focus(NavigationMethod.Directional);
+    }
+
+    private void FilterBar_KeyDown(object? sender, KeyEventArgs e)
+    {
+        var focused = TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() as Control;
+        if (focused is null || e.KeyModifiers != KeyModifiers.None) return;
+        // An open dropdown: Up/Down choose in it, Enter or Esc close it.
+        if (focused is ComboBox { IsDropDownOpen: true } open)
+        {
+            switch (e.Key)
+            {
+                case Key.Up: open.SelectedIndex = Math.Max(0, open.SelectedIndex - 1); break;
+                case Key.Down: open.SelectedIndex = Math.Min(open.ItemCount - 1, open.SelectedIndex + 1); break;
+                case Key.Enter or Key.Escape or Key.Space: open.IsDropDownOpen = false; open.Focus(NavigationMethod.Directional); break;
+                default: return;
+            }
+            e.Handled = true;
+            return;
+        }
+        var stops = FilterStops();
+        var stop = focused.FindAncestorOfType<ListBoxItem>(includeSelf: true) is { } item && stops.Contains(item) ? item : focused;
+        var at = stops.IndexOf(stop);
+        if (at < 0) return;
+        switch (e.Key)
+        {
+            case Key.Left or Key.Right:
+                var next = at + (e.Key == Key.Right ? 1 : -1);
+                if (next >= 0 && next < stops.Count) stops[next].Focus(NavigationMethod.Directional);
+                break;
+            case Key.Enter or Key.Space:
+                if (stop is ListBoxItem pill) FilterPills.SelectedIndex = FilterPills.IndexFromContainer(pill);
+                else if (stop is ComboBox combo) combo.IsDropDownOpen = true;
+                else if (stop is Button button) button.Command?.Execute(null);
+                // Choosing a filter can rebuild the bar (Clear disappears): keep focus somewhere sensible.
+                Dispatcher.UIThread.Post(() =>
+                {
+                    if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Control { IsEffectivelyVisible: true })
+                        FocusFilters();
+                }, DispatcherPriority.Loaded);
+                break;
+            case Key.Down or Key.Escape:
+                FocusSelectedCover();
+                break;
+            default:
+                return;
+        }
+        e.Handled = true;
     }
 
     private DispatcherTimer? _letterTimer;
@@ -267,6 +384,9 @@ public partial class MainWindow : Window
 
     private async void OnClosing(object? sender, WindowClosingEventArgs e)
     {
+        // Who is closing the window, and from where (to track down S-Dock closing by itself).
+        EventLog.Write($"Window closing (reason: {e.CloseReason}, programmatic: {e.IsProgrammatic}, game running: {Vm?.Launcher.IsRunning})" +
+                       Environment.NewLine + Environment.StackTrace);
         if (_closeConfirmed || Vm is not { Launcher.IsRunning: true } vm)
             return;
         e.Cancel = true;

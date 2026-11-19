@@ -69,6 +69,7 @@ public static unsafe class SdlPads
             var pad = (SDL_Gamepad*)ptr;
             if (!SDL_GamepadConnected(pad))
             {
+                EventLog.Write("Controller disconnected");
                 SDL_CloseGamepad(pad);
                 _open.Remove(id);
                 continue;
@@ -96,7 +97,11 @@ public static unsafe class SdlPads
                 var id = ids[i];
                 if (_open.ContainsKey(id)) continue;
                 var pad = SDL_OpenGamepad(id);
-                if (pad is not null) _open[id] = (IntPtr)pad;
+                if (pad is not null)
+                {
+                    _open[id] = (IntPtr)pad;
+                    EventLog.Write($"Controller connected: {SDL_GetGamepadName(pad)} ({SDL_GetGamepadType(pad)})");
+                }
             }
         }
         finally

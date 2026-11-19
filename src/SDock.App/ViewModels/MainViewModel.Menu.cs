@@ -153,6 +153,7 @@ public sealed partial class MainViewModel
         list.Add(Do("Choose Cover…", ChooseCoverCommand));
         list.Add(Do("Choose Background…", ChooseBackgroundCommand));
         list.Add(Do("Choose Logo…", ChooseLogoCommand));
+        list.Add(Do("Rename…", RenameCommand));
         list.Add(Do("Edit Description…", EditDescriptionCommand));
         list.Add(Do("Edit Carousel Text…", EditCarouselTextCommand));
         list.Add(Do("Sort Title…", SetSortTitleCommand));

@@ -99,8 +99,9 @@ to the next or previous letter (by sort title). The letter shows briefly in the 
 Games are sorted without a leading "A", "An" or "The", so *The Messenger* is under M.
 
 **Filters.** All Games, Switch 1 and Switch 2, plus **More filters**: Unclassified,
-Update available, Not in TitleDB and Hidden games. With a
-controller, use **Settings → Library → Filter**.
+Update available, Not in TitleDB and Hidden games. With a controller in the grid, press Up from
+the top row to reach the filters: Left/Right move between them, A chooses (or opens More filters),
+Down or B goes back to the covers. **Settings → Library → Filter** works in both views.
 
 **Playing.** **Play** (A, Enter or double-click) uses the game's own emulator choice, then
 its generation's default, and otherwise asks you. Choose a game's own emulator in either view with
@@ -129,6 +130,7 @@ or Esc. The carousel keeps its menu short: **Emulator**, **Add to Favorites**, *
 |---|---|
 | Launch With… / Play Version… | Play once with another emulator, or another file of the game |
 | Choose Cover / Background / Logo… | Pick from downloaded artwork or browse your PC; *Use Default* goes back |
+| Rename… | Change the game's name: the one shown, sorted by, and used to look it up online (EmuReady, IGDB). If a rating or match isn't found, try the name as that site lists it |
 | Edit Description… / Edit Carousel Text… | Write your own description, or the one line shown in the carousel |
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
 | Sort Title… | Sort the game under another name, e.g. "Zelda 1", without renaming it (used exactly as typed) |
@@ -214,7 +216,7 @@ sees.
 
 | Controller | Keyboard | Action |
 |---|---|---|
-| D-pad / left stick | Arrow keys | Move between covers (hold to repeat); in the carousel, Up/Down jump letters |
+| D-pad / left stick | Arrow keys | Move between covers (hold to repeat). In the grid, Up/Down go straight up or down a row (from the top row, up to the filters); in the carousel, Up/Down jump letters |
 | A | Enter | Play, or choose in a menu |
 | B | Esc | Back / close a menu or dialog |
 | X | Right-click | Game Actions |

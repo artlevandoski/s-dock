@@ -57,6 +57,7 @@ public partial class MainViewModel
     {
         if (!Launcher.IsRunning) return;
         StatusText = "Closing the emulator…";
+        EventLog.Write("Closing the emulator (exit press)");
         Launcher.Close(TimeSpan.FromSeconds(5));
     }
 
@@ -230,5 +231,28 @@ public partial class MainViewModel
             return;
         _library.ClearPlayHistory();
         Refresh(SelectedItem?.Id);
+    }
+}
+
+// Rename: the name shown, sorted by, and used to look the game up online (EmuReady, IGDB).
+public partial class MainViewModel
+{
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task RenameAsync()
+    {
+        if (SelectedItem is not { } item) return;
+        var text = await _ui.EditTextAsync("Rename",
+            "The name S-Dock shows, sorts by, and uses to look the game up online (EmuReady, IGDB). " +
+            "If a rating or match isn't found, try the name as the site lists it.",
+            item.Title);
+        _ui.RestoreFocus();
+        if (text is null) return;
+        var name = string.Join(" ", text.Split([(char)13, (char)10], StringSplitOptions.RemoveEmptyEntries)).Trim();
+        if (name.Length == 0 || name == item.Title) return;
+        _library.SetTitle(item.Id, name);
+        _library.ForgetEmuReady(item.Id); // look it up again under the new name
+        Refresh(item.Id);
+        StatusText = $"Renamed to “{name}”.";
+        if (SelectedItem is { } renamed && renamed.Id == item.Id) ScheduleEmuReady(renamed);
     }
 }

@@ -561,6 +561,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void OnLaunched(string tag, int pid)
     {
         _sessionStarted = System.Diagnostics.Stopwatch.StartNew();
+        EventLog.Write($"Game started: {tag} (PID {pid})");
         var title = Items.FirstOrDefault(i => i.Id == tag)?.Title ?? "test game";
         StatusText = $"Emulator running (PID {pid}): {title}";
         LastLaunchedTag = tag;
@@ -570,6 +571,7 @@ public sealed partial class MainViewModel : ObservableObject
     private void OnFinished(string tag, int code, bool crashed)
     {
         StatusText = crashed ? $"Emulator crashed (code {code})." : $"Emulator exited (code {code}).";
+        EventLog.Write($"Game closed: {tag} (exit code {code}{(crashed ? ", crashed" : "")})");
         RecordSession(tag);
         AfterEmulator(tag);
     }
