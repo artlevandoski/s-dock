@@ -112,6 +112,21 @@ public sealed class FolderMoveTests : IDisposable
     }
 
     [AvaloniaFact]
+    public async Task Nothing_missing_explains_which_library_is_in_use()
+    {
+        // As on a second PC where the copied library isn't the one in use: a fresh library with just the new folder.
+        using var lib = _env.OpenLibrary();
+        var folder = lib.UpsertFolder(New, Generations.Switch1);
+        lib.AddEdition("Alpha", Generations.Switch1, Put(Path.Combine(New, "Alpha.nsp")), folderId: folder);
+        var ui = new FakeUi { NextPickedFolder = New };
+        var vm = new MainViewModel(lib, new EmulatorLauncher(), ui);
+        await vm.MoveGameFolderCommand.ExecuteAsync(null);
+        Assert.Contains("nothing to move", ui.Messages.Last());
+        Assert.Contains(AppPaths.DataDir, ui.Messages.Last());
+        Assert.Equal(New, ui.NextPickedFolder);                    // it didn't ask for a folder
+    }
+
+    [AvaloniaFact]
     public async Task Cancelled_or_nothing_found_changes_nothing()
     {
         var (lib, alpha, _, _) = Setup();

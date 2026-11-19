@@ -27,13 +27,27 @@ public sealed partial class MainViewModel
             await _ui.ShowMessageAsync("Move Game Folder", "No game folders have been added yet. Use Add Folder… first.");
             return;
         }
+        if (folders.All(f => f.Missing == 0))
+        {
+            // Nothing is missing, so nothing has moved, as far as this library knows. The usual reason after copying
+            // S-Dock to another PC: the copied data folder isn't the one S-Dock is using.
+            await _ui.ShowMessageAsync("Move Game Folder",
+                "None of the games in this library are missing, so there's nothing to move.\n\n" +
+                $"This library is in:\n{AppPaths.DataDir}\n\n" +
+                "If you copied your library from another PC and don't see it here, it isn't in that folder. Close S-Dock, " +
+                "put the copied data folder there (next to S-Dock.exe, replacing this one), start S-Dock again, then use " +
+                "Move Game Folder.");
+            return;
+        }
         GameFolder? old;
         var label = (GameFolder f) => f.Missing > 0 ? $"{f.Path}  ({f.Missing} missing)" : f.Path;
-        if (folders.Count == 1)
-            old = folders[0];
+        // Only folders with missing games can have moved.
+        var moved = folders.Where(f => f.Missing > 0).ToList();
+        if (moved.Count == 1)
+            old = moved[0];
         else
         {
-            var shown = folders.Take(6).ToList();
+            var shown = moved.Take(6).ToList();
             var pick = await _ui.ChooseAsync("Move Game Folder", "Which game folder has moved?",
                 "Choose the folder as S-Dock knew it. Next you'll choose where it is now.",
                 [.. shown.Select(label), "Cancel"]);
@@ -48,7 +62,9 @@ public sealed partial class MainViewModel
         if (now is null) return;
         if (AppPaths.PathKey(now) == AppPaths.PathKey(old.Path))
         {
-            await _ui.ShowMessageAsync("Move Game Folder", "That's the same folder S-Dock already knows.");
+            await _ui.ShowMessageAsync("Move Game Folder",
+                $"That's the folder S-Dock already knows ({old.Path}). Choose where its games are now instead.\n\n" +
+                $"This library is in:\n{AppPaths.DataDir}");
             return;
         }
 

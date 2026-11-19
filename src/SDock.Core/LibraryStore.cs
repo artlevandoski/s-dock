@@ -690,6 +690,16 @@ public sealed partial class LibraryStore : IDisposable
         return r.Read() ? ReadMetadata(r) : EditionMetadata.Empty(editionId);
     }
 
+    /// <summary>
+    /// Removes a game from the library: its record, files list, details, emulator choice, favorite, hidden state and
+    /// ratings (the tables cascade). The game files on disk are never touched; artwork is the caller's to delete.
+    /// </summary>
+    public void DeleteEdition(string editionId) => InTransaction(() =>
+    {
+        Exec("DELETE FROM editions WHERE id = $id", ("$id", editionId));
+        Exec("DELETE FROM settings WHERE key = $k", ("$k", NoEmulatorKey("edition", editionId)));
+    });
+
     /// <summary>Forgets everything downloaded or chosen for a game's details (its files and settings stay).</summary>
     public void DeleteMetadata(string editionId) =>
         Exec("DELETE FROM edition_metadata WHERE edition_id = $e", ("$e", editionId));

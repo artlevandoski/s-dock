@@ -171,6 +171,7 @@ public sealed partial class MainViewModel
         ]));
         if (IsGrid && !program) list.Add(Do("Add Version File…", AddVersionFileCommand));
         else list.Add(Do("Game Settings (Grid View)", ShowGridCommand));
+        list.Add(Do("Remove from Library…", RemoveFromLibraryCommand));
         return list;
     }
 

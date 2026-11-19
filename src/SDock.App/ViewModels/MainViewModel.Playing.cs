@@ -131,3 +131,36 @@ public partial class MainViewModel
         StatusText = favorite ? $"Added “{item.Title}” to Favorites." : $"Removed “{item.Title}” from Favorites.";
     }
 }
+
+// Remove from Library: take a game out of S-Dock with its artwork and settings. The game file is never touched.
+public partial class MainViewModel
+{
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private async Task RemoveFromLibraryAsync()
+    {
+        if (SelectedItem is not { } item) return;
+        if (IsRunning)
+        {
+            await _ui.ShowMessageAsync("Remove from Library", "Close the running game first.");
+            return;
+        }
+        var where = item.Edition.PrimaryFile?.Path is { } path ? $"\n\n{path}" : "";
+        var choice = await _ui.ChooseAsync("Remove from Library", $"Remove “{item.Title}” from S-Dock?",
+            "Its artwork, description, favorite and settings are deleted from S-Dock. " +
+            $"The game file itself isn't touched and stays on your PC:{where}\n\n" +
+            "Adding its folder again would bring it back. To keep it out of sight but in S-Dock, use Hide Game instead.",
+            "Remove", "Cancel");
+        _ui.RestoreFocus();
+        if (choice != "Remove") return;
+
+        // Move to the neighbouring cover so the selection doesn't jump back to the start of the row.
+        var index = Items.IndexOf(item);
+        var next = Items.Count > 1 ? Items[index + 1 < Items.Count ? index + 1 : index - 1].Id : null;
+        _library.DeleteEdition(item.Id);
+        var art = Path.Combine(AppPaths.ArtworkDir, item.Id);
+        try { if (Directory.Exists(art)) Directory.Delete(art, recursive: true); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { } // a picture in use; harmless leftover
+        Refresh(next);
+        StatusText = $"Removed “{item.Title}” from the library.";
+    }
+}

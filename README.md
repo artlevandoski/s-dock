@@ -128,6 +128,7 @@ or Esc. The carousel keeps its menu short: **Emulator**, **Add to Favorites**, *
 | Add to / Remove from Favorites | Mark the game as a favorite; it also shows in the **Favorites** tab |
 | Emulator › | The game's own emulator: the default, any profile, or no emulator. The tick shows the current one; a choice applies at once |
 | Hide Game | Hide it from its library; find it again under **More filters → Hidden games** |
+| Remove from Library… | Take the game out of S-Dock with its artwork, description and settings (asks first). The game file itself stays on your PC; adding its folder again brings the game back |
 | Game Info and Matching › | Refresh from TitleDB, **Set Title ID…**, match or refresh on IGDB, use the default artwork, or **Clear Match and Artwork…** to start the game over |
 
 **Updates and DLC.** S-Dock reads the update and DLC files beside each game (for example in
