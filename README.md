@@ -115,7 +115,10 @@ closes, S-Dock comes back with the same game selected.
 
 - **Esc** (while the game is in front) or **Start + Select** closes the game and returns to
   S-Dock. By default you press twice: the first press shows a note, and a second press within
-  3 seconds closes it. Change this under **Settings → Playing**.
+  3 seconds closes it. Change this under **Settings → Playing**. S-Dock asks the emulator to close and
+  stops it if it hasn't after 2.5 seconds; to skip Eden's "stop emulation?" question, set Eden's
+  **Confirm before stopping emulation** to *Never*. Steam Input often sends Alt+F4 for Start + Select
+  as well; S-Dock ignores close requests for a few seconds after an exit press, so only the game closes.
 - **Start Games in Full Screen** (on by default) starts Eden in full screen. For other
   emulators, add their own full-screen switch to the profile.
 

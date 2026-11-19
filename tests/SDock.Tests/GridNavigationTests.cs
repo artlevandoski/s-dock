@@ -69,7 +69,12 @@ public sealed class GridNavigationTests : IDisposable
 
         Pad(window, PadAction.Up);                                    // top row: up into the filters
         Assert.IsType<ListBoxItem>(Focused(window));                  // on All Games
-        Pad(window, PadAction.Right, PadAction.Accept);               // Switch 1, chosen with A
+        Pad(window, PadAction.Right);                                 // on Switch 1: it's highlighted before choosing
+        var onPill = Assert.IsType<ListBoxItem>(Focused(window));
+        Assert.Equal("Switch 1", (onPill.DataContext as FilterOption)?.Label);
+        Assert.Contains(":focus-visible", onPill.Classes);            // the bright ring (App.axaml)
+        Assert.Equal(FilterOption.AllValue, vm.GenerationFilter.Value); // not chosen yet
+        Pad(window, PadAction.Accept);                                // chosen with A
         Assert.Equal(Generations.Switch1, vm.GenerationFilter.Value);
         Assert.Equal(["Alpha"], vm.Items.Select(i => i.Title));
 
@@ -85,6 +90,23 @@ public sealed class GridNavigationTests : IDisposable
         Pad(window, PadAction.Cancel);                                // B: back to the covers
         Assert.IsType<EditionItem>(Assert.IsType<ListBoxItem>(Focused(window)).DataContext); // a cover again
         window.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_close_request_right_after_an_exit_press_is_ignored_but_quitting_still_works()
+    {
+        using var lib = _env.OpenLibrary();
+        var vm = new MainViewModel(lib, new EmulatorLauncher(), new FakeUi());
+        Assert.False(vm.JustPressedExit);
+        vm.NoteExitPress();                                           // Start + Select (or Esc) during a game
+        Assert.True(vm.JustPressedExit);                              // Alt+F4 from Steam Input now is ignored
+        var window = new MainWindow { DataContext = vm, Width = 800, Height = 600 };
+        window.Show();
+        var closed = false;
+        window.Closed += (_, _) => closed = true;
+        window.Close();                                               // S-Dock's own Quit is not an outside request
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(closed);
     }
 
     [AvaloniaFact]

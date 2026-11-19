@@ -53,12 +53,27 @@ public partial class MainViewModel
     /// Closes the running game's emulator the way its close button would (so it shuts down cleanly), stopping it
     /// if it hasn't exited within a few seconds. S-Dock comes back to the front when it has.
     /// </summary>
+    /// <summary>When the last exit press (Esc or Start + Select) came.</summary>
+    public DateTime? LastExitPressUtc { get; private set; }
+
+    /// <summary>For this long after an exit press, close requests from outside S-Dock are ignored (see MainWindow).</summary>
+    public static readonly TimeSpan IgnoreCloseAfterExitPress = TimeSpan.FromSeconds(4);
+
+    /// <summary>
+    /// True right after an exit press. Programs such as Steam Input often send Alt+F4 for the same buttons; by the
+    /// time it arrives S-Dock may be back in front, and it must not close S-Dock as well as the game.
+    /// </summary>
+    public bool JustPressedExit => LastExitPressUtc is { } at && DateTime.UtcNow - at < IgnoreCloseAfterExitPress;
+
+    public void NoteExitPress() => LastExitPressUtc = DateTime.UtcNow;
+
     public void ExitGame()
     {
         if (!Launcher.IsRunning) return;
         StatusText = "Closing the emulator…";
         EventLog.Write("Closing the emulator (exit press)");
-        Launcher.Close(TimeSpan.FromSeconds(5));
+        // Asked politely first; if it hasn't closed in a moment (Eden may ask "stop emulation?"), it's stopped.
+        Launcher.Close(TimeSpan.FromSeconds(2.5));
     }
 
     private EmulatorProfile ForLaunch(EmulatorProfile profile) =>

@@ -65,6 +65,7 @@ public sealed class GameExitService : IDisposable
     {
         EventLog.Write($"Exit press (game running: {_vm.Launcher.IsRunning}, two presses: {_vm.ExitWithTwoPresses}, armed: {_gate.IsArmed(_clock.Elapsed)})");
         if (!_vm.Launcher.IsRunning) return;
+        _vm.NoteExitPress();
         if (_gate.Press(_clock.Elapsed, _vm.ExitWithTwoPresses))
         {
             HideToast();

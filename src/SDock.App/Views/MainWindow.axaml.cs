@@ -387,6 +387,14 @@ public partial class MainWindow : Window
         // Who is closing the window, and from where (to track down S-Dock closing by itself).
         EventLog.Write($"Window closing (reason: {e.CloseReason}, programmatic: {e.IsProgrammatic}, game running: {Vm?.Launcher.IsRunning})" +
                        Environment.NewLine + Environment.StackTrace);
+        // A close request from outside (e.g. Alt+F4 that Steam Input sends for Start + Select) right after leaving a
+        // game was meant for the game, not S-Dock: ignore it.
+        if (!e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing && Vm is { JustPressedExit: true })
+        {
+            e.Cancel = true;
+            EventLog.Write("Ignored: a close request right after leaving a game (it was meant for the game)");
+            return;
+        }
         if (_closeConfirmed || Vm is not { Launcher.IsRunning: true } vm)
             return;
         e.Cancel = true;

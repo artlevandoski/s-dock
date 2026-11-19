@@ -198,6 +198,22 @@
       <Setter Property="Background" Value="{StaticResource SyAccentHover}" />
       <Setter Property="Foreground" Value="{StaticResource SyOnAccent}" />
     </Style>
+    <!-- The filter the controller or keyboard is on: a bright ring, whether or not it's the one chosen. -->
+    <Style Selector="ListBox.pills ListBoxItem:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="ListBox.pills ListBoxItem:focus-visible">
+      <Setter Property="RenderTransform" Value="scale(1.06)" />
+    </Style>
+    <Style Selector="ComboBox.chip:focus-visible /template/ Border#Background">
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
+    <Style Selector="Button#ClearFiltersButton:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="2" />
+    </Style>
 
     <!-- Grid / Carousel buttons with icon and label -->
     <Style Selector="ToggleButton.seg">
