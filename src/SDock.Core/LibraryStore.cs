@@ -11,7 +11,7 @@ namespace SDock.Core;
 /// </summary>
 public sealed partial class LibraryStore : IDisposable
 {
-    public const int SchemaVersion = 13;
+    public const int SchemaVersion = 14;
 
     private const string Schema = """
         CREATE TABLE IF NOT EXISTS meta (
@@ -138,6 +138,12 @@ public sealed partial class LibraryStore : IDisposable
             last_played   TEXT NOT NULL,
             total_seconds INTEGER NOT NULL DEFAULT 0,
             sessions      INTEGER NOT NULL DEFAULT 0
+        );
+        -- v14: each game's trailer (a YouTube video ID from IGDB; NULL = looked up, none).
+        CREATE TABLE IF NOT EXISTS trailers (
+            edition_id TEXT PRIMARY KEY REFERENCES editions(id) ON DELETE CASCADE,
+            video_id   TEXT,
+            fetched_at TEXT NOT NULL
         );
         """;
 
@@ -282,6 +288,11 @@ public sealed partial class LibraryStore : IDisposable
         {
             // v12 -> v13: play history table comes from the schema script; nothing to convert.
             Exec("UPDATE meta SET value = '13' WHERE key = 'schema_version'");
+        }
+        if (version < 14)
+        {
+            // v13 -> v14: trailers table comes from the schema script; nothing to convert.
+            Exec("UPDATE meta SET value = '14' WHERE key = 'schema_version'");
         }
     }
 

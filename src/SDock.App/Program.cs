@@ -29,9 +29,14 @@ internal static class Program
             Environment.SetEnvironmentVariable(AppPaths.DataDirEnv, Path.GetFullPath(args[i + 1]));
 
         Benchmark = args.Contains("--benchmark");
+        // --trailer-test <video id> <png>: play one trailer, record whether it plays, save a snapshot, exit (a check).
+        int t = Array.IndexOf(args, "--trailer-test");
+        if (t >= 0 && t + 2 < args.Length) TrailerTest = (args[t + 1], Path.GetFullPath(args[t + 2]));
         Started.Start();
         return BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }
+
+    public static (string VideoId, string Png)? TrailerTest { get; private set; }
 
     /// <summary>--benchmark: measure frame times with the real renderer and exit (for performance checks).</summary>
     public static bool Benchmark { get; private set; }

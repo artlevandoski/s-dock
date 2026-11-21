@@ -20,6 +20,7 @@
     <PackageReference Include="CommunityToolkit.Mvvm" />
     <PackageReference Include="Velopack" />
     <PackageReference Include="ppy.SDL3-CS" />
+    <PackageReference Include="Microsoft.Web.WebView2" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\SDock.Core\SDock.Core.csproj" />

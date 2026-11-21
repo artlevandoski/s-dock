@@ -61,7 +61,7 @@ public sealed class ControllerMenuTests : IDisposable
         // The carousel's Game Actions are a short menu: emulator, favorites, hiding, and the way to the rest.
         Press(window, PadAction.GameActions);
         Assert.True(vm.IsMenuOpen);
-        Assert.Equal(["Emulator: Choose emulator", "Add to Favorites", "Hide Game", "More Game Actions (Grid View)"],
+        Assert.Equal(["Emulator: Choose emulator", "Watch Trailer", "Add to Favorites", "Hide Game", "More Game Actions (Grid View)"],
             vm.MenuItems.Select(m => m.Label));
         Press(window, PadAction.Cancel);
         Assert.False(vm.IsMenuOpen);

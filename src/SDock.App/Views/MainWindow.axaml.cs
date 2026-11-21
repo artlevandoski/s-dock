@@ -33,6 +33,7 @@ public partial class MainWindow : Window
         FilterBar.AddHandler(KeyDownEvent, FilterBar_KeyDown, RoutingStrategies.Tunnel);
         // The Settings page takes every key while it's open, before anything under it sees them.
         AddHandler(KeyDownEvent, Settings_KeyDown, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, Trailer_KeyDown, RoutingStrategies.Tunnel);
         SettingsRowList.Tapped += (_, e) =>
         {
             if ((e.Source as Control)?.FindAncestorOfType<Button>(includeSelf: true) is not null) return; // the ‹ › arrows
@@ -59,6 +60,7 @@ public partial class MainWindow : Window
                 vm.PropertyChanged += Vm_PropertyChanged;
                 vm.MenuChanged += OnMenuChanged;
                 vm.SettingsChanged += OnSettingsChanged;
+                vm.TrailerScript += script => _ = _trailer?.RunAsync(script);
                 vm.QuitRequested += () => Close();
                 ApplyFullScreen(vm.IsCarousel);
             }
@@ -107,8 +109,53 @@ public partial class MainWindow : Window
         if ((sender as Control)?.DataContext is SettingRow row) Vm?.StepSetting(row, +1);
     }
 
+    // ------------------------------------------------------------------ trailer
+    private Controls.TrailerView? _trailer;
+
+    /// <summary>The trailer player, once one has played (for the --trailer-test check).</summary>
+    public Controls.TrailerView? TrailerPlayer => _trailer;
+
+    private void UpdateTrailer()
+    {
+        if (Vm is not { } vm) return;
+        if (vm.IsTrailerOpen && vm.TrailerVideoId is { } video)
+        {
+            if (_trailer is null && OperatingSystem.IsWindows() && TryGetPlatformHandle() is not null && MainViewModel.TrailerPlayerAvailable())
+            {
+                _trailer = new Controls.TrailerView();
+                _trailer.CloseRequested += () => vm.CloseTrailer();
+                _trailer.Failed += message => { vm.CloseTrailer(); vm.StatusText = $"The trailer couldn't play: {message}"; };
+                TrailerHost.Child = _trailer;
+            }
+            _trailer?.Play(video);
+        }
+        else
+        {
+            _trailer?.Stop();
+            Dispatcher.UIThread.Post(FocusSelectedCover, DispatcherPriority.Loaded);
+        }
+    }
+
+    private void Trailer_KeyDown(object? sender, KeyEventArgs e)
+    {
+        if (Vm is not { IsTrailerOpen: true } vm) return;
+        PadAction? action = e.Key switch
+        {
+            Key.Space or Key.Enter => PadAction.Accept,
+            Key.Left => PadAction.Left,
+            Key.Right => PadAction.Right,
+            Key.Up => PadAction.Up,
+            Key.Down => PadAction.Down,
+            Key.Escape or Key.Back => PadAction.Cancel,
+            _ => null,
+        };
+        if (action is { } a) vm.TrailerInput(a);
+        e.Handled = true; // nothing under the trailer reacts while it plays
+    }
+
     private void Vm_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
+        if (e.PropertyName is nameof(MainViewModel.IsTrailerOpen) or nameof(MainViewModel.TrailerVideoId)) UpdateTrailer();
         if (e.PropertyName == nameof(MainViewModel.SettingsRowIndex) && Vm is { SettingsRowIndex: >= 0 } settings)
             Dispatcher.UIThread.Post(() =>
             {

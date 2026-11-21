@@ -333,6 +333,13 @@
                   </Grid>
                   <Button x:Name="DetailsGameActionsButton" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
                           Command="{Binding OpenGameMenuCommand}" Content="Game Actions…" ToolTip.Tip="Launch With, artwork, sort title and more (X, or right-click a cover)" />
+                  <Button x:Name="DetailsTrailerButton" Classes="subtle" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"
+                          Command="{Binding WatchTrailerCommand}" ToolTip.Tip="Play the game's trailer here in S-Dock">
+                    <StackPanel Orientation="Horizontal" Spacing="8">
+                      <PathIcon Data="{StaticResource IconPlay}" Width="14" Height="14" />
+                      <TextBlock Text="Watch Trailer" />
+                    </StackPanel>
+                  </Button>
                   <TextBlock Text="{Binding RouteText}" Classes="muted" FontSize="12" TextWrapping="Wrap"
                              HorizontalAlignment="Center" TextAlignment="Center" />
                   <!-- EmuReady's PC rating (Settings → Game Info); click to open the game on emuready.com. -->
@@ -721,6 +728,31 @@
         </Grid>
       </DockPanel>
     </Border>
+
+    <!-- ============================== Trailer ==============================
+         A game's trailer, full screen inside S-Dock. The player itself is a native view (WebView2), created the first
+         time a trailer plays; nothing S-Dock draws can sit on top of it, so the hints are in a bar below it. -->
+    <Grid x:Name="TrailerOverlay" IsVisible="{Binding IsTrailerOpen}" Background="Black" RowDefinitions="*,Auto">
+      <Border x:Name="TrailerHost" />
+      <Border Grid.Row="1" Padding="32,12" Background="#F010111E" BorderBrush="#2AFFFFFF" BorderThickness="0,1,0,0">
+        <Grid ColumnDefinitions="*,Auto">
+          <TextBlock Text="{Binding TrailerTitle}" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center"
+                     TextTrimming="CharacterEllipsis" Margin="0,0,24,0" />
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+            <Border Classes="key round"><TextBlock Text="A" /></Border>
+            <TextBlock Text="Pause" VerticalAlignment="Center" Margin="2,0,18,0" />
+            <Border Classes="key"><TextBlock Text="←→" /></Border>
+            <TextBlock Text="10 s" VerticalAlignment="Center" Margin="2,0,18,0" />
+            <Border Classes="key"><TextBlock Text="↑↓" /></Border>
+            <TextBlock Text="Volume" VerticalAlignment="Center" Margin="2,0,18,0" />
+            <Border Classes="key round"><TextBlock Text="B" /></Border>
+            <TextBlock Text="Close" VerticalAlignment="Center" Margin="2,0,14,0" />
+            <Button x:Name="TrailerCloseButton" Classes="subtle" Content="Close" Focusable="False"
+                    Command="{Binding CloseTrailerCommand}" ToolTip.Tip="Close the trailer (B or Esc)" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
 
     <!-- The on-screen menu: Game Actions (X, the button, right-click) and Settings (Select/Back, the gear).
          D-pad or arrows to move, A or Enter to choose, B or Esc to go back. -->

@@ -156,6 +156,11 @@ public sealed class GamepadService
 
     public static void Dispatch(Window active, PadAction action)
     {
+        if (active is MainWindow { DataContext: MainViewModel { IsTrailerOpen: true } trailerVm })
+        {
+            trailerVm.TrailerInput(action); // a trailer is playing: A pauses, B closes
+            return;
+        }
         if (active is MainWindow { DataContext: MainViewModel { IsSettingsOpen: true } settingsVm })
         {
             settingsVm.SettingsInput(action); // the Settings page handles everything itself

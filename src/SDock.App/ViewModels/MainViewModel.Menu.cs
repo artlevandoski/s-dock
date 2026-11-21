@@ -63,6 +63,7 @@ public sealed partial class MainViewModel
         var list = new List<MenuEntry>();
         if (SelectedItem is { Edition.IsProgram: false })
             list.Add(Page($"Emulator: {EmulatorChoiceLabel}", BuildEmulatorPage));
+        list.Add(Do("Watch Trailer", WatchTrailerCommand));
         list.Add(Do(FavoriteMenuLabel, ToggleFavoriteCommand));
         list.Add(Do(HideMenuLabel, ToggleHiddenCommand));
         list.Add(Do("More Game Actions (Grid View)", ShowGridCommand));
@@ -150,6 +151,7 @@ public sealed partial class MainViewModel
             list.Add(Do("Launch With…", LaunchWithCommand, CanPlay));
             list.Add(Do("Play Version…", PlayVersionCommand, CanPlay));
         }
+        list.Add(Do("Watch Trailer", WatchTrailerCommand));
         list.Add(Do("Choose Cover…", ChooseCoverCommand));
         list.Add(Do("Choose Background…", ChooseBackgroundCommand));
         list.Add(Do("Choose Logo…", ChooseLogoCommand));

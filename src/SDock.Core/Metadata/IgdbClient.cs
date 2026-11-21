@@ -21,6 +21,14 @@ public sealed record IgdbGame
     [JsonPropertyName("cover")] public IgdbImage? Cover { get; init; }
     [JsonPropertyName("artworks")] public List<IgdbImage>? Artworks { get; init; }
     [JsonPropertyName("screenshots")] public List<IgdbImage>? Screenshots { get; init; }
+    [JsonPropertyName("videos")] public List<IgdbVideo>? Videos { get; init; }
+
+    /// <summary>The YouTube ID of the game's trailer: one named "trailer" (not a gameplay or review video), else the first.</summary>
+    public string? TrailerVideoId =>
+        (Videos?.FirstOrDefault(v => v.Name.Trim().Equals("Trailer", StringComparison.OrdinalIgnoreCase))
+         ?? Videos?.FirstOrDefault(v => v.Name.Contains("trailer", StringComparison.OrdinalIgnoreCase) &&
+                                        !v.Name.Contains("review", StringComparison.OrdinalIgnoreCase))
+         ?? Videos?.FirstOrDefault())?.VideoId is { Length: > 0 } id ? id : null;
 
     public int? ReleaseYear => FirstReleaseDate is { } s ? DateTimeOffset.FromUnixTimeSeconds(s).Year : null;
     public IEnumerable<string> GenreNames => Genres?.Select(g => g.Name).Where(n => n.Length > 0) ?? [];
@@ -35,6 +43,13 @@ public sealed record IgdbNamed
     [JsonPropertyName("id")] public long Id { get; init; }
     [JsonPropertyName("name")] public string Name { get; init; } = "";
     [JsonPropertyName("abbreviation")] public string? Abbreviation { get; init; }
+}
+
+/// <summary>A video on IGDB: a YouTube video ID and its name ("Trailer", "Gameplay", ...).</summary>
+public sealed record IgdbVideo
+{
+    [JsonPropertyName("video_id")] public string VideoId { get; init; } = "";
+    [JsonPropertyName("name")] public string Name { get; init; } = "";
 }
 
 public sealed record IgdbImage
@@ -83,7 +98,7 @@ public sealed partial class IgdbClient : IDisposable
     public const string ImageBase = "https://images.igdb.com/igdb/image/upload/";
     public const string GameFields =
         "id,name,slug,summary,first_release_date,url,genres.name,platforms.name,platforms.abbreviation," +
-        "cover.image_id,artworks.image_id,screenshots.image_id";
+        "cover.image_id,artworks.image_id,screenshots.image_id,videos.video_id,videos.name";
 
     private static readonly TimeSpan MinInterval = TimeSpan.FromMilliseconds(260);
 

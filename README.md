@@ -133,6 +133,7 @@ or Esc. The carousel keeps its menu short: **Emulator**, **Add to Favorites**, *
 |---|---|
 | Launch With… / Play Version… | Play once with another emulator, or another file of the game |
 | Choose Cover / Background / Logo… | Pick from downloaded artwork or browse your PC; *Use Default* goes back |
+| Watch Trailer | Play the game's trailer inside S-Dock (also a button in the grid's details panel). A pauses, Left/Right skip 10 s, Up/Down change the volume, B or Esc closes |
 | Rename… | Change the game's name: the one shown, sorted by, and used to look it up online (EmuReady, IGDB). If a rating or match isn't found, try the name as that site lists it |
 | Edit Description… / Edit Carousel Text… | Write your own description, or the one line shown in the carousel |
 | Add Version File… | Attach another file (an update, revision or alternate dump) to the game |
@@ -171,9 +172,15 @@ IGDB.
 |---|---|---|
 | [TitleDB](https://github.com/blawar/titledb) | Name, description, publisher, release date, genres, players, square eShop icon (the cover), banner (the background), screenshots | None. Matched exactly by each file's title ID. |
 | [nx-versions](https://github.com/16BitWonder/nx-versions) | Latest known update for each game, and dates | None. On by default (**Settings → Game Info → Use nx-versions**). |
-| [IGDB](https://www.igdb.com/) | Backup for games TitleDB doesn't list, and logos | Free Twitch developer credentials (below) |
+| [IGDB](https://www.igdb.com/) | Backup for games TitleDB doesn't list, logos, and trailers | Free Twitch developer credentials (below) |
 | [SteamGridDB](https://www.steamgriddb.com/) | More logos, covers and backgrounds | Free API key (optional) |
 | [EmuReady](https://www.emuready.com/) | How well each game runs on PC emulators, from community reports | None. On by default (**Settings → Game Info → Show EmuReady ratings**). |
+
+**Trailers.** **Watch Trailer** plays the game's YouTube trailer full screen inside S-Dock, using
+Microsoft Edge WebView2 (part of Windows 10 and 11). Trailers come from IGDB, so they need your free
+IGDB keys: a game matched on IGDB gets its trailer with the match, and for any other game S-Dock
+asks IGDB when you first press Watch Trailer (without changing the game's match). If none is found,
+renaming the game to IGDB's name usually helps.
 
 **EmuReady.** With **Show EmuReady ratings** on (the default), the game you stop on is looked up on
 emuready.com (at most once a week per game) and its rating shows under Play, e.g. *EmuReady: Great on
@@ -250,7 +257,7 @@ S-Dock\
   S-Dock.exe   starts S-Dock
   current\     the app itself (replaced by updates)
   Update.exe   applies updates
-  data\        library database, artwork, TitleDB and logs
+  data\        library database, artwork, TitleDB, logs, and the trailer player's cache (webview)
   emulators\   emulator builds you place here
   packages\    downloaded updates (appears after the first update)
 ```

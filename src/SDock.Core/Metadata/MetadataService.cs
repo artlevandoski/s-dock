@@ -161,6 +161,7 @@ public sealed partial class MetadataService(LibraryStore library, IgdbClient cli
             FetchedAt = LibraryStore.UtcNow(),
         });
         library.SetIgdbId(editionId, game.Id);
+        library.SetTrailer(editionId, game.TrailerVideoId); // the trailer comes with the match
     }
 
     /// <summary>Fetches the matched game again (new description, art). User edits are kept.</summary>

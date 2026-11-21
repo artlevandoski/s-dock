@@ -29,6 +29,46 @@ public partial class App : Application
                 base.OnFrameworkInitializationCompleted();
                 return;
             }
+            if (Program.TrailerTest is { } test)
+            {
+                // A check of the real player inside S-Dock's window: open, playing, closed (silent), opened again.
+                var testLibrary = new LibraryStore(AppPaths.DatabasePath, AppPaths.PortableRoot);
+                var testVm = new MainViewModel(testLibrary, new EmulatorLauncher(), new UiServices(new MainWindow()));
+                var testWindow = new MainWindow { DataContext = testVm, Width = 960, Height = 600 };
+                desktop.MainWindow = testWindow;
+                testWindow.Opened += async (_, _) =>
+                {
+                    var report = new System.Text.StringBuilder().AppendLine($"runtime available: {Controls.TrailerView.RuntimeAvailable}");
+                    async Task<string> WaitFor(string want)
+                    {
+                        var state = "";
+                        for (var i = 0; i < 40; i++)
+                        {
+                            await Task.Delay(500);
+                            if (testWindow.TrailerPlayer?.Web is null) continue;
+                            state = await testWindow.TrailerPlayer.RunAsync("window.sdockState || location.href");
+                            if (state.Contains(want) || state.Contains("error")) break;
+                        }
+                        return state;
+                    }
+                    testVm.OpenTrailer("Test", test.VideoId);
+                    report.AppendLine($"1 open: {await WaitFor("playing")}");
+                    await Task.Delay(2000);
+                    if (testWindow.TrailerPlayer?.Web is { } web)
+                    {
+                        await using var png = File.Create(test.Png);
+                        await web.CapturePreviewAsync(Microsoft.Web.WebView2.Core.CoreWebView2CapturePreviewImageFormat.Png, png);
+                    }
+                    testVm.TrailerInput(Input.PadAction.Cancel); // B
+                    report.AppendLine($"2 closed: {await WaitFor("about:blank")}, overlay visible: {testVm.IsTrailerOpen}");
+                    testVm.OpenTrailer("Test", test.VideoId);
+                    report.AppendLine($"3 again: {await WaitFor("playing")}");
+                    File.WriteAllText(test.Png + ".txt", report.ToString());
+                    desktop.Shutdown();
+                };
+                base.OnFrameworkInitializationCompleted();
+                return;
+            }
             // Relative emulator paths always mean "inside S-Dock's folder", even with --data-dir.
             var library = new LibraryStore(AppPaths.DatabasePath, AppPaths.PortableRoot);
             if (AppPaths.IsPortable)

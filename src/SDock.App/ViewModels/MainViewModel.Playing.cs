@@ -266,6 +266,7 @@ public partial class MainViewModel
         if (name.Length == 0 || name == item.Title) return;
         _library.SetTitle(item.Id, name);
         _library.ForgetEmuReady(item.Id); // look it up again under the new name
+        if (!item.IsMatched) _library.ForgetTrailer(item.Id); // and its trailer, found by name
         Refresh(item.Id);
         StatusText = $"Renamed to “{name}”.";
         if (SelectedItem is { } renamed && renamed.Id == item.Id) ScheduleEmuReady(renamed);
