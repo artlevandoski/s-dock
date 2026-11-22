@@ -180,13 +180,29 @@ public sealed partial class MainViewModel
 
     public bool IsGrid => !IsCarousel;
 
-    /// <summary>The on-screen keyboard for the grid's search (opened from the filters with the controller).</summary>
+    /// <summary>The on-screen keyboard for search (Up in the carousel, Up from the filters in the grid).</summary>
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSearchBox), nameof(ShowSearchButton))]
     public partial bool IsSearchKeyboardOpen { get; set; }
+
+    /// <summary>The search box is being used (e.g. Ctrl+F in the carousel), with or without the on-screen keyboard.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowSearchBox), nameof(ShowSearchButton))]
+    public partial bool IsSearching { get; set; }
+
+    /// <summary>
+    /// The grid always shows the search box. The carousel stays clean: the box shows while you search, or while a
+    /// search is filtering the covers (so it's clear why some are missing); otherwise a search button stands in.
+    /// </summary>
+    public bool ShowSearchBox => IsGrid || IsSearching || IsSearchKeyboardOpen || SearchText.Length > 0;
+    public bool ShowSearchButton => !ShowSearchBox;
 
     partial void OnIsCarouselChanged(bool value)
     {
-        if (value) IsSearchKeyboardOpen = false; // search lives in the grid
+        IsSearchKeyboardOpen = false;
+        IsSearching = false;
+        OnPropertyChanged(nameof(ShowSearchBox));
+        OnPropertyChanged(nameof(ShowSearchButton));
     }
 
     /// <summary>The selected game's art fills the window in the carousel and stays faint behind the grid.</summary>
@@ -211,6 +227,8 @@ public sealed partial class MainViewModel
 
     partial void OnSearchTextChanged(string value)
     {
+        OnPropertyChanged(nameof(ShowSearchBox));
+        OnPropertyChanged(nameof(ShowSearchButton));
         _searchByLibrary[CurrentLibrary] = value ?? "";
         if (!_loadingState) ApplyFilter();
     }

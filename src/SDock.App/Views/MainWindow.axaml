@@ -194,12 +194,16 @@
             </TabStrip.ItemTemplate>
           </TabStrip>
           <StackPanel Grid.Column="3" Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-            <Panel Width="230" IsVisible="{Binding IsGrid}">
+            <Panel Width="230" IsVisible="{Binding ShowSearchBox}">
               <TextBox x:Name="SearchBox" Classes="search" Text="{Binding SearchText}" PlaceholderText="Search (Ctrl+F)" />
               <PathIcon Data="{StaticResource IconSearch}" Width="15" Height="15" Margin="13,0,0,0"
                         HorizontalAlignment="Left" VerticalAlignment="Center" Foreground="{StaticResource SyMuted}"
                         IsHitTestVisible="False" />
             </Panel>
+            <Button x:Name="SearchButton" Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center"
+                    IsVisible="{Binding ShowSearchButton}" Click="SearchButton_Click" ToolTip.Tip="Search (Up, or Ctrl+F)">
+              <PathIcon Data="{StaticResource IconSearch}" Width="19" Height="19" />
+            </Button>
             <Button Classes="subtle" Width="44" Height="44" Padding="0" HorizontalContentAlignment="Center" IsVisible="{Binding IsGrid}"
                     Command="{Binding AddFolderCommand}" ToolTip.Tip="Add a folder of games (Ctrl+O)">
               <PathIcon Data="{StaticResource IconFolderPlus}" Width="20" Height="20" />
@@ -257,6 +261,8 @@
             <Border Classes="key"><TextBlock Text="←" /></Border>
             <Border Classes="key"><TextBlock Text="→" /></Border>
             <TextBlock Text="Browse" VerticalAlignment="Center" Margin="2,0,22,0" />
+            <Border Classes="key" IsVisible="{Binding IsCarousel}"><TextBlock Text="↑" /></Border>
+            <TextBlock Text="Search" VerticalAlignment="Center" Margin="2,0,22,0" IsVisible="{Binding IsCarousel}" />
             <Border Classes="key round"><TextBlock Text="A" /></Border>
             <TextBlock Text="Play" VerticalAlignment="Center" Margin="2,0,22,0" />
             <Border Classes="key round"><TextBlock Text="X" /></Border>

@@ -207,10 +207,16 @@ public partial class MainWindow : Window
             Play();
             e.Handled = true;
         }
-        // Letters: Up/Down in the carousel (it only scrolls sideways), Page Up/Down in either view.
-        else if ((sender == CarouselList && e.Key is Key.Up or Key.Down) || e.Key is Key.PageUp or Key.PageDown)
+        // The carousel: Up searches (Down does nothing; letters are LT/RT, or Page Up/Down).
+        else if (sender == CarouselList && e.Key is Key.Up or Key.Down && e.KeyModifiers == KeyModifiers.None)
         {
-            JumpLetter(e.Key is Key.Up or Key.PageUp ? -1 : +1);
+            if (e.Key == Key.Up) OpenSearchKeyboard();
+            e.Handled = true;
+        }
+        // Letters: Page Up/Down in either view.
+        else if (e.Key is Key.PageUp or Key.PageDown)
+        {
+            JumpLetter(e.Key == Key.PageUp ? -1 : +1);
             e.Handled = true;
         }
         // The grid: Up/Down go straight up or down a row from wherever you are in it.
@@ -337,15 +343,38 @@ public partial class MainWindow : Window
     /// <summary>Search with the controller: the search box with the on-screen keyboard under it.</summary>
     public void OpenSearchKeyboard()
     {
-        if (Vm is not { IsGrid: true } vm) return;
+        if (Vm is not { } vm) return;
         vm.IsSearchKeyboardOpen = true;
-        SearchBox.Focus();
-        SearchBox.CaretIndex = (SearchBox.Text ?? "").Length;
+        FocusSearchBox(selectAll: false);
+    }
+
+    /// <summary>Puts the cursor in the search box once it's showing (in the carousel it appears only now).</summary>
+    private void FocusSearchBox(bool selectAll)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            SearchBox.Focus();
+            if (selectAll) SearchBox.SelectAll();
+            else SearchBox.CaretIndex = (SearchBox.Text ?? "").Length;
+        }, DispatcherPriority.Loaded);
+    }
+
+    private void SearchButton_Click(object? sender, RoutedEventArgs e)
+    {
+        // The mouse: the box, and the on-screen keyboard only if the controller is what's in use.
+        if (Vm is not { } vm) return;
+        vm.IsSearching = true;
+        if (GamepadService.ControllerInUse) vm.IsSearchKeyboardOpen = true;
+        FocusSearchBox(selectAll: true);
     }
 
     private void CloseSearchKeyboard()
     {
-        if (Vm is { } vm) vm.IsSearchKeyboardOpen = false;
+        if (Vm is { } vm)
+        {
+            vm.IsSearchKeyboardOpen = false;
+            vm.IsSearching = false;
+        }
         FocusSelectedCover(); // straight to the results
     }
 
@@ -428,13 +457,9 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
         {
-            // Search lives in the grid: from the carousel, switch first, then focus the box once it's shown.
-            if (Vm is { IsCarousel: true } vm) vm.IsCarousel = false;
-            Dispatcher.UIThread.Post(() =>
-            {
-                SearchBox.Focus();
-                SearchBox.SelectAll();
-            }, DispatcherPriority.Loaded);
+            // Search in either view: in the carousel the box appears in the top bar for as long as you're searching.
+            if (Vm is { } vm) vm.IsSearching = true;
+            FocusSearchBox(selectAll: true);
             e.Handled = true;
         }
         else if (e.Key == Key.Escape && Vm is { IsMenuOpen: true } menuVm)
@@ -444,7 +469,11 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.Escape && SearchBox.IsFocused)
         {
-            if (Vm is { } searchVm) searchVm.IsSearchKeyboardOpen = false;
+            if (Vm is { } searchVm)
+            {
+                searchVm.IsSearchKeyboardOpen = false;
+                searchVm.IsSearching = false;
+            }
             FocusSelectedCover();
             e.Handled = true;
         }

@@ -103,6 +103,37 @@ public sealed class OnScreenKeyboardTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void Up_in_the_carousel_searches_with_the_keyboard_and_the_box_stays_while_filtering()
+    {
+        using var lib = _env.OpenLibrary();
+        lib.AddEdition("Alpha", Generations.Switch1, _env.Game("A.nsp"));
+        lib.AddEdition("Bravo", Generations.Switch1, _env.Game("B.nsp"));
+        var vm = new MainViewModel(lib, new EmulatorLauncher(), new FakeUi()) { IsCarousel = true };
+        var window = new MainWindow { DataContext = vm, Width = 1280, Height = 800 };
+        window.Show();
+        Dispatcher.UIThread.RunJobs();
+        window.FocusSelectedCover();
+        Assert.False(vm.ShowSearchBox);                              // clean: just a search button
+        Assert.True(window.FindControl<Button>("SearchButton")!.IsEffectivelyVisible);
+
+        GamepadService.Dispatch(window, PadAction.Up);               // Up: search
+        Dispatcher.UIThread.RunJobs();
+        Assert.True(vm.IsSearchKeyboardOpen);
+        Assert.True(vm.ShowSearchBox);
+        Assert.True(vm.IsCarousel);                                  // still in the carousel
+        OnScreenKeyboard.In(window)!.Type("alp");
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(["Alpha"], vm.Items.Select(i => i.Title));
+        GamepadService.Dispatch(window, PadAction.Play);             // Start: done
+        Dispatcher.UIThread.RunJobs();
+        Assert.False(vm.IsSearchKeyboardOpen);
+        Assert.True(vm.ShowSearchBox);                               // the search still filters, so the box stays
+        vm.SearchText = "";
+        Assert.False(vm.ShowSearchBox);                              // cleared: clean again
+        window.Close();
+    }
+
+    [AvaloniaFact]
     public void Grid_search_from_the_filters_filters_as_you_type()
     {
         using var lib = _env.OpenLibrary();

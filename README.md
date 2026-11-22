@@ -90,11 +90,13 @@ game you played; **Settings → Library → Start on** can make it the last game
 the screen with one row of covers above the game's name and the first sentence of its
 description (**Edit Carousel Text…** changes it); switching back to the grid leaves full
 screen. Both views share the same selection, and S-Dock opens in the one chosen under
-**Settings → Library → Launch view**. The carousel is kept clean: search, Add Folder,
-the filter bar and the view buttons appear only in the grid (Y or Ctrl+G switches views, Ctrl+F
-jumps to the grid's search, and filters are under **Settings → Library → Filter** in either view).
+**Settings → Library → Launch view**. The carousel is kept clean: Add Folder, the filter bar and
+the view buttons appear only in the grid (Y or Ctrl+G switches views, and filters are under
+**Settings → Library → Filter** in either view). Search works in both: in the carousel press
+**Up** (or Ctrl+F, or the search button by the gear); its search box shows only while you search or
+while a search is filtering the covers.
 
-**Jump by letter.** Up/Down in the carousel, LT/RT on a controller, or Page Up/Page Down jump
+**Jump by letter.** LT/RT on a controller, or Page Up/Page Down, jump
 to the next or previous letter (by sort title). The letter shows briefly in the middle.
 Games are sorted without a leading "A", "An" or "The", so *The Messenger* is under M.
 
@@ -226,7 +228,7 @@ sees.
 
 | Controller | Keyboard | Action |
 |---|---|---|
-| D-pad / left stick | Arrow keys | Move between covers (hold to repeat). In the grid, Up/Down go straight up or down a row (from the top row, up to the filters); in the carousel, Up/Down jump letters |
+| D-pad / left stick | Arrow keys | Move between covers (hold to repeat). In the grid, Up/Down go straight up or down a row (from the top row, up to the filters, then search); in the carousel, Up searches |
 | A | Enter | Play, or choose in a menu |
 | B | Esc | Back / close a menu or dialog |
 | X | Right-click | Game Actions |
@@ -237,7 +239,7 @@ sees.
 | LT / RT | Page Up / Page Down | Previous / next letter |
 | Start | | Play |
 | Start + Select | Esc (in a game) | Close the game and return to S-Dock |
-| | Ctrl+F | Search |
+| | Ctrl+F | Search (in either view) |
 | | Ctrl+O / Ctrl+E | Add Folder / Emulator Profiles |
 
 In dialogs (questions, choosers, pickers, text editors, settings windows) the D-pad moves through
@@ -246,7 +248,7 @@ and B cancels. Typing and Windows' own file and folder pickers still need a keyb
 
 **Typing with the controller.** An on-screen keyboard appears wherever you'd type: Rename, Sort
 Title, Edit Description and Edit Carousel Text (it shows when you're using the controller; the
-**Keyboard** button shows or hides it), and the grid's search (from the filters, press Up). D-pad
+**Keyboard** button shows or hides it), and search (Up in the carousel; in the grid, Up from the filters). D-pad
 moves, **A** types, **B** deletes (and closes once there's nothing left), **X** space, **Y** shift,
 **LB/RB** move the cursor, **Select** symbols, **Start** done. Search results update as you type.
 

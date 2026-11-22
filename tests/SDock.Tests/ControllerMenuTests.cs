@@ -113,7 +113,7 @@ public sealed class ControllerMenuTests : IDisposable
     }
 
     [AvaloniaFact]
-    public void Letter_jumps_with_up_down_triggers_and_page_keys()
+    public void Letter_jumps_with_the_triggers_and_page_keys()
     {
         using var lib = _env.OpenLibrary();
         foreach (var t in new[] { "1942", "Alpha", "Apex", "Bravo", "Zed" })
@@ -124,15 +124,18 @@ public sealed class ControllerMenuTests : IDisposable
         vm.Select(lib.ListEditions().Single(e => e.Title == "1942").Id);
         window.FocusSelectedCover();
 
-        Press(window, PadAction.Down);              // carousel: next letter
+        Press(window, PadAction.NextLetter);        // RT: next letter
         Assert.Equal("Alpha", vm.SelectedItem?.Title);
         Assert.True(vm.ShowJumpLetter);
         Assert.Equal("A", vm.JumpLetter);
-        Press(window, PadAction.Down);
+        Press(window, PadAction.Down);              // Down no longer jumps letters in the carousel
+        Assert.Equal("Alpha", vm.SelectedItem?.Title);
+        Assert.False(vm.IsSearchKeyboardOpen);
+        Press(window, PadAction.NextLetter);
         Assert.Equal("Bravo", vm.SelectedItem?.Title);
         Press(window, PadAction.NextLetter);        // RT
         Assert.Equal("The Legend of Zelda", vm.SelectedItem?.Title); // filed under L by its sort title
-        Press(window, PadAction.Up);
+        Press(window, PadAction.PreviousLetter);
         Assert.Equal("Bravo", vm.SelectedItem?.Title);
         Press(window, PadAction.PreviousLetter);    // LT: start of the previous letter
         Assert.Equal("Alpha", vm.SelectedItem?.Title);
