@@ -244,6 +244,12 @@ In dialogs (questions, choosers, pickers, text editors, settings windows) the D-
 lists and then between buttons, A presses or chooses (it ticks check boxes and opens dropdowns),
 and B cancels. Typing and Windows' own file and folder pickers still need a keyboard and mouse.
 
+**Typing with the controller.** An on-screen keyboard appears wherever you'd type: Rename, Sort
+Title, Edit Description and Edit Carousel Text (it shows when you're using the controller; the
+**Keyboard** button shows or hides it), and the grid's search (from the filters, press Up). D-pad
+moves, **A** types, **B** deletes (and closes once there's nothing left), **X** space, **Y** shift,
+**LB/RB** move the cursor, **Select** symbols, **Start** done. Search results update as you type.
+
 Controller input is ignored while another app is in front, except Start + Select during a
 game. In full screen, S-Dock brings itself to the front when you return from a game.
 

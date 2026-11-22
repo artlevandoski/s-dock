@@ -31,6 +31,9 @@ public partial class MainWindow : Window
             list.ContextRequested += Cover_ContextRequested; // right-click (or the menu key) opens Game Actions
         MenuList.AddHandler(KeyDownEvent, MenuList_KeyDown, RoutingStrategies.Tunnel);
         FilterBar.AddHandler(KeyDownEvent, FilterBar_KeyDown, RoutingStrategies.Tunnel);
+        SearchKeyboard.Target = SearchBox;
+        SearchKeyboard.Done += CloseSearchKeyboard;
+        SearchKeyboard.Closed += CloseSearchKeyboard;
         // The Settings page takes every key while it's open, before anything under it sees them.
         AddHandler(KeyDownEvent, Settings_KeyDown, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, Trailer_KeyDown, RoutingStrategies.Tunnel);
@@ -322,10 +325,28 @@ public partial class MainWindow : Window
             case Key.Down or Key.Escape:
                 FocusSelectedCover();
                 break;
+            case Key.Up:
+                OpenSearchKeyboard();
+                break;
             default:
                 return;
         }
         e.Handled = true;
+    }
+
+    /// <summary>Search with the controller: the search box with the on-screen keyboard under it.</summary>
+    public void OpenSearchKeyboard()
+    {
+        if (Vm is not { IsGrid: true } vm) return;
+        vm.IsSearchKeyboardOpen = true;
+        SearchBox.Focus();
+        SearchBox.CaretIndex = (SearchBox.Text ?? "").Length;
+    }
+
+    private void CloseSearchKeyboard()
+    {
+        if (Vm is { } vm) vm.IsSearchKeyboardOpen = false;
+        FocusSelectedCover(); // straight to the results
     }
 
     private DispatcherTimer? _letterTimer;
@@ -423,6 +444,7 @@ public partial class MainWindow : Window
         }
         else if (e.Key == Key.Escape && SearchBox.IsFocused)
         {
+            if (Vm is { } searchVm) searchVm.IsSearchKeyboardOpen = false;
             FocusSelectedCover();
             e.Handled = true;
         }

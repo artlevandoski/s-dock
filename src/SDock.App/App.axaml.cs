@@ -114,6 +114,11 @@ public partial class App : Application
             };
 
             EventLog.Write($"S-Dock {MainViewModel.AppVersion} started (data: {AppPaths.DataDir})");
+            // Real typing or a click means the keyboard and mouse are in use (the on-screen keyboard stays away).
+            Avalonia.Input.InputElement.TextInputEvent.AddClassHandler<Avalonia.Controls.TopLevel>(
+                (_, _) => Input.GamepadService.NoteKeyboardOrMouse(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
+            Avalonia.Input.InputElement.PointerPressedEvent.AddClassHandler<Avalonia.Controls.TopLevel>(
+                (_, _) => Input.GamepadService.NoteKeyboardOrMouse(), Avalonia.Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
             desktop.Exit += (_, e) => EventLog.Write($"S-Dock exiting (code {e.ApplicationExitCode})");
             // Errors outside the window's own thread would close S-Dock without a word: at least leave a record.
             AppDomain.CurrentDomain.UnhandledException += (_, e) =>

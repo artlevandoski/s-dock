@@ -180,6 +180,15 @@ public sealed partial class MainViewModel
 
     public bool IsGrid => !IsCarousel;
 
+    /// <summary>The on-screen keyboard for the grid's search (opened from the filters with the controller).</summary>
+    [ObservableProperty]
+    public partial bool IsSearchKeyboardOpen { get; set; }
+
+    partial void OnIsCarouselChanged(bool value)
+    {
+        if (value) IsSearchKeyboardOpen = false; // search lives in the grid
+    }
+
     /// <summary>The selected game's art fills the window in the carousel and stays faint behind the grid.</summary>
     public double BackdropOpacity => IsCarousel ? 0.8 : 0.16;
     public string ViewToggleLabel => IsCarousel ? "Grid View" : "Carousel View";

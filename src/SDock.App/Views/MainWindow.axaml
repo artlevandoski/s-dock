@@ -729,6 +729,12 @@
       </DockPanel>
     </Border>
 
+    <!-- The on-screen keyboard for the grid's search: Up from the filters opens it; results filter as you type. -->
+    <Border x:Name="SearchKeyboardPanel" IsVisible="{Binding IsSearchKeyboardOpen}" VerticalAlignment="Bottom"
+            HorizontalAlignment="Center" Width="820" Margin="0,0,0,64">
+      <c:OnScreenKeyboard x:Name="SearchKeyboard" />
+    </Border>
+
     <!-- ============================== Trailer ==============================
          A game's trailer, full screen inside S-Dock. The player itself is a native view (WebView2), created the first
          time a trailer plays; nothing S-Dock draws can sit on top of it, so the hints are in a bar below it. -->

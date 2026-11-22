@@ -119,6 +119,14 @@ public sealed class GamepadService
         return null;
     }
 
+    private static long _lastController, _lastKeyboardOrMouse;
+
+    /// <summary>True when the controller was used more recently than typing or the mouse (the on-screen keyboard shows then).</summary>
+    public static bool ControllerInUse => _lastController > _lastKeyboardOrMouse;
+
+    public static void NoteController() => _lastController = Environment.TickCount64;
+    public static void NoteKeyboardOrMouse() => _lastKeyboardOrMouse = Environment.TickCount64;
+
     private void Poll()
     {
         var state = ReadController();
@@ -151,7 +159,10 @@ public sealed class GamepadService
             return;
         }
         foreach (var action in _mapper.Update(s, _clock.Elapsed))
+        {
+            NoteController();
             Dispatch(active, action);
+        }
     }
 
     public static void Dispatch(Window active, PadAction action)
@@ -161,6 +172,8 @@ public sealed class GamepadService
             trailerVm.TrailerInput(action); // a trailer is playing: A pauses, B closes
             return;
         }
+        if (Controls.OnScreenKeyboard.In(active) is { } keyboard && keyboard.Input(action))
+            return; // the on-screen keyboard is up: the controller types
         if (active is MainWindow { DataContext: MainViewModel { IsSettingsOpen: true } settingsVm })
         {
             settingsVm.SettingsInput(action); // the Settings page handles everything itself

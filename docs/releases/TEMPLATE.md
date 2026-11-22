@@ -48,7 +48,7 @@ the folder.
 
 ## Known limitations
 
-- Typing (search, text boxes) and Windows' file and folder pickers still need a keyboard and mouse.
+- Windows' file and folder pickers (Add Folder, choosing an image) still need a keyboard and mouse.
 - The app isn't code-signed (see the SmartScreen note above).
 
 ## Feedback
