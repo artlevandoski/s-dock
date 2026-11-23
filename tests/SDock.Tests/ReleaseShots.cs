@@ -77,6 +77,38 @@ public sealed class ReleaseShots
             Settle(window, vm);
             MainWindowTests.Capture(window, "game-actions.png");
             vm.CloseMenu();
+
+            // 1.2.0: search in the carousel with the on-screen keyboard, and Watch Trailer in Game Actions.
+            void Press(PadAction action) { GamepadService.NoteController(); GamepadService.Dispatch(window, action); Dispatcher.UIThread.RunJobs(); }
+            try
+            {
+                vm.IsCarousel = true;
+                vm.Select(game.Id);
+                Settle(window, vm, 2500);
+                Press(PadAction.Up);
+                if (SDock.App.Controls.OnScreenKeyboard.In(window) is { } keyboard)
+                {
+                    var term = Environment.GetEnvironmentVariable("SDOCK_RELEASE_SHOTS_SEARCH") ?? "moon";
+                    foreach (var ch in term[..^1]) { foreach (var m in keyboard.MovesTo(ch.ToString())) Press(m); Press(PadAction.Accept); }
+                    foreach (var m in keyboard.MovesTo(term[^1].ToString())) Press(m);   // resting on the next key
+                    Settle(window, vm, 1500);
+                    MainWindowTests.Capture(window, "search-keyboard.png");
+                    Press(PadAction.Accept);
+                    Press(PadAction.Play);                                              // Start: done
+                    Settle(window, vm, 2500);
+                    MainWindowTests.Capture(window, "search-results.png");
+                    Press(PadAction.Up);
+                    for (var i = 0; i < 6 && vm.IsSearchKeyboardOpen | vm.SearchText.Length > 0; i++) Press(PadAction.Cancel);
+                }
+                vm.Select(game.Id);
+                Settle(window, vm, 2500);
+                Press(PadAction.GameActions);
+                Press(PadAction.Down);                                                  // Watch Trailer
+                Settle(window, vm);
+                MainWindowTests.Capture(window, "watch-trailer.png");
+                Press(PadAction.Cancel);
+            }
+            finally { GamepadService.NoteKeyboardOrMouse(); }
             window.Close();
         }
         finally

@@ -7,10 +7,11 @@ with covers, backgrounds, logos and descriptions.
 You bring your own game files and emulator. S-Dock does not include or download games,
 firmware, keys or system files, and it never changes your game files.
 
-Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: 1.0.0.**
+Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). Stable, with automatic updates.
 
 ## Contents
 
+- [Features](#features)
 - [Install](#install)
 - [Getting started](#getting-started)
 - [Using S-Dock](#using-s-dock)
@@ -18,6 +19,54 @@ Built with C# / .NET 10 and [Avalonia](https://avaloniaui.net/). **Status: 1.0.0
 - [Controller and keyboard](#controller-and-keyboard)
 - [Portable folder](#portable-folder)
 - [For developers](#for-developers)
+
+## Features
+
+<!-- Keep this list complete: add every new feature here (one short line), with details further down. -->
+
+**Browsing**
+- Full-screen **carousel** with the game's artwork behind the covers, or a **grid** with a details
+  panel; choose which one S-Dock opens in.
+- Tabs: **Main Library**, **Arcade Archives** (sorted in automatically, ACA NEOGEO and SEGA AGES
+  optional), **Favorites** and **Recently Played**. Any game can be moved to another tab by hand.
+- **Favorites** with a gold star on the cover; **play time** and *last played* for every game; opens
+  on the last game you played.
+- **Search** in both views, **jump by letter**, and sorting that ignores a leading A, An or The.
+- **Filters:** Switch 1, Switch 2, Unclassified, Update available, Not in TitleDB, Hidden games.
+- Shows whether you have the latest **update** and how many **DLC**, from the files beside each game.
+
+**Playing**
+- An emulator per game or per generation, **Launch With…** for a one-off, or **no emulator** for
+  PC versions and other `.exe` games.
+- **Start + Select** (or Esc) closes the game and returns to S-Dock on the same game, even with
+  Steam Input running.
+- Games start in full screen, and S-Dock comes back to the front afterwards.
+
+**Game Actions**
+- **Watch Trailer** inside S-Dock, controlled with the controller.
+- **Rename**, Sort Title, Edit Description and Edit Carousel Text.
+- Choose cover, background or logo; add and play alternate version files.
+- Hide a game, or **Remove from Library** (the game file is never touched).
+- Re-match on TitleDB or IGDB, or clear a game's match and artwork.
+
+**Game info and artwork**
+- **TitleDB** (names, descriptions, covers, backgrounds, screenshots), **nx-versions** (latest
+  updates), **IGDB** (backup info, logos, trailers), **SteamGridDB** (more artwork, optional) and
+  **EmuReady** ratings (how well each game runs on PC emulators).
+
+**Controller and keyboard**
+- Xbox, PlayStation, Switch Pro, Joy-Con and most other controllers, with no drivers; several at once.
+- Everything works with a controller: both views, filters, menus, dialogs and Settings.
+- **On-screen keyboard** for search and every text box.
+- Keyboard shortcuts and the mouse work throughout.
+
+**Settings, portability and updates**
+- A full-screen **Settings** page made for the controller; changes apply straight away.
+- Background style: the game's artwork or a plain colour.
+- **Portable:** everything stays in the S-Dock folder; move the folder to move S-Dock.
+- **Move Game Folder** finds your games again after they move, keeping their settings and artwork.
+- **Automatic updates** that keep your data and emulators.
+- Logs, and S-Dock keeps running after an unexpected error.
 
 ## Install
 
@@ -126,8 +175,8 @@ closes, S-Dock comes back with the same game selected.
 
 **Game Actions** (the X button, the Game Actions button, or right-click a cover) open as a list in
 the middle of the screen: move with the D-pad or arrow keys, choose with A or Enter, go back with B
-or Esc. The carousel keeps its menu short: **Emulator**, **Add to Favorites**, **Hide Game** and
-**More Game Actions (Grid View)**; the grid has everything below.
+or Esc. The carousel keeps its menu short: **Emulator**, **Watch Trailer**, **Add to Favorites**,
+**Hide Game** and **More Game Actions (Grid View)**; the grid has everything below.
 
 **Game Actions:**
 
@@ -244,7 +293,8 @@ sees.
 
 In dialogs (questions, choosers, pickers, text editors, settings windows) the D-pad moves through
 lists and then between buttons, A presses or chooses (it ticks check boxes and opens dropdowns),
-and B cancels. Typing and Windows' own file and folder pickers still need a keyboard and mouse.
+and B cancels. Only Windows' own file and folder pickers (Add Folder, browsing for an image) still
+need a keyboard and mouse.
 
 **Typing with the controller.** An on-screen keyboard appears wherever you'd type: Rename, Sort
 Title, Edit Description and Edit Carousel Text (it shows when you're using the controller; the
