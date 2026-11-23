@@ -30,6 +30,9 @@ internal static class Program
 
         Benchmark = args.Contains("--benchmark");
         // --trailer-test <video id> <png>: play one trailer, record whether it plays, save a snapshot, exit (a check).
+        // --demo-tour <marks file>: S-Dock shows itself off for a recording, notes when each part starts, then exits.
+        int d = Array.IndexOf(args, "--demo-tour");
+        if (d >= 0 && d + 1 < args.Length) DemoTourMarks = Path.GetFullPath(args[d + 1]);
         int t = Array.IndexOf(args, "--trailer-test");
         if (t >= 0 && t + 2 < args.Length) TrailerTest = (args[t + 1], Path.GetFullPath(args[t + 2]));
         Started.Start();
@@ -37,6 +40,7 @@ internal static class Program
     }
 
     public static (string VideoId, string Png)? TrailerTest { get; private set; }
+    public static string? DemoTourMarks { get; private set; }
 
     /// <summary>--benchmark: measure frame times with the real renderer and exit (for performance checks).</summary>
     public static bool Benchmark { get; private set; }

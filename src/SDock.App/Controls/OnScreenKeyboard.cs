@@ -62,6 +62,25 @@ public sealed class OnScreenKeyboard : UserControl
     /// <summary>The key the D-pad is on (for tests).</summary>
     public string HighlightedKey => _rows[_row][_col].Key.Label;
 
+    /// <summary>The D-pad presses that move from the current key to this one (for the demo tour); empty if not shown.</summary>
+    public List<PadAction> MovesTo(string label)
+    {
+        for (var r = 0; r < _rows.Count; r++)
+            for (var c = 0; c < _rows[r].Count; c++)
+                if (string.Equals(_rows[r][c].Key.Label, label, StringComparison.Ordinal))
+                {
+                    var moves = new List<PadAction>();
+                    var row = _row;
+                    while (row < r) { moves.Add(PadAction.Down); row++; }
+                    while (row > r) { moves.Add(PadAction.Up); row--; }
+                    var col = Math.Min(_col, _rows[r].Count - 1);
+                    while (col < c) { moves.Add(PadAction.Right); col++; }
+                    while (col > c) { moves.Add(PadAction.Left); col--; }
+                    return moves;
+                }
+        return [];
+    }
+
     private void Build()
     {
         _grid.Children.Clear();

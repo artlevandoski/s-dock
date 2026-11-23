@@ -13,7 +13,11 @@ namespace SDock.Tests;
 public sealed class OnScreenKeyboardTests : IDisposable
 {
     private readonly TestEnv _env = new();
-    public void Dispose() => _env.Dispose();
+    public void Dispose()
+    {
+        SDock.App.Input.GamepadService.NoteKeyboardOrMouse(); // "controller in use" is shared: don't leave it on for other tests
+        _env.Dispose();
+    }
 
     private static (OnScreenKeyboard Keyboard, TextBox Box, Window Window) Keyboard(string text = "")
     {

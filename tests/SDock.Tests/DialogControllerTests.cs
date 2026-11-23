@@ -13,6 +13,8 @@ namespace SDock.Tests;
 public sealed class DialogControllerTests : IDisposable
 {
     private readonly TestEnv _env = new();
+    // These drive dialogs the classic way (D-pad between controls, A presses): no on-screen keyboard in the way.
+    public DialogControllerTests() => SDock.App.Input.GamepadService.NoteKeyboardOrMouse();
     public void Dispose() => _env.Dispose();
 
     private static Window Owner()

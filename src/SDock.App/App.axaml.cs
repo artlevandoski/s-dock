@@ -93,6 +93,15 @@ public partial class App : Application
                     await Task.Delay(TimeSpan.FromSeconds(4)); // let S-Dock settle (and any first-start questions) first
                     await vm.CheckForUpdatesOnStartAsync();
                 };
+            if (Program.DemoTourMarks is { } marks)
+            {
+                window.KeepFullScreen = true;
+                window.Opened += async (_, _) =>
+                {
+                    await DemoTour.RunAsync(window, vm, marks);
+                    desktop.Shutdown();
+                };
+            }
             if (Program.Benchmark)
             {
                 // --benchmark: measure real frame times on this machine, write logs\benchmark.txt, then exit.

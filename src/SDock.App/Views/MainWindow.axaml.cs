@@ -179,8 +179,12 @@ public partial class MainWindow : Window
     }
 
     /// <summary>Carousel view fills the screen; grid view puts the window back the way it was.</summary>
+    /// <summary>Full screen in both views (the demo tour, for recording).</summary>
+    public bool KeepFullScreen { get; set; }
+
     private void ApplyFullScreen(bool fullScreen)
     {
+        fullScreen |= KeepFullScreen;
         if (fullScreen && WindowState != WindowState.FullScreen)
         {
             _stateBeforeFullScreen = WindowState == WindowState.Minimized ? WindowState.Normal : WindowState;
