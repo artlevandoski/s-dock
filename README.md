@@ -1,4 +1,4 @@
-# S-Dock
+<img width="1672" height="941" alt="S-DOCK hero" src="https://github.com/user-attachments/assets/88c5cb4f-32da-4da1-96c7-05b7379dd7a8" />
 
 A controller-friendly Windows frontend for switch game libraries. Point it at your game
 folders and your own emulator, and browse everything in a grid or a full-screen carousel
